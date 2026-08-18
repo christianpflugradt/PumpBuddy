@@ -8,6 +8,12 @@ describe("pb-app-root", () => {
   });
 
   const createState = (): AppState => ({
+    configuratorLoadProfilesScreen: {
+      loadProfiles: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     historyScreen: {
       workouts: [],
       isLoading: false,
@@ -223,6 +229,38 @@ describe("pb-app-root", () => {
     const configuratorEl = el.querySelector("pb-configurator-load-profiles-screen");
     expect(configuratorEl).toBeTruthy();
     expect(configuratorEl?.textContent ?? "").toContain("Load Profiles");
+  });
+
+  it("renders configurator load profile detail route inside configurator mode", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.configuratorLoadProfilesScreen = {
+      loadProfiles: [
+        {
+          id: "profile-1",
+          name: "Alpha Draft",
+          status: "new",
+          definition_kind: "fixed_list",
+          weight_unit: "KG",
+          station_count: 0,
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: true,
+    };
+    state.viewState = {
+      screen: "configurator-load-profile-detail",
+      loadProfileId: "profile-1",
+    };
+
+    el.state = state;
+
+    const configuratorEl = el.querySelector("pb-configurator-load-profiles-screen");
+    expect(configuratorEl).toBeTruthy();
+    expect(configuratorEl?.textContent ?? "").toContain("Alpha Draft");
   });
 
   it("renders about screen when about view is selected", () => {

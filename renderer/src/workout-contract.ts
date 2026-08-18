@@ -20,6 +20,15 @@ export type GymSummary = {
   last_visited_at?: string | null;
 };
 
+export type LoadProfileSummary = {
+  id: string;
+  name: string;
+  status: "new" | "active" | "inactive";
+  definition_kind: "fixed_list" | "formula";
+  weight_unit: "KG" | "LBS";
+  station_count: number;
+};
+
 export type GymStationOption = {
   station_id: string;
   station_name: string;

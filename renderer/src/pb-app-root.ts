@@ -48,6 +48,7 @@ import {
 import {
   pbConfiguratorLoadProfilesScreenTag,
   registerPbConfiguratorLoadProfilesScreen,
+  type ConfiguratorLoadProfilesScreenState,
 } from "./pb-configurator-load-profiles-screen";
 
 export const pbAppRootTag = "pb-app-root";
@@ -112,7 +113,37 @@ class PbAppRootElement extends HTMLElement {
     }
 
     if (state.viewState.screen === "configurator-load-profiles") {
-      const el = document.createElement(pbConfiguratorLoadProfilesScreenTag);
+      const el = document.createElement(pbConfiguratorLoadProfilesScreenTag) as HTMLElement & {
+        state: ConfiguratorLoadProfilesScreenState;
+      };
+      el.state = {
+        mode: "list",
+        loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [],
+        selectedLoadProfile: null,
+        isLoading: state.configuratorLoadProfilesScreen?.isLoading ?? false,
+        errorMessage: state.configuratorLoadProfilesScreen?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-load-profile-detail") {
+      const loadProfileId = state.viewState.loadProfileId;
+      const el = document.createElement(pbConfiguratorLoadProfilesScreenTag) as HTMLElement & {
+        state: ConfiguratorLoadProfilesScreenState;
+      };
+      el.state = {
+        mode: loadProfileId === null ? "create" : "detail",
+        loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [],
+        selectedLoadProfile:
+          loadProfileId === null
+            ? null
+            : state.configuratorLoadProfilesScreen?.loadProfiles.find(
+                (loadProfile) => loadProfile.id === loadProfileId,
+              ) ?? null,
+        isLoading: false,
+        errorMessage: null,
+      };
       container.append(el);
       return;
     }

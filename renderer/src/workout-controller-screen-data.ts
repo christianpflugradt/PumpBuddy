@@ -2,6 +2,7 @@ import {
   loadAboutMetadata,
   loadGymDetail,
   loadGymSummaries,
+  loadLoadProfileSummaries,
   loadStationDetail,
   loadTrainingPlanDetail,
   loadTrainingPlanSummaries,
@@ -25,6 +26,7 @@ type Dependencies = {
 
 export const createScreenDataController = (deps: Dependencies): {
   loadAboutScreenMetadata: () => Promise<void>;
+  loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadHistoryScreenData: () => Promise<void>;
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
@@ -40,6 +42,7 @@ export const createScreenDataController = (deps: Dependencies): {
 } => {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
+  let configuratorLoadProfilesToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
   let trainingPlanDetailLoadToken = 0;
@@ -124,6 +127,60 @@ export const createScreenDataController = (deps: Dependencies): {
         aboutScreen: {
           metadata: null,
           errorMessage: "Unable to load build metadata right now.",
+        },
+      });
+      render();
+    }
+  };
+
+  const loadConfiguratorLoadProfilesScreenData = async (): Promise<void> => {
+    const requestToken = ++configuratorLoadProfilesToken;
+    const state = getState();
+    const current = state.configuratorLoadProfilesScreen;
+    if (current?.isLoading) {
+      return;
+    }
+
+    setState({
+      ...state,
+      configuratorLoadProfilesScreen: {
+        loadProfiles: current?.loadProfiles ?? [],
+        isLoading: true,
+        errorMessage: null,
+        hasLoaded: current?.hasLoaded ?? false,
+      },
+    });
+    render();
+
+    try {
+      const loadProfiles = await loadLoadProfileSummaries(fetchJson);
+      if (requestToken !== configuratorLoadProfilesToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        configuratorLoadProfilesScreen: {
+          loadProfiles,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      });
+      render();
+    } catch {
+      if (requestToken !== configuratorLoadProfilesToken) {
+        return;
+      }
+
+      const nextState = getState();
+      setState({
+        ...nextState,
+        configuratorLoadProfilesScreen: {
+          loadProfiles: nextState.configuratorLoadProfilesScreen?.loadProfiles ?? [],
+          isLoading: false,
+          errorMessage: "Unable to load load profiles right now.",
+          hasLoaded: false,
         },
       });
       render();
@@ -548,6 +605,7 @@ export const createScreenDataController = (deps: Dependencies): {
 
   return {
     loadAboutScreenMetadata,
+    loadConfiguratorLoadProfilesScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,

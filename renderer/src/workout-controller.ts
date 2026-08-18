@@ -96,6 +96,12 @@ export const createApp = (
 ): void => {
   let state: AppState = {
     sessionUser,
+    configuratorLoadProfilesScreen: {
+      loadProfiles: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     aboutScreen: {
       metadata: null,
       errorMessage: null,
@@ -255,6 +261,8 @@ export const createApp = (
     render,
     fetchJson,
   });
+  const loadConfiguratorLoadProfilesScreenData =
+    screenDataController.loadConfiguratorLoadProfilesScreenData;
   const loadWorkoutDetailScreenData =
     screenDataController.loadWorkoutDetailScreenData;
 
@@ -507,6 +515,7 @@ export const createApp = (
         setState,
         render,
         loadAboutScreenMetadata,
+        loadConfiguratorLoadProfilesScreenData,
         loadHistoryScreenData,
         loadProgressScreenData,
         loadExercisesScreenData,

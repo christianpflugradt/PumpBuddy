@@ -7,6 +7,7 @@ import {
   loadAboutMetadata,
   loadGymDetail,
   loadGymSummaries,
+  loadLoadProfileSummaries,
   loadStationDetail,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
@@ -72,6 +73,31 @@ describe("workout-api credentials", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/training-plans", {
       credentials: "same-origin",
     });
+  });
+
+  it("loads load profile summaries through generated renderer models", async () => {
+    const fetchJson = vi.fn().mockResolvedValue([
+      {
+        id: "profile-1",
+        name: "Config Alpha",
+        status: "inactive",
+        definition_kind: "formula",
+        weight_unit: "LBS",
+        station_count: 4,
+      },
+    ]);
+
+    await expect(loadLoadProfileSummaries(fetchJson)).resolves.toEqual([
+      {
+        id: "profile-1",
+        name: "Config Alpha",
+        status: "inactive",
+        definition_kind: "formula",
+        weight_unit: "LBS",
+        station_count: 4,
+      },
+    ]);
+    expect(fetchJson).toHaveBeenCalledWith("/api/load-profiles");
   });
 
   it("uses same-origin credentials for JSON submissions", async () => {

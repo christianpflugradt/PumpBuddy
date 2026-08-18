@@ -8,6 +8,7 @@ type Dependencies = {
   setState: SetState;
   render: () => void;
   loadAboutScreenMetadata: () => Promise<void>;
+  loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadHistoryScreenData: () => Promise<void>;
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
@@ -54,6 +55,7 @@ const shouldClearProgressSelection = (state: AppState): boolean =>
 const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "start" ||
   state.viewState.screen === "configurator-load-profiles" ||
+  state.viewState.screen === "configurator-load-profile-detail" ||
   state.viewState.screen === "about" ||
   state.viewState.screen === "settings" ||
   state.viewState.screen === "history" ||
@@ -143,6 +145,7 @@ export const handleScreenNavigationAction = (
     setState,
     render,
     loadAboutScreenMetadata,
+    loadConfiguratorLoadProfilesScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,
@@ -184,6 +187,63 @@ export const handleScreenNavigationAction = (
       const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
       setState({
         ...nextState,
+        viewState: { screen: "configurator-load-profiles" },
+      });
+      render();
+      void loadConfiguratorLoadProfilesScreenData();
+      return true;
+    }
+    case "start-configurator-load-profile-create": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-load-profiles") {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "configurator-load-profile-detail", loadProfileId: null },
+      });
+      render();
+      return true;
+    }
+    case "open-configurator-load-profile-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-load-profiles") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { loadProfileId?: unknown } | undefined;
+      const loadProfileId =
+        typeof payload?.loadProfileId === "string" ? payload.loadProfileId.trim() : "";
+      if (loadProfileId.length === 0) {
+        return true;
+      }
+
+      const exists = Boolean(
+        state.configuratorLoadProfilesScreen?.loadProfiles.some(
+          (loadProfile) => loadProfile.id === loadProfileId,
+        ),
+      );
+      if (!exists) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "configurator-load-profile-detail", loadProfileId },
+      });
+      render();
+      return true;
+    }
+    case "navigate-back-from-configurator-load-profile-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-load-profile-detail") {
+        return true;
+      }
+
+      setState({
+        ...state,
         viewState: { screen: "configurator-load-profiles" },
       });
       render();

@@ -4,6 +4,7 @@ import {
   loadActiveWorkout,
   loadGymDetail,
   loadGymSummaries,
+  loadLoadProfileSummaries,
   loadStationDetail,
   loadStartScreenData,
   loadTrainingPlanDetail,
@@ -64,6 +65,7 @@ vi.mock("./workout-api", async () => {
     loadActiveWorkout: vi.fn(),
     loadGymDetail: vi.fn(),
     loadGymSummaries: vi.fn(),
+    loadLoadProfileSummaries: vi.fn(),
     loadStationDetail: vi.fn(),
     loadStartScreenData: vi.fn(),
     loadTrainingPlanDetail: vi.fn(),
@@ -78,6 +80,7 @@ vi.mock("./workout-api", async () => {
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
+const loadLoadProfileSummariesMock = vi.mocked(loadLoadProfileSummaries);
 const loadStationDetailMock = vi.mocked(loadStationDetail);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadTrainingPlanDetailMock = vi.mocked(loadTrainingPlanDetail);
@@ -616,19 +619,65 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "settings" });
   });
 
-  it("switches into configurator mode from navigation and back to workout browsing", () => {
+  it("switches into configurator mode from navigation and back to workout browsing", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & {
       state?: { viewState?: unknown } | null;
     };
     document.body.append(app);
 
+    loadLoadProfileSummariesMock.mockResolvedValue([]);
     createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+    expect(loadLoadProfileSummariesMock).toHaveBeenCalledTimes(1);
+
+    dispatchSideMenuAction(app, "navigate-workout");
+    expect(app.state?.viewState).toEqual({ screen: "start" });
+  });
+
+  it("navigates from the configurator list into create and existing detail routes without leaving configurator mode", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+
+    loadLoadProfileSummariesMock.mockResolvedValue([
+      {
+        id: "profile-1",
+        name: "Alpha Draft",
+        status: "new",
+        definition_kind: "fixed_list",
+        weight_unit: "KG",
+        station_count: 0,
+      },
+    ]);
+
+    createApp(app);
+    await flush();
 
     dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
     expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
 
-    dispatchSideMenuAction(app, "navigate-workout");
-    expect(app.state?.viewState).toEqual({ screen: "start" });
+    dispatchAction(app, "start-configurator-load-profile-create");
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-load-profile-detail",
+      loadProfileId: null,
+    });
+
+    dispatchAction(app, "navigate-back-from-configurator-load-profile-detail");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-load-profile-detail",
+      payload: { loadProfileId: "profile-1" },
+    });
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-load-profile-detail",
+      loadProfileId: "profile-1",
+    });
   });
 
   it("persists successful side-menu middle navigation counts through authenticated session preferences", async () => {

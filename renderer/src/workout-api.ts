@@ -9,6 +9,7 @@ import type {
   GymDetailResponse,
   GymStationDetailResponse,
   GymSummary,
+  LoadProfileSummary,
   ReopenActiveWorkoutExerciseRequest,
   SelectActiveWorkoutExerciseOptionRequest,
   SkipActiveWorkoutExerciseRequest,
@@ -29,6 +30,7 @@ import {
   parseGymDetailResponse,
   parseGymStationDetailResponse,
   parseGymSummaries,
+  parseLoadProfileSummaries,
   parseTrainingPlanDetailResponse,
   parseTrainingPlanOptionsResponse,
   parseTrainingPlanSummaries,
@@ -146,6 +148,11 @@ export const createFetchJson = (fetchImpl: typeof fetch = fetch): FetchJson => {
 
 export const loadGymSummaries = async (fetchJson: FetchJson): Promise<GymSummary[]> =>
   parseGymSummaries(await fetchJson<unknown>("/api/gyms"));
+
+export const loadLoadProfileSummaries = async (
+  fetchJson: FetchJson,
+): Promise<LoadProfileSummary[]> =>
+  parseLoadProfileSummaries(await fetchJson<unknown>("/api/load-profiles"));
 
 export const loadGymDetail = async (
   fetchJson: FetchJson,

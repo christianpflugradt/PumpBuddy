@@ -61,6 +61,12 @@ const createTrainingPlanDetail = (
 });
 
 const createState = (): AppState => ({
+  configuratorLoadProfilesScreen: {
+    loadProfiles: [],
+    isLoading: false,
+    errorMessage: null,
+    hasLoaded: false,
+  },
   historyScreen: {
     workouts: [],
     isLoading: false,
@@ -162,6 +168,39 @@ const setup = () => {
 };
 
 describe("workout-controller-screen-data plan browsing", () => {
+  it("loads configurator load profiles into renderer browsing state", async () => {
+    const { controller, fetchJson, getState } = setup();
+    fetchJson.mockResolvedValue([
+      {
+        id: "profile-1",
+        name: "Travel Plates",
+        status: "inactive",
+        definition_kind: "formula",
+        weight_unit: "LBS",
+        station_count: 2,
+      },
+    ]);
+
+    await controller.loadConfiguratorLoadProfilesScreenData();
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/load-profiles");
+    expect(getState().configuratorLoadProfilesScreen).toEqual({
+      loadProfiles: [
+        {
+          id: "profile-1",
+          name: "Travel Plates",
+          status: "inactive",
+          definition_kind: "formula",
+          weight_unit: "LBS",
+          station_count: 2,
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: true,
+    });
+  });
+
   it("loads training plan summaries into browsing state without changing start state", async () => {
     const { controller, fetchJson, getState } = setup();
     fetchJson.mockResolvedValue([

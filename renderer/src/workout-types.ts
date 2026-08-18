@@ -5,6 +5,7 @@ import type {
   GymStationDetailResponse,
   GymStationOption,
   GymSummary,
+  LoadProfileSummary,
   PlanExerciseOptionSummary,
   TrainingPlanDetailResponse,
   TrainingPlanSummary,
@@ -72,6 +73,7 @@ export type ExerciseStep = {
 export type ViewState =
   | { screen: "start" }
   | { screen: "configurator-load-profiles" }
+  | { screen: "configurator-load-profile-detail"; loadProfileId: string | null }
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }
@@ -158,6 +160,12 @@ export type GymStationChooserState = {
 
 export type AppState = {
   sessionUser?: SessionUser | null;
+  configuratorLoadProfilesScreen?: {
+    loadProfiles: LoadProfileSummary[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
+  };
   aboutScreen?: {
     metadata: AboutMetadata | null;
     errorMessage: string | null;
