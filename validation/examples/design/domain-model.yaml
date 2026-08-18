@@ -2,7 +2,7 @@ version: 1
 scope: example
 source_of_truth: domain-structure
 references:
-  glossary: /path/to/glossary.yaml
+  glossary: validation/examples/design/glossary.yaml
 formatting:
   indent_spaces: 2
 

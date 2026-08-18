@@ -4,12 +4,12 @@ from typing import List, Literal, Optional
 
 from pydantic import Field, model_validator
 
-from .common import StrictModel
+from .common import RepoRelativePath, StrictModel
 
 
 class Source(StrictModel):
     type: str
-    reference: str
+    reference: RepoRelativePath
 
 
 class ItemSection(StrictModel):
@@ -30,8 +30,8 @@ class Scope(StrictModel):
 
 
 class Inputs(StrictModel):
-    required: List[str] = Field(min_length=1)
-    optional: List[str] = Field(default_factory=list)
+    required: List[RepoRelativePath] = Field(min_length=1)
+    optional: List[RepoRelativePath] = Field(default_factory=list)
 
 
 class Verification(StrictModel):

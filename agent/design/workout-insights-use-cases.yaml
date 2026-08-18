@@ -2,8 +2,8 @@ version: 1
 area: workout_insights
 source_of_truth: use_cases
 references:
-  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
-  execution_use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases.yaml
+  glossary: agent/design/glossary.yaml
+  execution_use_cases: agent/design/workout-use-cases.yaml
 formatting:
   indent_spaces: 2
 

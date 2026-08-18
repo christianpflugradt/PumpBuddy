@@ -2,7 +2,7 @@ version: 1
 database: postgresql
 source_of_truth: persistence-layout
 references:
-  glossary: /path/to/glossary.yaml
+  glossary: validation/examples/design/glossary.yaml
 formatting:
   indent_spaces: 2
 

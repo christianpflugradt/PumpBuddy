@@ -20,9 +20,9 @@ constraints:
 - Preserve existing backend stack (axum/tokio/sqlx) and test strategy.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
-  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/ci-quality.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Cargo.toml
+  - backend/Dockerfile
+  - .github/workflows/ci-quality.yaml
+  - backend/Cargo.toml
   optional: []
 acceptance_criteria:
 - id: ac-01

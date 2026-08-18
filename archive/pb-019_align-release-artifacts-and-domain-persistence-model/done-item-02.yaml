@@ -24,10 +24,10 @@ constraints:
 - Preserve existing semantic-release driven release flow.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/Dockerfile
+  - .github/workflows/release.yaml
+  - renderer/Dockerfile
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+  - README.md
 acceptance_criteria:
 - id: ac-01
   statement: Release workflow defines a renderer GHCR build/push step with semantic-version

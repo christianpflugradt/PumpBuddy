@@ -2,8 +2,8 @@ version: 1
 area: workout_insights
 source_of_truth: capabilities
 references:
-  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
-  execution_capabilities: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-capabilities.yaml
+  glossary: agent/design/glossary.yaml
+  execution_capabilities: agent/design/workout-capabilities.yaml
 formatting:
   indent_spaces: 2
 

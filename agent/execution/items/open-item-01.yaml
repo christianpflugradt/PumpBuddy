@@ -28,12 +28,12 @@ constraints:
 - Keep the first configurator destination fixed to the load profiles screen.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-context.md
+  - agent/strategy/tech-stack.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-side-menu.ts
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/pb-settings-screen.ts
 acceptance_criteria:
 - id: ac-01
   statement: Users can switch into configurator mode from the side menu and return

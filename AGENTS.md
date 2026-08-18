@@ -43,3 +43,8 @@ Quality/test command policy:
 - Allowed examples: `make check`, `make check-renderer`, `make check-backend`.
 - Do not suggest direct `npm`, `pnpm`, `yarn`, `bun`, `vitest`, `cargo test`, or similar tool-internal commands for quality/test execution in those artifacts.
 - Dependency management is separate from quality/test execution and may use tool-native commands when needed (for example `npm install` for renderer dependencies, `cargo add` for backend dependencies).
+
+Path reference policy:
+- Any path written into tracked repo artifacts or instructions must be repo-relative, never absolute.
+- Referenced paths must stay within this repository; do not write paths that escape the repo root.
+- Prefer forms like `agent/...`, `backend/...`, or `renderer/...`, including for currently open items, plans, design references, and archived task notes.

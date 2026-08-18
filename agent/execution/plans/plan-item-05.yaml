@@ -9,14 +9,14 @@ summary:
     draft load profiles across both fixed-list and formula definitions.
 context:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-05.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-app-root.ts
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/openapi-contract.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/openapi-contract.ts
 implementation_approach:
 - Extend renderer view-state and app-root routing so configurator users can enter
   full-screen draft load-profile create and edit screens from the load-profile list

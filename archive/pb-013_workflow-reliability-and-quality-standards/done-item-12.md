@@ -6,10 +6,10 @@ The renderer has a single 1,584-line `app.ts` file that combines API DTOs, fetch
 
 ## Evidence
 
-- `wc -l` reports [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts) at 1,584 lines.
-- The file defines transport models and fetch helpers near [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L56), [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L190), and [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L307).
-- The same file also renders the UI at [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L535), [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L710), and [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L808).
-- Workout-flow orchestration and event wiring live in the same module at [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L859), [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L973), [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L1203), [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L1318), and [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L1396).
+- `wc -l` reports [renderer/src/app.ts](renderer/src/app.ts) at 1,584 lines.
+- The file defines transport models and fetch helpers near [renderer/src/app.ts](renderer/src/app.ts#L56), [renderer/src/app.ts](renderer/src/app.ts#L190), and [renderer/src/app.ts](renderer/src/app.ts#L307).
+- The same file also renders the UI at [renderer/src/app.ts](renderer/src/app.ts#L535), [renderer/src/app.ts](renderer/src/app.ts#L710), and [renderer/src/app.ts](renderer/src/app.ts#L808).
+- Workout-flow orchestration and event wiring live in the same module at [renderer/src/app.ts](renderer/src/app.ts#L859), [renderer/src/app.ts](renderer/src/app.ts#L973), [renderer/src/app.ts](renderer/src/app.ts#L1203), [renderer/src/app.ts](renderer/src/app.ts#L1318), and [renderer/src/app.ts](renderer/src/app.ts#L1396).
 
 ## Goal
 
@@ -38,5 +38,5 @@ Refactor the renderer into smaller modules that separate API access, workout sta
 
 - Criteria Met: API client code now lives in `renderer/src/workout-api.ts`, state/orchestration helpers live in `renderer/src/workout-state.ts`, and pure rendering is isolated in `renderer/src/workout-render.ts`, leaving `renderer/src/app.ts` focused on wiring, events, and app state.
 - Evidence: `renderer/src/app.ts` now imports API/state/render helpers and delegates rendering to `renderStartScreen`/`renderExerciseScreen`/`renderCompletionScreen`, with API request helpers in `renderer/src/workout-api.ts` and state transitions in `renderer/src/workout-state.ts`.
-- Runtime/Build Check: `cd /Users/cpf/Workspace/personal/PumpBuddy/renderer && npm test` (passes: 21 tests, 0 failures).
+- Runtime/Build Check: `cd renderer && npm test` (passes: 21 tests, 0 failures).
 - Residual Risk: None identified.

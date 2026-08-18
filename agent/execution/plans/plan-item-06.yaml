@@ -10,15 +10,15 @@ summary:
     load expansion results.
 context:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-06.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  - agent/execution/items/open-item-06.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-context.md
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-station-detail-screen.ts
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-gym-detail-screen.ts
+  - backend/src/persistence/load_profiles.rs
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-gym-detail-screen.ts
 implementation_approach:
 - Confirm the backend read and write contract surface for load-profile detail and
   rename flows exposes the status, immutable definition fields, and preview values

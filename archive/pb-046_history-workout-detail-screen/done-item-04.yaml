@@ -31,7 +31,7 @@ constraints:
 inputs:
   required:
   - agent/execution/plan.yaml
-  - /Users/cpf/Downloads/image.png
+  - archive/pb-046_history-workout-detail-screen/external-reference-image.md
   optional:
   - agent/design/api-contract.yaml
 acceptance_criteria:

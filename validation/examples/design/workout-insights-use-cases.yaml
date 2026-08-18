@@ -2,8 +2,8 @@ version: 1
 area: workout_insights
 source_of_truth: use_cases
 references:
-  glossary: /path/to/glossary.yaml
-  execution_use_cases: /path/to/workout-use-cases.yaml
+  glossary: validation/examples/design/glossary.yaml
+  execution_use_cases: validation/examples/design/workout-use-cases.yaml
 formatting:
   indent_spaces: 2
 

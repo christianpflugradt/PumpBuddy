@@ -2,10 +2,10 @@ version: 1
 area: workout
 source_of_truth: use_case_domain_mapping
 references:
-  glossary: /path/to/glossary.yaml
-  use_cases: /path/to/use-cases.yaml
-  domain_model: /path/to/domain-model.yaml
-  persistence_model: /path/to/persistence-model.yaml
+  glossary: validation/examples/design/glossary.yaml
+  use_cases: validation/examples/design/use-cases.yaml
+  domain_model: validation/examples/design/domain-model.yaml
+  persistence_model: validation/examples/design/persistence-model.yaml
 formatting:
   indent_spaces: 2
 

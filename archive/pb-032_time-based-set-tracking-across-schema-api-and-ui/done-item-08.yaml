@@ -24,10 +24,10 @@ constraints:
 - Keep quality/test execution interface make-based.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/Makefile
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/models/mod.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - Makefile
+  - backend/Dockerfile
+  - backend/src/models/mod.rs
+  - agent/design/api-contract.yaml
   optional: []
 acceptance_criteria:
 - id: ac-01

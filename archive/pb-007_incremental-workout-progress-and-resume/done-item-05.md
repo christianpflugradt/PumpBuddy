@@ -16,7 +16,7 @@ Restore an unfinished active workout automatically when the application loads so
 - loading the application with no active persisted workout keeps the normal start screen behavior
 - loading the application with an unfinished persisted workout bypasses the start screen and restores the user to the correct next exercise
 - the renderer does not expose a separate manual "resume workout" control on the start screen
-- `npm test` succeeds in `/Users/cpf/Workspace/personal/PumpBuddy/renderer`
+- `npm test` succeeds in `renderer`
 
 ## References
 

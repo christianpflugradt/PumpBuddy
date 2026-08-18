@@ -11,10 +11,10 @@ summary:
 
 context:
   required:
-    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+    - .github/workflows/release.yaml
+    - backend/Dockerfile
   optional:
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/engineering-guardrails.yaml
 
 implementation_approach:
   - Extend the release workflow so the semantic-release job emits a concrete release version/tag output that downstream jobs can consume.

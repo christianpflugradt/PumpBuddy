@@ -2,11 +2,11 @@ version: 1
 area: workout_insights
 source_of_truth: use_case_domain_mapping
 references:
-  glossary: /path/to/glossary.yaml
-  use_cases: /path/to/workout-insights-use-cases.yaml
-  domain_model: /path/to/domain-model.yaml
-  persistence_model: /path/to/persistence-model.yaml
-  api_contract: /path/to/api-contract.yaml
+  glossary: validation/examples/design/glossary.yaml
+  use_cases: validation/examples/design/workout-insights-use-cases.yaml
+  domain_model: validation/examples/design/domain-model.yaml
+  persistence_model: validation/examples/design/persistence-model.yaml
+  api_contract: validation/examples/design/api-contract.yaml
 formatting:
   indent_spaces: 2
 

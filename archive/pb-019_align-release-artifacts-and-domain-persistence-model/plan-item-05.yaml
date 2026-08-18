@@ -11,15 +11,15 @@ summary:
 
 context:
   required:
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/mod.rs
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - backend/init.sql
+    - backend/src/domain.rs
+    - backend/src/persistence/mod.rs
   optional:
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/test-strategy.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+    - agent/design/glossary.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/engineering-guardrails.yaml
 
 implementation_approach:
   - Compare current domain and persistence-model expectations against `backend/src/persistence/mod.rs` and `backend/init.sql` to identify concrete, testable mismatches.

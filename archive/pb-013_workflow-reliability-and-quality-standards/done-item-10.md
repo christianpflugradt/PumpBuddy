@@ -6,9 +6,9 @@ The backend application layer currently depends directly on API transport concer
 
 ## Evidence
 
-- [backend/src/application/workouts.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs#L1) imports `crate::api::{map_persistence_error, ApiError}` directly.
-- [backend/src/application/workouts.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs#L7) and [backend/src/application/workouts.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs#L29) return `Result<(), ApiError>` from application-level validation functions.
-- [backend/src/api/handlers.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers.rs#L144) through [backend/src/api/handlers.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers.rs#L237) call those functions from the transport layer, so the application module is no longer reusable without the HTTP error contract.
+- [backend/src/application/workouts.rs](backend/src/application/workouts.rs#L1) imports `crate::api::{map_persistence_error, ApiError}` directly.
+- [backend/src/application/workouts.rs](backend/src/application/workouts.rs#L7) and [backend/src/application/workouts.rs](backend/src/application/workouts.rs#L29) return `Result<(), ApiError>` from application-level validation functions.
+- [backend/src/api/handlers.rs](backend/src/api/handlers.rs#L144) through [backend/src/api/handlers.rs](backend/src/api/handlers.rs#L237) call those functions from the transport layer, so the application module is no longer reusable without the HTTP error contract.
 
 ## Goal
 

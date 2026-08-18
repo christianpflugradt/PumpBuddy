@@ -9,15 +9,15 @@ summary:
     ordering and renderer-ready summary fields.
 context:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-02.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/gyms.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers/gyms.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/api_integration.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/tests/api_integration.rs
 implementation_approach:
 - 'Extend `agent/design/api-contract.yaml` with a read-only authenticated load-profile
   list path and summary schema that covers id, name, status, definition kind, weight

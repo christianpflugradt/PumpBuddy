@@ -55,7 +55,7 @@ review_result:
       now use canonical repository terms, with no stale selected_training_plan_exercise_option_id
       token or stale use-case path present in the mapping artifact.'
     evidence: 'Verified `agent/design/workout-use-cases-to-domain-model.yaml` references
-      `use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases.yaml`
+      `use_cases: agent/design/workout-use-cases.yaml`
       and uses canonical `selected_plan_exercise_option_id` in UC-01B create defaults
       and UC-02 update fields.'
     runtime_build_check: 'Passed acceptance verification command: `rg -n "selected_training_plan_exercise_option_id|agent/design/use-cases/workout-use-cases.yaml|selected_plan_exercise_option_id"

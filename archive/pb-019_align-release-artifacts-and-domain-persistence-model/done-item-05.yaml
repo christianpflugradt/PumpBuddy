@@ -29,13 +29,13 @@ constraints:
 - Do not resolve this item with documentation-only changes.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/mod.rs
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/init.sql
+  - backend/src/domain.rs
+  - backend/src/persistence/mod.rs
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  - agent/design/glossary.yaml
 acceptance_criteria:
 - id: ac-01
   statement: Rust persistence behavior and seed SQL are updated to match current domain-model

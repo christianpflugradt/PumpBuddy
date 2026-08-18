@@ -4,12 +4,12 @@ from typing import List, Literal
 
 from pydantic import Field
 
-from .common import StrictModel
+from .common import RepoRelativePath, StrictModel
 
 
 class PlanSection(StrictModel):
     item_id: str
-    item_path: str
+    item_path: RepoRelativePath
     title: str
 
 
@@ -18,8 +18,8 @@ class Summary(StrictModel):
 
 
 class PlanContext(StrictModel):
-    required: List[str] = Field(default_factory=list)
-    optional: List[str] = Field(default_factory=list)
+    required: List[RepoRelativePath] = Field(default_factory=list)
+    optional: List[RepoRelativePath] = Field(default_factory=list)
 
 
 class PlanItemTemplateDoc(StrictModel):

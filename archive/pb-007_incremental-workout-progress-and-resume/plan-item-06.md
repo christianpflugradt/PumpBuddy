@@ -25,8 +25,8 @@ Add a cancellation path for unfinished persisted workouts so the backend removes
 
 ## Validation Plan
 
-- Run `cargo test` in `/Users/cpf/Workspace/personal/PumpBuddy/backend`.
-- Run `npm test` in `/Users/cpf/Workspace/personal/PumpBuddy/renderer`.
+- Run `cargo test` in `backend`.
+- Run `npm test` in `renderer`.
 - Manually verify the renderer only exposes cancellation for unfinished persisted workouts, shows English confirmation copy, and returns to the start screen after deletion.
 
 ## Out of Scope

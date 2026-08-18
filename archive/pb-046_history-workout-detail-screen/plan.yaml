@@ -31,7 +31,7 @@ constraints:
 inputs:
   - agent/design/api-contract.yaml
   - agent/design/workout-use-cases.yaml
-  - /Users/cpf/Downloads/image.png
+  - archive/pb-046_history-workout-detail-screen/external-reference-image.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.

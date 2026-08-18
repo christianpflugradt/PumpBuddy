@@ -9,15 +9,15 @@ summary:
     flows that enforce status-based mutability and per-user name uniqueness.
 context:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-03.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/persistence_integration/options_and_gyms.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/error.rs
+  - backend/src/persistence/load_profiles.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/src/api/error.rs
 implementation_approach:
 - 'Extend `agent/design/api-contract.yaml` with authenticated load-profile write endpoints
   and request or response schemas that distinguish full draft edits from rename-only

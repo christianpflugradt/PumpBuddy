@@ -2,9 +2,9 @@ version: 1
 area: configurator
 source_of_truth: use_cases
 references:
-  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
-  domain_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  persistence_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  glossary: agent/design/glossary.yaml
+  domain_model: agent/design/domain-model.yaml
+  persistence_model: agent/design/persistence-model.yaml
 formatting:
   indent_spaces: 2
 

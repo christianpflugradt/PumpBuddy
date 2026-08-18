@@ -31,7 +31,7 @@ inputs:
   - agent/execution/plan.yaml
   - agent/design/workout-use-cases.yaml
   optional:
-  - /Users/cpf/Downloads/image.png
+  - archive/pb-046_history-workout-detail-screen/external-reference-image.md
 acceptance_criteria:
 - id: ac-01
   statement: Tapping any completed History row opens the corresponding workout-detail

@@ -24,10 +24,10 @@ constraints:
 - Instructions must be concise and user-facing.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/README.md
-  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+  - README.md
+  - .github/workflows/release.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/plan.yaml
+  - agent/execution/plan.yaml
 acceptance_criteria:
 - id: ac-01
   statement: README includes backend and renderer GHCR image references plus example

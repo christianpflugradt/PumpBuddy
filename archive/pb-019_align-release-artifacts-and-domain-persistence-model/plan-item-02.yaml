@@ -11,11 +11,11 @@ summary:
 
 context:
   required:
-    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/renderer/Dockerfile
+    - .github/workflows/release.yaml
+    - renderer/Dockerfile
   optional:
-    - /Users/cpf/Workspace/personal/PumpBuddy/README.md
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+    - README.md
+    - agent/strategy/engineering-guardrails.yaml
 
 implementation_approach:
   - Reuse the semantic-release-derived version output already available in the release workflow and wire it into renderer image tag construction.

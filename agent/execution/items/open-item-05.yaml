@@ -30,12 +30,12 @@ constraints:
   names or definition semantics.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/openapi-contract.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/openapi-contract.ts
 acceptance_criteria:
 - id: ac-01
   statement: Users can create or edit draft load profiles in a dedicated full-screen

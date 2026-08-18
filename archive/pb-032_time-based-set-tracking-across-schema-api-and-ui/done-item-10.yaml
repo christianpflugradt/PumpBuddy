@@ -22,11 +22,11 @@ constraints:
 - Preserve existing Vitest-focused unit coverage patterns.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/test-strategy.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/Makefile
-  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/ci-quality.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/package.json
+  - agent/strategy/test-strategy.yaml
+  - agent/strategy/tech-stack.yaml
+  - Makefile
+  - .github/workflows/ci-quality.yaml
+  - renderer/package.json
   optional: []
 acceptance_criteria:
 - id: ac-01

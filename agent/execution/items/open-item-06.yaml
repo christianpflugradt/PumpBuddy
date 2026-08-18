@@ -34,13 +34,13 @@ constraints:
 - Do not allow renderer-side bypass of historical-profile immutability.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-context.md
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-gym-detail-screen.ts
+  - backend/src/persistence/load_profiles.rs
+  - renderer/src/pb-gym-detail-screen.ts
 acceptance_criteria:
 - id: ac-01
   statement: Active and inactive profile detail views keep definition fields read-only

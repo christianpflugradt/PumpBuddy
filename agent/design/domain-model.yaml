@@ -2,7 +2,7 @@ version: 1
 scope: training-plans-workouts-execution
 source_of_truth: domain-structure
 references:
-  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  glossary: agent/design/glossary.yaml
 formatting:
   indent_spaces: 2
 value_sets:

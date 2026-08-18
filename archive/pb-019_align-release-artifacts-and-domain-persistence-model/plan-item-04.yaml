@@ -11,11 +11,11 @@ summary:
 
 context:
   required:
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+    - agent/design/domain-model.yaml
+    - backend/src/domain.rs
   optional:
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases-to-domain-model.yaml
-    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/strategy/engineering-guardrails.yaml
 
 implementation_approach:
   - Compare domain entities, value objects, enums, and aggregate relationships defined in `backend/src/domain.rs` against the corresponding sections in `agent/design/domain-model.yaml`.

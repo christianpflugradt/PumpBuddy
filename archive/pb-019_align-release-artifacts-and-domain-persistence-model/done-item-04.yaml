@@ -24,10 +24,10 @@ constraints:
 - Keep scope to confirmed mismatches only.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
 acceptance_criteria:
 - id: ac-01
   statement: Domain model document and backend domain code no longer contain conflicting

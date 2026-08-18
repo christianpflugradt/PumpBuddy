@@ -37,7 +37,7 @@ Provide a backend Dockerfile that builds and runs the Rust backend service from 
 `docker compose build backend` completes successfully using the repository Dockerfile.
 
 - Status: fail
-- Evidence: Running `docker compose build backend` in `/Users/cpf/Workspace/personal/PumpBuddy` exits with `no configuration file provided: not found` because no compose file exists yet.
+- Evidence: Running `docker compose build backend` in `repo root` exits with `no configuration file provided: not found` because no compose file exists yet.
 - Risk: The Dockerfile cannot be validated through the required compose workflow, so the item does not satisfy its primary integration acceptance gate.
 
 ### Additional Notes

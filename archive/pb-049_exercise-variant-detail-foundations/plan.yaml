@@ -32,7 +32,7 @@ constraints:
   - Keep scope sized for one focused workday by deferring remaining sections to a follow-up plan.
 inputs:
   - AGENTS.md
-  - /Users/cpf/.codex/RTK.md
+  - archive/pb-049_exercise-variant-detail-foundations/external-rtk-reference.md
   - stakeholder proposal in this thread dated 2026-04-24
   - agent/execution/workflow-policy.yaml
   - agent/strategy/tech-stack.yaml

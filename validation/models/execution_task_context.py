@@ -4,16 +4,16 @@ from typing import List, Literal
 
 from pydantic import Field
 
-from .common import StrictModel
+from .common import RepoRelativePath, StrictModel
 
 
 class ContextSection(StrictModel):
-    required: List[str] = Field(min_length=1)
-    optional: List[str] = Field(default_factory=list)
+    required: List[RepoRelativePath] = Field(min_length=1)
+    optional: List[RepoRelativePath] = Field(default_factory=list)
 
 
 class TemplatesSection(StrictModel):
-    required: List[str] = Field(min_length=1)
+    required: List[RepoRelativePath] = Field(min_length=1)
 
 
 class TaskContextDoc(StrictModel):
@@ -21,7 +21,7 @@ class TaskContextDoc(StrictModel):
     task: str
     context: ContextSection
     templates: TemplatesSection
-    on_demand_order: List[str] = Field(default_factory=list)
-    finalize_script: str
-    finalize_track_paths: List[str] = Field(min_length=1)
+    on_demand_order: List[RepoRelativePath] = Field(default_factory=list)
+    finalize_script: RepoRelativePath
+    finalize_track_paths: List[RepoRelativePath] = Field(min_length=1)
     instruction: str

@@ -100,7 +100,7 @@ review_result:
       exclusions, and 30 heatmap cells.
     runtime_build_check: Deterministic review finalize selected make check-renderer
       for source commit 4aaa9d783cf663dd348a89c8ad9e314d44925d74, but the gate was
-      blocked before renderer checks because Docker could not connect to unix:///Users/cpf/.rd/docker.sock.
+      blocked before renderer checks because Docker could not connect to the local Docker socket.
     residual_risk: 'Low residual risk: visual fit depends on CSS rendering in the
       compact grid, but labels are absolutely positioned inside existing square cells
       with no added external layout space.'

@@ -30,13 +30,13 @@ constraints:
 - Do not introduce speculative configurator CRUD for gyms or exercises.
 inputs:
   required:
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
-  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/gyms.rs
-  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/api/handlers/gyms.rs
 acceptance_criteria:
 - id: ac-01
   statement: Authenticated callers can retrieve load profile summaries through a documented

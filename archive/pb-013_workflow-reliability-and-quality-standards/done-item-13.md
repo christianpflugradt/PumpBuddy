@@ -7,9 +7,9 @@ The renderer is implemented as a plain DOM-mounted TypeScript application with a
 ## Evidence
 
 - The technology baseline defines `Web Components` and `SCSS` as required renderer technologies in `agent/strategy/tech-stack.md`.
-- [renderer/src/main.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/main.ts#L1) imports `./styles.css` and mounts the app into a pre-existing `.app` container rather than registering or bootstrapping custom elements.
-- [renderer/src/styles.css](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/styles.css#L1) is a handwritten CSS stylesheet rather than SCSS.
-- [renderer/package.json](/Users/cpf/Workspace/personal/PumpBuddy/renderer/package.json#L13) declares only `typescript` and `vite` as direct dev dependencies; there is no direct SCSS workflow dependency and no Web Components helper/runtime.
+- [renderer/src/main.ts](renderer/src/main.ts#L1) imports `./styles.css` and mounts the app into a pre-existing `.app` container rather than registering or bootstrapping custom elements.
+- [renderer/src/styles.css](renderer/src/styles.css#L1) is a handwritten CSS stylesheet rather than SCSS.
+- [renderer/package.json](renderer/package.json#L13) declares only `typescript` and `vite` as direct dev dependencies; there is no direct SCSS workflow dependency and no Web Components helper/runtime.
 - A repository search for Web Components entry points (`customElements.define`, `extends HTMLElement`, `connectedCallback`, `attachShadow`) returned no matches under `renderer/`.
 
 ## Goal

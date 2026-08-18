@@ -12,7 +12,7 @@ context:
   - agent/execution/plan.yaml
   - agent/execution/items/open-item-04.yaml
   optional:
-  - /Users/cpf/Downloads/image.png
+  - archive/pb-046_history-workout-detail-screen/external-reference-image.md
   - agent/design/api-contract.yaml
 implementation_approach:
 - Define or update renderer view-model mapping so the hero receives training plan
