@@ -1,0 +1,56 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Plan load profile list read boundary
+summary:
+  goal: Add a contract-first authenticated load-profile list endpoint with backend-owned
+    ordering and renderer-ready summary fields.
+context:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-02.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/gyms.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers/gyms.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/api_integration.rs
+implementation_approach:
+- 'Extend `agent/design/api-contract.yaml` with a read-only authenticated load-profile
+  list path and summary schema that covers id, name, status, definition kind, weight
+  unit or summary fields, and renderer-facing usage transparency needed by the configurator
+  landing screen.'
+- Regenerate backend and renderer OpenAPI models through the repository Makefile flow
+  so the new contract becomes the only source for typed boundary changes.
+- Add domain and persistence list-summary types plus a repository query for user-scoped
+  load profiles that orders non-inactive rows first, then alphabetically by name,
+  then by stable tie-breaker.
+- Reuse the existing backend layering pattern by adding application-service and API-handler
+  wiring for the new list endpoint rather than embedding repository calls directly
+  in routing code.
+- Map persistence fields into response models with explicit enum translation for status
+  and definition-kind values, keeping transport validation consistent with other handlers.
+- Add backend integration coverage for authenticated success, user scoping, and server-owned
+  ordering so the acceptance criteria are enforced by deterministic tests.
+risks_and_assumptions:
+- Assume usage transparency can be satisfied by fields derivable from current persistence
+  without introducing write-scope behavior or speculative configurator aggregates.
+- 'Risk: if the contract overcommits to fields the renderer does not yet need, follow-on
+  items may inherit avoidable coupling; keep the summary payload minimal and directly
+  tied to item acceptance.'
+- 'Assume the new endpoint should follow existing authenticated `/api/...` read conventions
+  and return `200` with an array payload rather than introducing a wrapper object.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Renderer list-screen implementation or card layout behavior.
+- Create, update, rename, delete, or status-transition endpoints for load profiles.
+- Broader configurator CRUD for gyms, stations, exercises, or permissions.
+handoff_notes:
+- Model the new read path after the existing gyms read boundary to stay aligned with
+  current repository conventions for service, handler, and integration-test structure.
+- Keep ordering and inactive grouping assertions in backend tests so the renderer
+  can remain a thin consumer of the list response.
