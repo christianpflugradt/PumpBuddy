@@ -146,6 +146,9 @@ CREATE TABLE IF NOT EXISTS load_profiles (
     )
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS load_profiles_user_normalized_name_unique
+    ON load_profiles (user_id, lower(btrim(name)));
+
 CREATE TABLE IF NOT EXISTS equipment_stations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     gym_id UUID NOT NULL,

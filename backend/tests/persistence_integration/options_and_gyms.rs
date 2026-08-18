@@ -41,6 +41,19 @@ fn assert_load_profile_definition_check(error: sqlx::Error, constraint: &str) {
     }
 }
 
+fn assert_load_profile_name_unique_violation(error: sqlx::Error) {
+    match error {
+        sqlx::Error::Database(db_error) => {
+            assert_eq!(db_error.code().as_deref(), Some("23505"));
+            assert_eq!(
+                db_error.constraint(),
+                Some("load_profiles_user_normalized_name_unique")
+            );
+        }
+        other => panic!("unexpected load profile name insert error: {other:?}"),
+    }
+}
+
 #[tokio::test]
 async fn option_read_path_uses_enabled_variant_station_compatibility_for_realizability() {
     let _guard = test_lock().lock().await;
@@ -148,6 +161,31 @@ async fn load_profile_definition_shape_checks_reject_fixed_list_values_empty_and
             .expect_err("invalid load profile definition should be rejected before persistence");
         assert_load_profile_definition_check(error, constraint);
     }
+}
+
+#[tokio::test]
+async fn load_profile_name_uniqueness_is_normalized_per_user_in_persistence() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    insert_load_profile_definition_fixture(
+        &db.pool,
+        "4f000000-0000-0000-0000-0000000000f1",
+        "Normalized Duplicate",
+        r#"{"kind":"fixed_list","values":[5,10,15]}"#,
+    )
+    .await
+    .expect("first load profile insert should succeed");
+
+    let error = insert_load_profile_definition_fixture(
+        &db.pool,
+        "4f000000-0000-0000-0000-0000000000f2",
+        "  normalized duplicate  ",
+        r#"{"kind":"fixed_list","values":[2,4,6]}"#,
+    )
+    .await
+    .expect_err("normalized duplicate name should be rejected");
+    assert_load_profile_name_unique_violation(error);
 }
 
 #[tokio::test]

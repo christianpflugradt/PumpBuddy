@@ -1,16 +1,28 @@
-use axum::{extract::State, Extension, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Extension, Json,
+};
 
-use crate::api::models::LoadProfileSummaryResponse;
+use crate::api::models::{
+    LoadProfileCreateRequest, LoadProfileSummaryResponse, LoadProfileUpdateRequest,
+};
 use crate::api::session::AuthenticatedSession;
 use crate::api::{ApiError, AppState};
 use crate::application::load_profiles::{
-    list_load_profiles as list_load_profiles_service, LoadProfileServiceError,
+    create_load_profile as create_load_profile_service,
+    delete_load_profile as delete_load_profile_service,
+    list_load_profiles as list_load_profiles_service,
+    update_load_profile as update_load_profile_service, LoadProfileServiceError,
 };
 use crate::domain::LoadProfileSummary as DomainLoadProfileSummary;
 
 fn map_load_profile_service_error(error: LoadProfileServiceError) -> ApiError {
     match error {
+        LoadProfileServiceError::Conflict(message) => ApiError::Conflict(message),
+        LoadProfileServiceError::NotFound(message) => ApiError::NotFound(message),
         LoadProfileServiceError::Persistence(_) => ApiError::Internal,
+        LoadProfileServiceError::Validation(message) => ApiError::Validation(message),
     }
 }
 
@@ -73,4 +85,53 @@ pub(crate) async fn list_load_profiles(
             .map(load_profile_summary_response)
             .collect::<Result<Vec<_>, _>>()?,
     ))
+}
+
+pub(crate) async fn create_load_profile(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Json(payload): Json<LoadProfileCreateRequest>,
+) -> Result<(StatusCode, Json<LoadProfileSummaryResponse>), ApiError> {
+    let created = create_load_profile_service(
+        &state.repository,
+        &session.user_id,
+        payload.validate_and_into_domain()?,
+    )
+    .await
+    .map_err(map_load_profile_service_error)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(load_profile_summary_response(created)?),
+    ))
+}
+
+pub(crate) async fn update_load_profile(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(load_profile_id): Path<String>,
+    Json(payload): Json<LoadProfileUpdateRequest>,
+) -> Result<Json<LoadProfileSummaryResponse>, ApiError> {
+    let updated = update_load_profile_service(
+        &state.repository,
+        &load_profile_id,
+        &session.user_id,
+        payload.validate_and_into_domain()?,
+    )
+    .await
+    .map_err(map_load_profile_service_error)?;
+
+    Ok(Json(load_profile_summary_response(updated)?))
+}
+
+pub(crate) async fn delete_load_profile(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(load_profile_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    delete_load_profile_service(&state.repository, &load_profile_id, &session.user_id)
+        .await
+        .map_err(map_load_profile_service_error)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

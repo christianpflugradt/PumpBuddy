@@ -87,6 +87,17 @@ fn create_workout_payload() -> Value {
     })
 }
 
+fn create_load_profile_payload(name: &str) -> Value {
+    json!({
+        "name": name,
+        "weight_unit": "KG",
+        "definition": {
+            "kind": "fixed_list",
+            "values": [5.0, 10.0, 15.0]
+        }
+    })
+}
+
 fn suggested_set_for_position(body: &Value, position: i64) -> &Value {
     body["workout"]["exercises"]
         .as_array()
@@ -118,6 +129,13 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
         .expect("response body should read");
     let payload = serde_json::from_slice(&body).expect("response should be json");
     (status, payload)
+}
+
+async fn empty_response_status(app: axum::Router, request: Request<Body>) -> StatusCode {
+    app.oneshot(request)
+        .await
+        .expect("request should succeed")
+        .status()
 }
 
 fn array_entry_position(rows: &[Value], name: &str) -> usize {
@@ -632,10 +650,10 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
     .bind("alpha configurator active")
     .bind(r#"{"kind":"fixed_list","values":[10,20,30]}"#)
     .bind("4f000000-0000-0000-0000-000000000103")
-    .bind("Alpha Configurator Active")
+    .bind("Alpha Configurator Builder")
     .bind(r#"{"kind":"fixed_list","values":[5,15,25]}"#)
     .bind("4f000000-0000-0000-0000-000000000104")
-    .bind("Alpha Configurator Active")
+    .bind("alpha configurator zeta draft")
     .bind(r#"{"kind":"fixed_list","values":[12,24,36]}"#)
     .bind("4f000000-0000-0000-0000-000000000105")
     .bind("0 Retired Profile")
@@ -728,18 +746,18 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
     let stable_tie = load_profiles
         .iter()
         .find(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000103"))
-        .expect("stable tie-break profile should exist");
-    assert_eq!(stable_tie["name"], json!("Alpha Configurator Active"));
+        .expect("secondary active profile should exist");
+    assert_eq!(stable_tie["name"], json!("Alpha Configurator Builder"));
     assert_eq!(stable_tie["status"], json!("active"));
     assert_eq!(stable_tie["station_count"], json!(1));
 
-    let duplicate_name = load_profiles
+    let later_draft = load_profiles
         .iter()
         .find(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000104"))
-        .expect("duplicate name profile should exist");
-    assert_eq!(duplicate_name["name"], json!("Alpha Configurator Active"));
-    assert_eq!(duplicate_name["status"], json!("new"));
-    assert_eq!(duplicate_name["station_count"], json!(0));
+        .expect("later draft profile should exist");
+    assert_eq!(later_draft["name"], json!("alpha configurator zeta draft"));
+    assert_eq!(later_draft["status"], json!("new"));
+    assert_eq!(later_draft["station_count"], json!(0));
 
     let inactive = load_profiles
         .iter()
@@ -756,15 +774,16 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
     let stable_tie_position = load_profiles
         .iter()
         .position(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000103"))
-        .expect("stable tie-break profile position should exist");
-    let duplicate_name_position = load_profiles
+        .expect("secondary active profile position should exist");
+    let later_draft_position = load_profiles
         .iter()
         .position(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000104"))
-        .expect("duplicate name profile position should exist");
+        .expect("later draft profile position should exist");
     let draft_position = array_entry_position(load_profiles, "Bravo Configurator Draft");
     let inactive_position = array_entry_position(load_profiles, "0 Retired Profile");
-    assert!(stable_tie_position < duplicate_name_position);
-    assert!(duplicate_name_position < lowercase_alpha_position);
+    assert!(lowercase_alpha_position < stable_tie_position);
+    assert!(stable_tie_position < later_draft_position);
+    assert!(later_draft_position < draft_position);
     assert!(lowercase_alpha_position < draft_position);
     assert!(draft_position < inactive_position);
     assert_eq!(
@@ -772,8 +791,270 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
         json!("4f000000-0000-0000-0000-000000000103")
     );
     assert_eq!(
-        load_profiles[duplicate_name_position]["id"],
+        load_profiles[later_draft_position]["id"],
         json!("4f000000-0000-0000-0000-000000000104")
+    );
+}
+
+#[tokio::test]
+async fn load_profile_routes_create_update_and_delete_draft_profiles() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    let (create_status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/load-profiles")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_load_profile_payload("API Draft Create Profile").to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(create_status, StatusCode::CREATED);
+    assert_eq!(create_body["status"], json!("new"));
+    assert_eq!(create_body["definition_kind"], json!("fixed_list"));
+    assert_eq!(create_body["weight_unit"], json!("KG"));
+    assert_eq!(create_body["station_count"], json!(0));
+
+    let load_profile_id = create_body["id"]
+        .as_str()
+        .expect("created load profile id should be present")
+        .to_owned();
+
+    let stored_after_create = sqlx::query(
+        "SELECT
+            name,
+            status,
+            weight_unit,
+            definition->>'kind' AS definition_kind
+         FROM load_profiles
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(&load_profile_id)
+    .bind(DEV_USER_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("created load profile should persist");
+    assert_eq!(
+        stored_after_create.get::<String, _>("name"),
+        "API Draft Create Profile"
+    );
+    assert_eq!(stored_after_create.get::<String, _>("status"), "new");
+    assert_eq!(stored_after_create.get::<String, _>("weight_unit"), "KG");
+    assert_eq!(
+        stored_after_create.get::<Option<String>, _>("definition_kind"),
+        Some("fixed_list".to_owned())
+    );
+
+    let (update_status, update_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/load-profiles/{load_profile_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                json!({
+                    "name": "API Draft Updated Profile",
+                    "weight_unit": "LBS",
+                    "definition": {
+                        "kind": "formula",
+                        "min": 45.0,
+                        "step": 5.0
+                    }
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(update_status, StatusCode::OK);
+    assert_eq!(update_body["name"], json!("API Draft Updated Profile"));
+    assert_eq!(update_body["definition_kind"], json!("formula"));
+    assert_eq!(update_body["weight_unit"], json!("LBS"));
+
+    let stored_after_update = sqlx::query(
+        "SELECT
+            name,
+            weight_unit,
+            definition->>'kind' AS definition_kind,
+            (definition->>'min')::numeric::float8 AS formula_min,
+            (definition->>'step')::numeric::float8 AS formula_step
+         FROM load_profiles
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(&load_profile_id)
+    .bind(DEV_USER_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("updated load profile should persist");
+    assert_eq!(
+        stored_after_update.get::<String, _>("name"),
+        "API Draft Updated Profile"
+    );
+    assert_eq!(stored_after_update.get::<String, _>("weight_unit"), "LBS");
+    assert_eq!(
+        stored_after_update.get::<Option<String>, _>("definition_kind"),
+        Some("formula".to_owned())
+    );
+    assert_eq!(stored_after_update.get::<f64, _>("formula_min"), 45.0);
+    assert_eq!(stored_after_update.get::<f64, _>("formula_step"), 5.0);
+
+    let delete_status = empty_response_status(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/load-profiles/{load_profile_id}"))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(delete_status, StatusCode::NO_CONTENT);
+
+    let deleted_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)
+         FROM load_profiles
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(&load_profile_id)
+    .bind(DEV_USER_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("delete verification query should succeed");
+    assert_eq!(deleted_count, 0);
+}
+
+#[tokio::test]
+async fn load_profile_routes_enforce_duplicate_names_and_historical_mutation_rules() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
+         VALUES
+           ($1::uuid, $2::uuid, $3, 'active', 'KG', $4::jsonb),
+           ($5::uuid, $2::uuid, $6, 'new', 'KG', $7::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-000000000301")
+    .bind(DEV_USER_ID)
+    .bind("Historical Rename Source")
+    .bind(r#"{"kind":"fixed_list","values":[5,10,15]}"#)
+    .bind("4f000000-0000-0000-0000-000000000302")
+    .bind("Existing Duplicate Target")
+    .bind(r#"{"kind":"fixed_list","values":[2,4,6]}"#)
+    .execute(&pool)
+    .await
+    .expect("load profile fixtures should insert");
+
+    let (duplicate_create_status, duplicate_create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/load-profiles")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_load_profile_payload("  existing duplicate target  ").to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(duplicate_create_status, StatusCode::CONFLICT);
+    assert_eq!(
+        duplicate_create_body["message"],
+        json!("Load profile name already exists")
+    );
+
+    let (rename_status, rename_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000301")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                json!({
+                    "name": "Historical Rename Success"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(rename_status, StatusCode::OK);
+    assert_eq!(rename_body["name"], json!("Historical Rename Success"));
+    assert_eq!(rename_body["definition_kind"], json!("fixed_list"));
+    assert_eq!(rename_body["weight_unit"], json!("KG"));
+
+    let (immutable_status, immutable_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000301")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                json!({
+                    "name": "Historical Rename Success",
+                    "weight_unit": "LBS",
+                    "definition": {
+                        "kind": "formula",
+                        "min": 45.0,
+                        "step": 5.0
+                    }
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(immutable_status, StatusCode::CONFLICT);
+    assert_eq!(
+        immutable_body["message"],
+        json!("Only draft load profiles can change weight_unit or definition")
+    );
+
+    let (duplicate_rename_status, duplicate_rename_body) = json_response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000301")
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(
+                json!({
+                    "name": "existing duplicate target"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(duplicate_rename_status, StatusCode::CONFLICT);
+    assert_eq!(
+        duplicate_rename_body["message"],
+        json!("Load profile name already exists")
     );
 }
 

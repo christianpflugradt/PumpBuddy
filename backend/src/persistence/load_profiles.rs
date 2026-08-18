@@ -1,10 +1,25 @@
-use super::{DomainRepository, PersistenceError};
-use crate::domain::LoadProfileSummary;
+use super::{logging, DomainRepository, PersistenceError};
+use crate::domain::{
+    LoadProfileDefinitionInput, LoadProfileSummary, LoadProfileUpdate, NewLoadProfile,
+};
+use serde_json::json;
 use sqlx::{types::JsonValue, Row};
+use uuid::Uuid;
 
 const POUNDS_TO_KILOGRAMS: f64 = 0.453_592_37;
 const DEFAULT_FORMULA_LOAD_CAP_KG: f64 = 300.0;
 const FLOAT_TOLERANCE: f64 = 1e-9;
+
+#[derive(Debug, Clone)]
+struct StoredLoadProfile {
+    id: String,
+    name: String,
+    status: String,
+    definition_kind: String,
+    weight_unit: String,
+    station_count: i64,
+    definition: JsonValue,
+}
 
 pub(super) async fn fetch_load_profile_summaries_for_user(
     repository: &DomainRepository,
@@ -54,6 +69,178 @@ pub(super) async fn fetch_load_profile_summaries_for_user(
             })
         })
         .collect()
+}
+
+pub(super) async fn load_profile_name_exists_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+    name: &str,
+    excluding_id: Option<&str>,
+) -> Result<bool, PersistenceError> {
+    let exists = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(
+            SELECT 1
+            FROM load_profiles
+            WHERE user_id = $1::uuid
+              AND lower(btrim(name)) = lower(btrim($2))
+              AND ($3::uuid IS NULL OR id <> $3::uuid)
+        )",
+    )
+    .bind(user_id)
+    .bind(name)
+    .bind(excluding_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(exists)
+}
+
+pub(super) async fn create_load_profile_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+    new_load_profile: &NewLoadProfile,
+) -> Result<LoadProfileSummary, PersistenceError> {
+    let id = Uuid::new_v4().to_string();
+    let definition = definition_json(&new_load_profile.definition);
+
+    match sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, 'new', $4, $5::jsonb)",
+    )
+    .bind(&id)
+    .bind(user_id)
+    .bind(&new_load_profile.name)
+    .bind(&new_load_profile.weight_unit)
+    .bind(definition)
+    .execute(&repository.pool)
+    .await
+    {
+        Ok(_) => {}
+        Err(error) => return Err(map_load_profile_write_sqlx_error(error)?),
+    }
+
+    fetch_stored_load_profile_for_user(repository, &id, user_id)
+        .await?
+        .ok_or_else(|| PersistenceError::NotFound("Load profile not found".to_owned()))
+        .map(summary_from_stored)
+}
+
+pub(super) async fn update_load_profile_for_user(
+    repository: &DomainRepository,
+    load_profile_id: &str,
+    user_id: &str,
+    update: &LoadProfileUpdate,
+) -> Result<LoadProfileSummary, PersistenceError> {
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "update_load_profile", "load_profile").await?;
+
+    let Some(current) =
+        fetch_stored_load_profile_for_user_tx(&mut tx, load_profile_id, user_id).await?
+    else {
+        logging::rollback_transaction(tx, "update_load_profile", "load_profile").await;
+        return Err(PersistenceError::NotFound(
+            "Load profile not found".to_owned(),
+        ));
+    };
+
+    let mut next_weight_unit = current.weight_unit.clone();
+    let mut next_definition = current.definition.clone();
+
+    if let Some(weight_unit) = &update.weight_unit {
+        if current.status != "new" && weight_unit != &current.weight_unit {
+            logging::rollback_transaction(tx, "update_load_profile", "load_profile").await;
+            return Err(PersistenceError::Conflict(
+                "Only draft load profiles can change weight_unit or definition".to_owned(),
+            ));
+        }
+        next_weight_unit = weight_unit.clone();
+    }
+
+    if let Some(definition) = &update.definition {
+        let candidate_definition = definition_json(definition);
+        if current.status != "new" && candidate_definition != current.definition {
+            logging::rollback_transaction(tx, "update_load_profile", "load_profile").await;
+            return Err(PersistenceError::Conflict(
+                "Only draft load profiles can change weight_unit or definition".to_owned(),
+            ));
+        }
+        next_definition = candidate_definition;
+    }
+
+    match sqlx::query(
+        "UPDATE load_profiles
+         SET name = $3,
+             weight_unit = $4,
+             definition = $5::jsonb
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(load_profile_id)
+    .bind(user_id)
+    .bind(&update.name)
+    .bind(&next_weight_unit)
+    .bind(next_definition)
+    .execute(&mut *tx)
+    .await
+    {
+        Ok(_) => {}
+        Err(error) => {
+            logging::rollback_transaction(tx, "update_load_profile", "load_profile").await;
+            return Err(map_load_profile_write_sqlx_error(error)?);
+        }
+    }
+
+    let updated = fetch_stored_load_profile_for_user_tx(&mut tx, load_profile_id, user_id)
+        .await?
+        .ok_or_else(|| PersistenceError::NotFound("Load profile not found".to_owned()))?;
+
+    logging::commit_transaction(tx, "update_load_profile", "load_profile").await?;
+    Ok(summary_from_stored(updated))
+}
+
+pub(super) async fn delete_load_profile_for_user(
+    repository: &DomainRepository,
+    load_profile_id: &str,
+    user_id: &str,
+) -> Result<(), PersistenceError> {
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "delete_load_profile", "load_profile").await?;
+
+    let Some(current) =
+        fetch_stored_load_profile_for_user_tx(&mut tx, load_profile_id, user_id).await?
+    else {
+        logging::rollback_transaction(tx, "delete_load_profile", "load_profile").await;
+        return Err(PersistenceError::NotFound(
+            "Load profile not found".to_owned(),
+        ));
+    };
+
+    if current.status != "new" {
+        logging::rollback_transaction(tx, "delete_load_profile", "load_profile").await;
+        return Err(PersistenceError::Conflict(
+            "Only draft load profiles can be deleted".to_owned(),
+        ));
+    }
+
+    if current.station_count > 0 {
+        logging::rollback_transaction(tx, "delete_load_profile", "load_profile").await;
+        return Err(PersistenceError::Conflict(
+            "Draft load profiles referenced by stations cannot be deleted".to_owned(),
+        ));
+    }
+
+    sqlx::query(
+        "DELETE FROM load_profiles
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(load_profile_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    logging::commit_transaction(tx, "delete_load_profile", "load_profile").await?;
+    Ok(())
 }
 
 pub(super) fn load_profile_definition_to_kg(
@@ -235,6 +422,132 @@ fn canonicalize_load_kg(raw_value: f64, weight_unit: &str) -> Result<f64, Persis
             "unknown load profile weight unit: {other}"
         ))),
     }
+}
+
+fn definition_json(definition: &LoadProfileDefinitionInput) -> JsonValue {
+    match definition.kind.as_str() {
+        "fixed_list" => json!({
+            "kind": definition.kind,
+            "values": definition.values.clone().unwrap_or_default(),
+        }),
+        "formula" => json!({
+            "kind": definition.kind,
+            "min": definition.min.unwrap_or_default(),
+            "step": definition.step.unwrap_or_default(),
+        }),
+        _ => json!({
+            "kind": definition.kind,
+        }),
+    }
+}
+
+fn summary_from_stored(load_profile: StoredLoadProfile) -> LoadProfileSummary {
+    LoadProfileSummary {
+        id: load_profile.id,
+        name: load_profile.name,
+        status: load_profile.status,
+        definition_kind: load_profile.definition_kind,
+        weight_unit: load_profile.weight_unit,
+        station_count: load_profile.station_count,
+    }
+}
+
+async fn fetch_stored_load_profile_for_user(
+    repository: &DomainRepository,
+    load_profile_id: &str,
+    user_id: &str,
+) -> Result<Option<StoredLoadProfile>, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT
+            lp.id::text AS id,
+            lp.name,
+            lp.status,
+            lp.definition->>'kind' AS definition_kind,
+            lp.weight_unit,
+            lp.definition,
+            COUNT(es.id)::bigint AS station_count
+         FROM load_profiles lp
+         LEFT JOIN equipment_stations es
+           ON es.load_profile_id = lp.id
+          AND es.user_id = lp.user_id
+         WHERE lp.id = $1::uuid
+           AND lp.user_id = $2::uuid
+         GROUP BY lp.id, lp.name, lp.status, lp.definition, lp.weight_unit",
+    )
+    .bind(load_profile_id)
+    .bind(user_id)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    row.map(stored_load_profile_from_row).transpose()
+}
+
+async fn fetch_stored_load_profile_for_user_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    load_profile_id: &str,
+    user_id: &str,
+) -> Result<Option<StoredLoadProfile>, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT
+            lp.id::text AS id,
+            lp.name,
+            lp.status,
+            lp.definition->>'kind' AS definition_kind,
+            lp.weight_unit,
+            lp.definition,
+            COUNT(es.id)::bigint AS station_count
+         FROM load_profiles lp
+         LEFT JOIN equipment_stations es
+           ON es.load_profile_id = lp.id
+          AND es.user_id = lp.user_id
+         WHERE lp.id = $1::uuid
+           AND lp.user_id = $2::uuid
+         GROUP BY lp.id, lp.name, lp.status, lp.definition, lp.weight_unit",
+    )
+    .bind(load_profile_id)
+    .bind(user_id)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    row.map(stored_load_profile_from_row).transpose()
+}
+
+fn stored_load_profile_from_row(
+    row: sqlx::postgres::PgRow,
+) -> Result<StoredLoadProfile, PersistenceError> {
+    let definition_kind = row
+        .get::<Option<String>, _>("definition_kind")
+        .ok_or_else(|| {
+            PersistenceError::Conflict(
+                "load profile definition is missing kind for stored row".to_string(),
+            )
+        })?;
+
+    Ok(StoredLoadProfile {
+        id: row.get("id"),
+        name: row.get("name"),
+        status: row.get("status"),
+        definition_kind,
+        weight_unit: row.get("weight_unit"),
+        definition: row.get("definition"),
+        station_count: row.get("station_count"),
+    })
+}
+
+fn map_load_profile_write_sqlx_error(
+    error: sqlx::Error,
+) -> Result<PersistenceError, PersistenceError> {
+    if let sqlx::Error::Database(db_error) = &error {
+        if db_error.code().as_deref() == Some("23505")
+            && db_error.constraint() == Some("load_profiles_user_normalized_name_unique")
+        {
+            return Ok(PersistenceError::Conflict(
+                "Load profile name already exists".to_owned(),
+            ));
+        }
+    }
+
+    Err(PersistenceError::Sqlx(error))
 }
 
 #[cfg(test)]

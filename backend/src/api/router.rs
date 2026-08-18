@@ -1,6 +1,6 @@
 use axum::{
     extract::{Extension, Path, Query, State},
-    routing::{delete, get, post, put},
+    routing::{delete, get, patch, post, put},
     Json, Router,
 };
 
@@ -8,12 +8,13 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
-    create_active_workout, create_workout, delete_latest_active_workout_set, get_about_metadata,
-    get_active_workout, get_gym_detail, get_gym_station_detail, get_training_plan,
-    get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_gyms, list_load_profiles, list_training_plan_exercise_variants,
-    list_training_plans, list_workouts, reopen_active_workout_exercise,
-    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
+    create_active_workout, create_load_profile, create_workout, delete_latest_active_workout_set,
+    delete_load_profile, get_about_metadata, get_active_workout, get_gym_detail,
+    get_gym_station_detail, get_training_plan, get_workout_detail,
+    get_workout_exercises_performance, get_workout_progress, get_workout_summary, list_gyms,
+    list_load_profiles, list_training_plan_exercise_variants, list_training_plans, list_workouts,
+    reopen_active_workout_exercise, select_active_workout_exercise_option,
+    skip_active_workout_exercise, update_active_workout, update_load_profile,
 };
 
 use super::middleware;
@@ -77,6 +78,38 @@ pub fn app_router(app_state: AppState) -> Router {
                 |State(state): State<AppState>,
                  Extension(session): Extension<AuthenticatedSession>| async move {
                     list_load_profiles(State(state), Extension(session)).await
+                },
+            )
+            .post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Json(payload): Json<super::models::LoadProfileCreateRequest>| async move {
+                    create_load_profile(State(state), Extension(session), Json(payload)).await
+                },
+            ),
+        )
+        .route(
+            "/load-profiles/{load_profile_id}",
+            patch(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(load_profile_id): Path<String>,
+                 Json(payload): Json<super::models::LoadProfileUpdateRequest>| async move {
+                    update_load_profile(
+                        State(state),
+                        Extension(session),
+                        Path(load_profile_id),
+                        Json(payload),
+                    )
+                    .await
+                },
+            )
+            .delete(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(load_profile_id): Path<String>| async move {
+                    delete_load_profile(State(state), Extension(session), Path(load_profile_id))
+                        .await
                 },
             ),
         )

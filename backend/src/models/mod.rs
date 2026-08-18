@@ -314,6 +314,30 @@ pub mod load_profile_summary {
 }
 pub use load_profile_summary::LoadProfileSummary;
 
+pub mod load_profile_create_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/load_profile_create_request.rs"
+    ));
+}
+pub use load_profile_create_request::LoadProfileCreateRequest;
+
+pub mod load_profile_definition {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/load_profile_definition.rs"
+    ));
+}
+pub use load_profile_definition::LoadProfileDefinition;
+
+pub mod load_profile_update_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/load_profile_update_request.rs"
+    ));
+}
+pub use load_profile_update_request::LoadProfileUpdateRequest;
+
 pub mod missing_exercise_detail {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

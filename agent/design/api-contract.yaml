@@ -325,6 +325,113 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a draft load profile
+      operationId: createLoadProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadProfileCreateRequest'
+      responses:
+        '201':
+          description: Draft load profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadProfileSummary'
+        '400':
+          description: Invalid load profile create payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Duplicate load profile name or invalid durable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/load-profiles/{loadProfileId}:
+    patch:
+      summary: Update a load profile
+      operationId: updateLoadProfile
+      parameters:
+        - name: loadProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadProfileUpdateRequest'
+      responses:
+        '200':
+          description: Load profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadProfileSummary'
+        '400':
+          description: Invalid load profile update payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Load profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate load profile name or immutable field update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Delete a draft load profile
+      operationId: deleteLoadProfile
+      parameters:
+        - name: loadProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Draft load profile deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Load profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Load profile cannot be deleted in its current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms/{gymId}:
     get:
       summary: Retrieve read-only gym transparency detail
@@ -1269,6 +1376,60 @@ components:
           description: |
             Number of visible equipment stations currently referencing this load
             profile for usage transparency on the configurator list.
+    LoadProfileDefinition:
+      type: object
+      description: |
+        Load profile definition payload for create and update writes. The
+        backend validates the shape according to `kind`.
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum: [fixed_list, formula]
+        values:
+          type: array
+          description: Required when kind is fixed_list.
+          items:
+            type: number
+            format: double
+        min:
+          type: number
+          format: double
+          description: Required when kind is formula.
+        step:
+          type: number
+          format: double
+          description: Required when kind is formula.
+    LoadProfileCreateRequest:
+      type: object
+      required:
+        - name
+        - weight_unit
+        - definition
+      properties:
+        name:
+          type: string
+        weight_unit:
+          type: string
+          enum: [KG, LBS]
+        definition:
+          $ref: '#/components/schemas/LoadProfileDefinition'
+    LoadProfileUpdateRequest:
+      type: object
+      description: |
+        Name is always editable. Weight-unit and definition changes are allowed
+        only while the stored profile status is `new`.
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        weight_unit:
+          type: string
+          enum: [KG, LBS]
+        definition:
+          $ref: '#/components/schemas/LoadProfileDefinition'
     GymSummary:
       type: object
       required:

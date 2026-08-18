@@ -1,7 +1,7 @@
 use crate::domain::{
     CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
-    GymStationDetail, GymSummary, LoadProfileSummary, NewWorkout, TrainingPlanDetail,
-    TrainingPlanSummary, Workout, WorkoutHistorySummary,
+    GymStationDetail, GymSummary, LoadProfileSummary, LoadProfileUpdate, NewLoadProfile,
+    NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -380,6 +380,32 @@ pub(crate) trait LoadProfileRepository {
         &self,
         user_id: &str,
     ) -> Result<Vec<LoadProfileSummary>, PersistenceError>;
+
+    async fn load_profile_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError>;
+
+    async fn create_load_profile_for_user(
+        &self,
+        user_id: &str,
+        new_load_profile: &NewLoadProfile,
+    ) -> Result<LoadProfileSummary, PersistenceError>;
+
+    async fn update_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+        update: &LoadProfileUpdate,
+    ) -> Result<LoadProfileSummary, PersistenceError>;
+
+    async fn delete_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
 }
 
 pub(crate) trait WorkoutRepository {
@@ -796,6 +822,40 @@ impl LoadProfileRepository for DomainRepository {
     ) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
         DomainRepository::fetch_load_profile_summaries_for_user(self, user_id).await
     }
+
+    async fn load_profile_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        DomainRepository::load_profile_name_exists_for_user(self, user_id, name, excluding_id).await
+    }
+
+    async fn create_load_profile_for_user(
+        &self,
+        user_id: &str,
+        new_load_profile: &NewLoadProfile,
+    ) -> Result<LoadProfileSummary, PersistenceError> {
+        DomainRepository::create_load_profile_for_user(self, user_id, new_load_profile).await
+    }
+
+    async fn update_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+        update: &LoadProfileUpdate,
+    ) -> Result<LoadProfileSummary, PersistenceError> {
+        DomainRepository::update_load_profile_for_user(self, load_profile_id, user_id, update).await
+    }
+
+    async fn delete_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::delete_load_profile_for_user(self, load_profile_id, user_id).await
+    }
 }
 
 impl WorkoutRepository for DomainRepository {
@@ -1047,6 +1107,40 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
         load_profiles::fetch_load_profile_summaries_for_user(self, user_id).await
+    }
+
+    pub async fn load_profile_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        load_profiles::load_profile_name_exists_for_user(self, user_id, name, excluding_id).await
+    }
+
+    pub async fn create_load_profile_for_user(
+        &self,
+        user_id: &str,
+        new_load_profile: &NewLoadProfile,
+    ) -> Result<LoadProfileSummary, PersistenceError> {
+        load_profiles::create_load_profile_for_user(self, user_id, new_load_profile).await
+    }
+
+    pub async fn update_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+        update: &LoadProfileUpdate,
+    ) -> Result<LoadProfileSummary, PersistenceError> {
+        load_profiles::update_load_profile_for_user(self, load_profile_id, user_id, update).await
+    }
+
+    pub async fn delete_load_profile_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        load_profiles::delete_load_profile_for_user(self, load_profile_id, user_id).await
     }
 
     pub async fn fetch_training_plan_exercise_variant_summaries_for_user(

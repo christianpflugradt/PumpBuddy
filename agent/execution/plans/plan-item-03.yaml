@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Plan draft-safe load profile writes
 summary:
   goal: Add contract-backed load-profile create, update, rename, and draft-delete
@@ -19,9 +19,9 @@ context:
   - backend/tests/persistence_integration/options_and_gyms.rs
   - backend/src/api/error.rs
 implementation_approach:
-- 'Extend `agent/design/api-contract.yaml` with authenticated load-profile write endpoints
+- Extend `agent/design/api-contract.yaml` with authenticated load-profile write endpoints
   and request or response schemas that distinguish full draft edits from rename-only
-  updates without introducing status-transition behavior.'
+  updates without introducing status-transition behavior.
 - Regenerate backend and renderer OpenAPI artifacts through the repository Makefile
   flow so all transport types for the new write surface come from the canonical contract.
 - Add or extend persistence support for load-profile inserts, status-aware updates,
@@ -50,7 +50,7 @@ validation_plan:
 - make check-backend
 out_of_scope:
 - Renderer detail forms, warning-dialog UX, or preview popup interactions.
-- 'User-driven promotion from `new` to `active` or `inactive`.'
+- User-driven promotion from `new` to `active` or `inactive`.
 - Generalized station or gym configurator CRUD beyond load-profile lifecycle support.
 handoff_notes:
 - Reuse existing persistence conflict patterns and API conflict responses so duplicate-name

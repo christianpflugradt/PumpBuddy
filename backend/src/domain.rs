@@ -37,6 +37,28 @@ pub struct LoadProfileSummary {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct LoadProfileDefinitionInput {
+    pub kind: String,
+    pub values: Option<Vec<f64>>,
+    pub min: Option<f64>,
+    pub step: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewLoadProfile {
+    pub name: String,
+    pub weight_unit: String,
+    pub definition: LoadProfileDefinitionInput,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LoadProfileUpdate {
+    pub name: String,
+    pub weight_unit: Option<String>,
+    pub definition: Option<LoadProfileDefinitionInput>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct GymDetail {
     pub id: String,
     pub name: String,

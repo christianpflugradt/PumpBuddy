@@ -6,9 +6,9 @@ use crate::application::workouts::{
 use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
-    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
-    NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
-    WorkoutDetailExercise as DomainWorkoutDetailExercise,
+    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, LoadProfileDefinitionInput,
+    LoadProfileUpdate, NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+    WorkoutDetail as DomainWorkoutDetail, WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
     WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
@@ -63,7 +63,10 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::load_profile_create_request::LoadProfileCreateRequest;
+pub use crate::models::load_profile_definition::LoadProfileDefinition as LoadProfileDefinitionRequest;
 pub use crate::models::load_profile_summary::LoadProfileSummary as LoadProfileSummaryResponse;
+pub use crate::models::load_profile_update_request::LoadProfileUpdateRequest;
 pub use crate::models::reopen_active_workout_exercise_request::ReopenActiveWorkoutExerciseRequest;
 pub use crate::models::select_active_workout_exercise_option_request::SelectActiveWorkoutExerciseOptionRequest;
 pub use crate::models::side_menu_middle_click_counts::SideMenuMiddleClickCounts as SideMenuMiddleClickCountsResponse;
@@ -134,6 +137,28 @@ pub struct TrainingPlanExerciseVariantsQuery {
     pub gym_id: String,
     #[serde(rename = "activeWorkoutId")]
     pub active_workout_id: Option<String>,
+}
+
+impl LoadProfileCreateRequest {
+    pub fn validate_and_into_domain(self) -> Result<NewLoadProfile, ApiError> {
+        Ok(NewLoadProfile {
+            name: self.name,
+            weight_unit: load_profile_weight_unit_to_domain(self.weight_unit),
+            definition: load_profile_definition_to_domain(*self.definition),
+        })
+    }
+}
+
+impl LoadProfileUpdateRequest {
+    pub fn validate_and_into_domain(self) -> Result<LoadProfileUpdate, ApiError> {
+        Ok(LoadProfileUpdate {
+            name: self.name,
+            weight_unit: self.weight_unit.map(load_profile_weight_unit_to_domain),
+            definition: self
+                .definition
+                .map(|definition| load_profile_definition_to_domain(*definition)),
+        })
+    }
 }
 
 impl CreateWorkoutRequest {
@@ -214,6 +239,57 @@ impl CreateWorkoutRequest {
             .map_err(ApiError::Validation)?;
 
         Ok(workout)
+    }
+}
+
+fn load_profile_definition_to_domain(
+    definition: LoadProfileDefinitionRequest,
+) -> LoadProfileDefinitionInput {
+    LoadProfileDefinitionInput {
+        kind: match definition.kind {
+            crate::models::load_profile_definition::Kind::FixedList => "fixed_list".to_owned(),
+            crate::models::load_profile_definition::Kind::Formula => "formula".to_owned(),
+        },
+        values: definition.values,
+        min: definition.min,
+        step: definition.step,
+    }
+}
+
+fn load_profile_weight_unit_to_domain<T>(weight_unit: T) -> String
+where
+    T: Into<LoadProfileWeightUnitWrapper>,
+{
+    match weight_unit.into() {
+        LoadProfileWeightUnitWrapper::Create(
+            crate::models::load_profile_create_request::WeightUnit::Kg,
+        )
+        | LoadProfileWeightUnitWrapper::Update(
+            crate::models::load_profile_update_request::WeightUnit::Kg,
+        ) => "KG".to_owned(),
+        LoadProfileWeightUnitWrapper::Create(
+            crate::models::load_profile_create_request::WeightUnit::Lbs,
+        )
+        | LoadProfileWeightUnitWrapper::Update(
+            crate::models::load_profile_update_request::WeightUnit::Lbs,
+        ) => "LBS".to_owned(),
+    }
+}
+
+enum LoadProfileWeightUnitWrapper {
+    Create(crate::models::load_profile_create_request::WeightUnit),
+    Update(crate::models::load_profile_update_request::WeightUnit),
+}
+
+impl From<crate::models::load_profile_create_request::WeightUnit> for LoadProfileWeightUnitWrapper {
+    fn from(value: crate::models::load_profile_create_request::WeightUnit) -> Self {
+        Self::Create(value)
+    }
+}
+
+impl From<crate::models::load_profile_update_request::WeightUnit> for LoadProfileWeightUnitWrapper {
+    fn from(value: crate::models::load_profile_update_request::WeightUnit) -> Self {
+        Self::Update(value)
     }
 }
 
