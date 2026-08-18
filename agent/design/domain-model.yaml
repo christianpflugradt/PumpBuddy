@@ -96,10 +96,11 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: LoadProfile
-    description: Station load contract with immutable definition payload and editable display name.
+    description: Station load contract with draft-to-historical lifecycle semantics and workout-aligned load expansion behavior.
     attributes:
       - id
       - name
+      - status
       - weight_unit
       - definition
       - created_at
@@ -107,7 +108,7 @@ entities:
     relationships:
       - type: one_to_many
         target: EquipmentStation
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: TrainingPlan
     description: Training plan aggregate with versioned exercise definitions.
@@ -586,13 +587,19 @@ invariants:
     rule: For UNILATERAL variants, a persisted LEFT entry without RIGHT for the same set_index means resume continues at RIGHT before advancing to the next set_index.
   - id: invariant.workout_set_stationless_null_load_allowed
     rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist canonical total load values.
-  - id: invariant.load_profile_definition_is_immutable
-    rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
+  - id: invariant.load_profile_status_values
+    rule: LoadProfile.status permits only new, active, or inactive.
+  - id: invariant.load_profile_name_unique_within_user_scope
+    rule: LoadProfile.name must be unique within one user's load-profile set so renames and creation cannot produce duplicate display names.
+  - id: invariant.load_profile_definition_editability_depends_on_status
+    rule: LoadProfile.definition and LoadProfile.weight_unit remain editable only while LoadProfile.status is new, and become read-only when status is active or inactive.
   - id: invariant.load_profile_name_is_editable
-    rule: LoadProfile.name is mutable for display updates without changing LoadProfile.definition.
+    rule: LoadProfile.name is editable in every status, but active or inactive rename flows require explicit user warning because historical interpretation may change.
   - id: invariant.load_profile_definition_sum_type
     rule: LoadProfile.definition uses kind as discriminator and permits only fixed_list or formula variants.
   - id: invariant.load_profile_fixed_list_definition_shape
     rule: fixed_list definitions include a non-empty ordered values array expressed in LoadProfile.weight_unit.
   - id: invariant.load_profile_formula_definition_shape
     rule: formula definitions include min and step where step > 0, both expressed in LoadProfile.weight_unit.
+  - id: invariant.load_profile_preview_alignment
+    rule: LoadProfile preview expansion uses the same distinct sorted value expansion and max-load cap semantics as configured-gym workout execution.

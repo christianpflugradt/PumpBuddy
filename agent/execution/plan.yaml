@@ -1,23 +1,42 @@
 version: 1
 kind: plan
 id: pb-062
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Introduce Configurator Mode And Load Profile Management
+goal: Deliver the first mobile-first configurator slice by adding configurator navigation mode and complete load-profile management with draft-safe lifecycle rules aligned to workout history protection.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - add a dedicated configurator entry and configurator-specific side menu that can switch back to workout browsing
+  - implement a mobile-first Load Profiles list screen as the first configurator destination
+  - implement dedicated full-screen Load Profile detail flows for create, edit, preview, rename warning, and delete of new drafts
+  - support both fixed-values and step-based load profile definitions with preview expansion capped by configured max weight
+  - introduce forward-compatible load profile status semantics new|active|inactive and enforce safe editability rules
+  - update domain and persistence references so future gyms or stations work can promote or retire profiles without redefining lifecycle semantics
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - full gyms or exercises configurator CRUD flows
+  - user-driven transitions from new to active or inactive
+  - station inactivity flows or archival tooling
+  - compatibility management across variants and stations
+  - broader role or permission modeling for configuration access
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - users can enter and exit configurator mode through clear side-menu navigation without losing the workout browsing entrypoint
+  - the first configurator screen is usable on iPhone-sized layouts for browsing and starting load-profile edits
+  - users can create both fixed-values and step-based draft load profiles from a dedicated full-screen editor
+  - draft load profiles can be edited or physically deleted, while active or inactive profiles restrict definition changes and require warning-confirmed renames
+  - load profile preview values match workout execution expansion rules and are shown in a reusable read-only popup up to configured max weight
+  - duplicate load profile names are prevented gracefully in the app and enforced durably in persistence design
 constraints:
-  - constraint 1
-  - constraint 2
+  - preserve historical workout meaning by avoiding definition mutation once a profile leaves draft state
+  - keep the renderer mobile-first and aligned with the existing web-components plus thin-renderer architecture
+  - keep the configurator entry visually highlighted with the same orange palette as the workout entry
+  - treat the current load-profile popup behavior in station detail as the visual interaction baseline for previewing expanded loads
+  - keep scope bounded to work that typically fits one focused workday and leaves gyms or stations for later plans
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-capabilities.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
+  Favor a vertical slice order: navigation shell and view-state plumbing first, then load-profile contract and persistence semantics, then renderer create/edit flows, then tests and quality gates.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.

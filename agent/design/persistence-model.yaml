@@ -57,9 +57,15 @@ decisions:
   - id: load_profile_sum_type_storage
     decision: Persist load profile variant definitions in load_profiles.definition as JSONB with fixed_list|formula variants in one table.
     rationale: Keeps LoadProfile as a single persistence aggregate while allowing immutable variant-specific shape.
+  - id: load_profile_status_storage
+    decision: Persist load_profiles.status with values new|active|inactive so draft editability and later archival visibility rules can evolve without reshaping the aggregate.
+    rationale: Captures the agreed forward-compatible lifecycle where v1 creates drafts now and later plans can promote or retire profiles through gyms and stations.
   - id: load_profile_mutability_semantics
-    decision: Allow updates to load_profiles.name while treating load_profiles.definition as immutable after insert.
-    rationale: Supports display-name edits without changing a profile's canonical load behavior contract.
+    decision: Allow updates to load_profiles.name in every status, but permit updates to load_profiles.definition and weight_unit only while status is new.
+    rationale: Supports draft authoring and deletion before first real usage while protecting historically relevant load behavior once profiles become active or inactive.
+  - id: load_profile_name_uniqueness_strategy
+    decision: Enforce case-safe per-user load-profile name uniqueness in both application validation and a database-backed normalized unique constraint or index.
+    rationale: Prevents crashes and ambiguous rename/create outcomes while honoring the stakeholder requirement that two load profiles must never share the same name for one user.
   - id: load_profile_definition_variant_requirements
     decision: Require definition.kind plus variant-specific shape constraints (fixed_list requires values to be a non-empty array; formula requires numeric min and positive numeric step).
     rationale: Matches load-profile domain invariants at the durable write boundary so malformed immutable definitions cannot be persisted for later read-path expansion failures.
@@ -255,10 +261,11 @@ tables:
       - { columns: [id, user_id] }
 
   - name: load_profiles
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: status, type: text, nullable: false }
       - { name: weight_unit, type: text, nullable: false }
       - { name: definition, type: jsonb, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
@@ -270,6 +277,8 @@ tables:
     unique_constraints:
       - { columns: [id, user_id] }
     checks:
+      - length(trim(name)) > 0
+      - status in ('new', 'active', 'inactive')
       - weight_unit in ('KG', 'LBS')
       - definition ? 'kind'
       - (definition->>'kind') in ('fixed_list', 'formula')
