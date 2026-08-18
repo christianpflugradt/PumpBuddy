@@ -619,20 +619,28 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
          VALUES
            ($1::uuid, $2::uuid, $3, 'new', 'KG', $4::jsonb),
            ($5::uuid, $2::uuid, $6, 'active', 'LBS', $7::jsonb),
-           ($8::uuid, $2::uuid, $9, 'inactive', 'KG', $10::jsonb),
-           ($11::uuid, $12::uuid, $13, 'active', 'KG', $14::jsonb)",
+           ($8::uuid, $2::uuid, $9, 'active', 'KG', $10::jsonb),
+           ($11::uuid, $2::uuid, $12, 'new', 'KG', $13::jsonb),
+           ($14::uuid, $2::uuid, $15, 'inactive', 'KG', $16::jsonb),
+           ($17::uuid, $18::uuid, $19, 'active', 'KG', $20::jsonb)",
     )
     .bind("4f000000-0000-0000-0000-000000000101")
     .bind(DEV_USER_ID)
-    .bind("A Configurator Draft")
+    .bind("Bravo Configurator Draft")
     .bind(r#"{"kind":"formula","min":10,"step":2.5}"#)
     .bind("4f000000-0000-0000-0000-000000000102")
-    .bind("B Configurator Active")
+    .bind("alpha configurator active")
     .bind(r#"{"kind":"fixed_list","values":[10,20,30]}"#)
     .bind("4f000000-0000-0000-0000-000000000103")
-    .bind("0 Retired Profile")
+    .bind("Alpha Configurator Active")
     .bind(r#"{"kind":"fixed_list","values":[5,15,25]}"#)
     .bind("4f000000-0000-0000-0000-000000000104")
+    .bind("Alpha Configurator Active")
+    .bind(r#"{"kind":"fixed_list","values":[12,24,36]}"#)
+    .bind("4f000000-0000-0000-0000-000000000105")
+    .bind("0 Retired Profile")
+    .bind(r#"{"kind":"fixed_list","values":[5,15,25]}"#)
+    .bind("4f000000-0000-0000-0000-000000000106")
     .bind(USER_B_ID)
     .bind("Foreign Configurator Profile")
     .bind(r#"{"kind":"fixed_list","values":[2,4,6]}"#)
@@ -658,7 +666,8 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
            ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid),
            ($6::uuid, $2::uuid, $3::uuid, $7, $5::uuid),
            ($8::uuid, $2::uuid, $3::uuid, $9, $10::uuid),
-           ($11::uuid, $12::uuid, $13::uuid, $14, $15::uuid)",
+           ($11::uuid, $2::uuid, $3::uuid, $12, $13::uuid),
+           ($14::uuid, $15::uuid, $16::uuid, $17, $18::uuid)",
     )
     .bind("6f000000-0000-0000-0000-000000000101")
     .bind(DEV_USER_ID)
@@ -668,13 +677,16 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
     .bind("6f000000-0000-0000-0000-000000000102")
     .bind("API Load Profile Active Station B")
     .bind("6f000000-0000-0000-0000-000000000103")
-    .bind("API Load Profile Inactive Station")
+    .bind("API Load Profile Stable Tie Station")
     .bind("4f000000-0000-0000-0000-000000000103")
     .bind("6f000000-0000-0000-0000-000000000104")
+    .bind("API Load Profile Inactive Station")
+    .bind("4f000000-0000-0000-0000-000000000105")
+    .bind("6f000000-0000-0000-0000-000000000105")
     .bind(USER_B_ID)
     .bind("5f000000-0000-0000-0000-000000000101")
     .bind("Foreign Profile Station")
-    .bind("4f000000-0000-0000-0000-000000000104")
+    .bind("4f000000-0000-0000-0000-000000000106")
     .execute(&pool)
     .await
     .expect("equipment stations should insert");
@@ -697,7 +709,7 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
 
     let draft = load_profiles
         .iter()
-        .find(|profile| profile["name"] == json!("A Configurator Draft"))
+        .find(|profile| profile["name"] == json!("Bravo Configurator Draft"))
         .expect("draft profile should exist");
     assert_eq!(draft["status"], json!("new"));
     assert_eq!(draft["definition_kind"], json!("formula"));
@@ -706,12 +718,28 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
 
     let active = load_profiles
         .iter()
-        .find(|profile| profile["name"] == json!("B Configurator Active"))
+        .find(|profile| profile["name"] == json!("alpha configurator active"))
         .expect("active profile should exist");
     assert_eq!(active["status"], json!("active"));
     assert_eq!(active["definition_kind"], json!("fixed_list"));
     assert_eq!(active["weight_unit"], json!("LBS"));
     assert_eq!(active["station_count"], json!(2));
+
+    let stable_tie = load_profiles
+        .iter()
+        .find(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000103"))
+        .expect("stable tie-break profile should exist");
+    assert_eq!(stable_tie["name"], json!("Alpha Configurator Active"));
+    assert_eq!(stable_tie["status"], json!("active"));
+    assert_eq!(stable_tie["station_count"], json!(1));
+
+    let duplicate_name = load_profiles
+        .iter()
+        .find(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000104"))
+        .expect("duplicate name profile should exist");
+    assert_eq!(duplicate_name["name"], json!("Alpha Configurator Active"));
+    assert_eq!(duplicate_name["status"], json!("new"));
+    assert_eq!(duplicate_name["station_count"], json!(0));
 
     let inactive = load_profiles
         .iter()
@@ -724,12 +752,29 @@ async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last(
         .iter()
         .any(|profile| profile["name"] == json!("Foreign Configurator Profile")));
 
-    let draft_position = array_entry_position(load_profiles, "A Configurator Draft");
-    let active_position = array_entry_position(load_profiles, "B Configurator Active");
+    let lowercase_alpha_position = array_entry_position(load_profiles, "alpha configurator active");
+    let stable_tie_position = load_profiles
+        .iter()
+        .position(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000103"))
+        .expect("stable tie-break profile position should exist");
+    let duplicate_name_position = load_profiles
+        .iter()
+        .position(|profile| profile["id"] == json!("4f000000-0000-0000-0000-000000000104"))
+        .expect("duplicate name profile position should exist");
+    let draft_position = array_entry_position(load_profiles, "Bravo Configurator Draft");
     let inactive_position = array_entry_position(load_profiles, "0 Retired Profile");
-    assert!(draft_position < active_position);
+    assert!(stable_tie_position < duplicate_name_position);
+    assert!(duplicate_name_position < lowercase_alpha_position);
+    assert!(lowercase_alpha_position < draft_position);
     assert!(draft_position < inactive_position);
-    assert!(active_position < inactive_position);
+    assert_eq!(
+        load_profiles[stable_tie_position]["id"],
+        json!("4f000000-0000-0000-0000-000000000103")
+    );
+    assert_eq!(
+        load_profiles[duplicate_name_position]["id"],
+        json!("4f000000-0000-0000-0000-000000000104")
+    );
 }
 
 #[tokio::test]
