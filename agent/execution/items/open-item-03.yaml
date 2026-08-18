@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-03
   title: Implement draft-safe load profile write lifecycle
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,5 +71,30 @@ handoff:
   review_focus:
   - Status-based write rules and conflict semantics for duplicate or immutable edits.
   - Migration or schema changes needed for normalized uniqueness and lifecycle safety.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-08-18T15:01:36Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/src/persistence/load_profiles.rs\
+    \ enforces the immutable-field\n    guard for any status other than `new` (lines\
+    \ 149-165), but the added API coverage\n    in backend/tests/api_workouts.rs:943-1058\
+    \ seeds only an `active` historical profile\n    and never exercises the same\
+    \ rename-or-mutation rules for an `inactive` profile.\n    The item acceptance\
+    \ text explicitly requires active and inactive behavior to be\n    validated by\
+    \ tests.\n  risk: A regression that only affects inactive profiles could pass\
+    \ review and quality\n    gates unnoticed, leaving one of the two historical lifecycle\
+    \ states without the\n    required acceptance evidence.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: backend/src/persistence/load_profiles.rs enforces the immutable-field
+      guard for any status other than `new` (lines 149-165), but the added API coverage
+      in backend/tests/api_workouts.rs:943-1058 seeds only an `active` historical
+      profile and never exercises the same rename-or-mutation rules for an `inactive`
+      profile. The item acceptance text explicitly requires active and inactive behavior
+      to be validated by tests.
+    risk: A regression that only affects inactive profiles could pass review and quality
+      gates unnoticed, leaving one of the two historical lifecycle states without
+      the required acceptance evidence.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
