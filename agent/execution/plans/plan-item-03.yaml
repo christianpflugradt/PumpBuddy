@@ -1,0 +1,59 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Plan draft-safe load profile writes
+summary:
+  goal: Add contract-backed load-profile create, update, rename, and draft-delete
+    flows that enforce status-based mutability and per-user name uniqueness.
+context:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-03.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/persistence_integration/options_and_gyms.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/error.rs
+implementation_approach:
+- 'Extend `agent/design/api-contract.yaml` with authenticated load-profile write endpoints
+  and request or response schemas that distinguish full draft edits from rename-only
+  updates without introducing status-transition behavior.'
+- Regenerate backend and renderer OpenAPI artifacts through the repository Makefile
+  flow so all transport types for the new write surface come from the canonical contract.
+- Add or extend persistence support for load-profile inserts, status-aware updates,
+  and draft-only deletes, including durable per-user normalized uniqueness enforcement
+  and explicit conflict mapping for immutable-field edits or duplicate names.
+- 'Introduce backend application-service validation that owns lifecycle rules: draft
+  profiles may change name, weight unit, and definition; active or inactive profiles
+  may change only name; delete is permitted only while status is `new`.'
+- Wire API handlers and router entries to the new application methods, preserving
+  existing authenticated error semantics so validation and conflict failures remain
+  user-safe and deterministic.
+- Add backend integration coverage for fixed-list and formula create or update flows,
+  duplicate-name rejection, immutable historical-profile edit rejection, rename-only
+  success for active or inactive profiles, and draft-delete success or failure boundaries.
+risks_and_assumptions:
+- Assume the write surface can remain under existing authenticated self-service API
+  conventions and does not require new permission modeling in this plan.
+- 'Risk: uniqueness enforcement may need both application preflight checks and a database
+  index or constraint migration to avoid race-prone duplicate names; keep persistence
+  as the final authority.'
+- Assume active and inactive rename flows can share one update boundary with server-side
+  field-level validation rather than needing separate rename-only endpoints.
+- 'Risk: existing load-profile fixtures and station references may require careful
+  draft-delete guards so only non-historically-relevant drafts can be physically removed.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Renderer detail forms, warning-dialog UX, or preview popup interactions.
+- 'User-driven promotion from `new` to `active` or `inactive`.'
+- Generalized station or gym configurator CRUD beyond load-profile lifecycle support.
+handoff_notes:
+- Reuse existing persistence conflict patterns and API conflict responses so duplicate-name
+  and immutable-edit failures stay consistent with the rest of the backend.
+- Keep lifecycle tests centered on backend-owned rules, with persistence-backed assertions
+  that historical profiles preserve definition meaning after rename-only updates.
