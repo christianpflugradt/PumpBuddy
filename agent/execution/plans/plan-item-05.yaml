@@ -1,0 +1,62 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Plan draft load profile authoring flows
+summary:
+  goal: Add dedicated full-screen renderer flows for creating, editing, and deleting
+    draft load profiles across both fixed-list and formula definitions.
+context:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-05.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-app-root.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/openapi-contract.ts
+implementation_approach:
+- Extend renderer view-state and app-root routing so configurator users can enter
+  full-screen draft load-profile create and edit screens from the load-profile list
+  and return cleanly after save or delete.
+- Create a dedicated screen component for draft load-profile authoring that follows
+  existing full-screen mobile screen patterns and owns local draft state for name,
+  weight unit, definition kind, field-level inputs, pending state, and inline validation
+  feedback.
+- Integrate the screen with the generated OpenAPI boundary for create, update, and
+  draft-delete requests, keeping backend validation as the source of truth while providing
+  lightweight client-side guards against obvious invalid input and duplicate submit
+  churn.
+- 'Implement variant-specific authoring UX for `fixed_list` and `formula` definitions
+  so users can switch definition kinds, edit the relevant fields, preserve or reset
+  draft state predictably, and avoid renderer crashes when inputs are incomplete or
+  malformed.'
+- Handle successful save and delete transitions by returning to the load profiles
+  list with refreshed data, while failed requests keep the draft open and surface
+  actionable error feedback without losing user-entered values.
+- Add renderer unit or integration coverage for create and edit flows, definition-kind
+  switching, invalid-input resilience, backend-save failure retention, and draft-delete
+  navigation back to the load-profile list.
+risks_and_assumptions:
+- 'Assume item `03` provides the necessary backend write endpoints and generated client
+  types before or alongside this renderer work.'
+- 'Risk: switching between `fixed_list` and `formula` drafts can accidentally leak
+  stale fields across variants; keep the screen state explicit about variant-owned
+  inputs and reset rules.'
+- Assume live validation should stay lightweight and user-friendly, complementing
+  backend errors rather than reproducing every persistence rule in the renderer.
+- 'Risk: narrow-screen layout can become cramped if fixed-list editing tries to expose
+  too many controls at once; favor a simple vertically stacked full-screen flow.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Active or inactive historical-profile rename restrictions and warning dialogs.
+- Preview popup behavior for expanded loads.
+- Changing load-profile status beyond draft authoring and deletion.
+handoff_notes:
+- Use existing screen and draft-state patterns from the renderer instead of introducing
+  a new form framework or modal-heavy flow.
+- Keep post-save and post-delete navigation assertions in renderer tests so configurator
+  list refresh behavior stays stable on mobile routes.
