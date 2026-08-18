@@ -1,0 +1,110 @@
+version: 1
+area: configurator
+source_of_truth: use_cases
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  domain_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  persistence_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+formatting:
+  indent_spaces: 2
+
+use_cases:
+  - id: CUC-01
+    name: Enter Configurator Mode
+    goal: User switches from workout browsing into configuration mode.
+    preconditions:
+      - user_authenticated
+      - no_active_modal_blocks_navigation
+    main_flow:
+      - user_opens_global_side_menu
+      - system_renders_configurator_entry_with_same_orange_palette_as_workout_entry
+      - user_selects_configurator
+      - system_navigates_to_load_profiles_screen
+      - system_replaces_workout_side_menu_with_configurator_side_menu
+      - system_renders_workout_return_entry_inside_configurator_side_menu
+    postconditions:
+      - configurator_mode_is_active
+      - load_profiles_screen_is_visible
+
+  - id: CUC-02
+    name: Browse Load Profiles
+    goal: User reviews existing load profiles on a mobile-first first screen.
+    preconditions:
+      - configurator_mode_is_active
+    main_flow:
+      - system_loads_visible_load_profiles_for_authenticated_user
+      - system_sorts_non_inactive_profiles_alphabetically_by_name
+      - system_places_inactive_profiles_after_non_inactive_profiles
+      - system_visually_separates_inactive_profiles_with_subdued_styling
+      - system_renders_each_profile_as_a_tappable_card_showing_name_status_definition_summary_and_usage_summary
+      - user_may_open_profile_detail_from_any_card
+    postconditions:
+      - user_can_identify_profile_state_and_basic_behavior_without_opening_detail
+
+  - id: CUC-03
+    name: Create New Load Profile
+    goal: User creates a draft load profile from the configurator.
+    preconditions:
+      - configurator_mode_is_active
+    main_flow:
+      - user_selects_new_load_profile
+      - system_opens_dedicated_full_screen_detail_editor
+      - user_enters_unique_name_and_weight_unit
+      - user_selects_definition_kind_fixed_values_or_step_based
+      - if_definition_kind_is_fixed_values_user_enters_ordered_exact_values
+      - if_definition_kind_is_step_based_user_enters_min_step_and_preview_cap_inputs
+      - system_validates_name_uniqueness_and_definition_shape_live_without_crashing
+      - system_persists_profile_with_status_new
+    postconditions:
+      - new_load_profile_exists_as_editable_draft
+
+  - id: CUC-04
+    name: Edit New Load Profile
+    goal: User updates or deletes a draft load profile before activation.
+    preconditions:
+      - load_profile_status_is_new
+    main_flow:
+      - user_opens_dedicated_full_screen_detail_editor
+      - system_allows_name_weight_unit_and_definition_edits
+      - user_may_open_preview_popup_showing_distinct_possible_loads_up_to_configured_max_weight
+      - system_reuses_popup_pattern_used_for_station_load_value_inspection
+      - user_may_delete_the_draft_profile
+    postconditions:
+      - draft_profile_is_updated_or_removed
+
+  - id: CUC-05
+    name: Rename Active Or Inactive Load Profile
+    goal: User corrects naming of a historically relevant profile without changing its load meaning.
+    preconditions:
+      - load_profile_status_is_active_or_inactive
+    main_flow:
+      - user_opens_dedicated_full_screen_detail_editor
+      - system_renders_definition_fields_read_only
+      - user_initiates_name_change
+      - system_displays_warning_dialog_about_historical_meaning_risk
+      - user_confirms_or_cancels_name_change
+      - if_confirmed_system_validates_unique_name_before_save
+      - if_confirmed_system_persists_new_name
+    postconditions:
+      - profile_definition_remains_unchanged
+      - profile_name_is_updated_only_when_warning_is_confirmed
+
+  - id: CUC-06
+    name: Preview Expanded Load Values
+    goal: User inspects distinct selectable loads derived from one profile.
+    preconditions:
+      - load_profile_exists
+    main_flow:
+      - user_opens_preview_popup_from_profile_detail
+      - system_expands_fixed_values_or_step_based_definition_into_distinct_sorted_values
+      - system_caps_preview_at_user_configured_max_weight_using_workout_execution_rules
+      - system_displays_the_sorted_value_list_in_a_read_only_popup
+    postconditions:
+      - user_can_verify_the_effective_workout_load_choices_before_using_the_profile
+
+rules:
+  - load_profile_names_must_be_unique_within_one_user_scope
+  - app_validation_must_handle_name_collisions_gracefully_before_backend_errors_reach_the_user
+  - status_values_are_new_active_inactive
+  - this_plan_scope_does_not_include_user_driven_transition_from_new_to_active_or_inactive
+  - gyms_and_exercises_entries_may_exist_in_the_configurator_side_menu_as_future_destinations_without_full_management_flows_in_this_plan

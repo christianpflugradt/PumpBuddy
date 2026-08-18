@@ -30,6 +30,7 @@ Use the structured models for entity and persistence details.
 - Plan versions are immutable once published.
 - Historically relevant blueprint data is archived instead of physically deleted.
 - Active workout continuity remains a core product guarantee.
+- Configurator flows must prefer safe lifecycle transitions over destructive mutation when reference data can affect historical workout interpretation.
 
 ---
 
@@ -58,6 +59,10 @@ Use the structured models for entity and persistence details.
 - In `free`, no gym is required and variant/station fields stay unresolved.
 - Progression suggestions for gym-aware recommendations exclude `free` workouts by default.
 - Cancelling an unfinished workout removes only the unfinished workout data, not blueprint history.
+- Load profile names must remain unique within one user's configuration space.
+- Draft load profiles may be edited or physically deleted while they remain `new`.
+- Active or inactive load profiles keep their definition and weight unit read-only, but may still be renamed after an explicit warning.
+- Load-profile previews must match the same capped distinct-load expansion that workout execution uses.
 
 ---
 
@@ -73,6 +78,7 @@ Use the structured models for entity and persistence details.
 - `Gym`: real-world fitness center.
 - `EquipmentStation`: concrete station in a gym (for example left cable tower, chest fly machine #2).
 - `LoadProfile`: allowed load steps for a station or equipment class, including display unit.
+- `ConfiguratorMode`: navigation mode for maintaining workout reference data outside normal workout browsing.
 - `WorkoutSet`: performed set with selected load and reps.
 
 ---
@@ -94,6 +100,7 @@ Use the structured models for entity and persistence details.
 - strict UI enforcement strategy for pre-start validation timing and messaging
 - authentication, authorization, and multi-user ownership enforcement
 - advanced station equivalence and transfer-learning rules
+- user-driven transitions from `new` load profiles into `active` or `inactive` status
 
 ---
 
