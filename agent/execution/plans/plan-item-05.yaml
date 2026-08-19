@@ -3,60 +3,50 @@ kind: item_plan
 plan:
   item_id: '05'
   item_path: agent/execution/items/open-item-05.yaml
-  title: Plan draft load profile authoring flows
+  title: Plan load profile detail read boundary
 summary:
-  goal: Add dedicated full-screen renderer flows for creating, editing, and deleting
-    draft load profiles across both fixed-list and formula definitions.
+  goal: Add a contract-backed load-profile detail read endpoint that exposes persisted
+    definition fields and backend-owned preview values for detail screens.
 context:
   required:
   - agent/execution/items/open-item-05.yaml
   - agent/design/configurator-use-cases.yaml
   - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
   - agent/design/api-contract.yaml
   optional:
-  - renderer/src/pb-settings-screen.ts
-  - renderer/src/pb-app-root.ts
-  - renderer/src/openapi-contract.ts
+  - backend/src/persistence/load_profiles.rs
+  - backend/src/api/handlers/load_profiles.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
 implementation_approach:
-- Extend renderer view-state and app-root routing so configurator users can enter
-  full-screen draft load-profile create and edit screens from the load-profile list
-  and return cleanly after save or delete.
-- Create a dedicated screen component for draft load-profile authoring that follows
-  existing full-screen mobile screen patterns and owns local draft state for name,
-  weight unit, definition kind, field-level inputs, pending state, and inline validation
-  feedback.
-- Integrate the screen with the generated OpenAPI boundary for create, update, and
-  draft-delete requests, keeping backend validation as the source of truth while providing
-  lightweight client-side guards against obvious invalid input and duplicate submit
-  churn.
-- 'Implement variant-specific authoring UX for `fixed_list` and `formula` definitions
-  so users can switch definition kinds, edit the relevant fields, preserve or reset
-  draft state predictably, and avoid renderer crashes when inputs are incomplete or
-  malformed.'
-- Handle successful save and delete transitions by returning to the load profiles
-  list with refreshed data, while failed requests keep the draft open and surface
-  actionable error feedback without losing user-entered values.
-- Add renderer unit or integration coverage for create and edit flows, definition-kind
-  switching, invalid-input resilience, backend-save failure retention, and draft-delete
-  navigation back to the load-profile list.
+- Extend agent/design/api-contract.yaml with an authenticated GET detail path for
+  one load profile and a response schema that exposes status, weight unit, persisted
+  fixed-list values or formula fields, station-count transparency, and preview loads.
+- Regenerate backend and renderer OpenAPI artifacts through the repository flow so
+  the new detail payload becomes the typed boundary for follow-up renderer work.
+- Add backend repository, application-service, and handler support for fetching one
+  user-scoped load profile by id without reconstructing editor prefill state from
+  summaries.
+- Reuse existing backend load-expansion logic to emit preview values capped by the
+  authenticated user max-load preference, keeping detail preview semantics aligned
+  with workout and station detail behavior.
+- Add backend integration coverage for detail reads across fixed-list and formula
+  profiles, user scoping, not-found behavior, and max-load-capped preview values.
 risks_and_assumptions:
-- 'Assume item `03` provides the necessary backend write endpoints and generated client
-  types before or alongside this renderer work.'
-- 'Risk: switching between `fixed_list` and `formula` drafts can accidentally leak
-  stale fields across variants; keep the screen state explicit about variant-owned
-  inputs and reset rules.'
-- Assume live validation should stay lightweight and user-friendly, complementing
-  backend errors rather than reproducing every persistence rule in the renderer.
-- 'Risk: narrow-screen layout can become cramped if fixed-list editing tries to expose
-  too many controls at once; favor a simple vertically stacked full-screen flow.'
+- 'Risk: if the detail response omits raw definition fields and exposes only derived
+  summaries, draft edit prefilling will remain blocked.'
+- Assume preview values should be backend-provided rather than recomputed in the renderer
+  so configured max-load behavior stays identical across surfaces.
+- 'Risk: mixing write concerns into this item would recreate the earlier dependency
+  ambiguity; keep this slice read-only and detail-focused.'
 validation_plan:
-- make check-renderer
+- make check-backend
 out_of_scope:
-- Active or inactive historical-profile rename restrictions and warning dialogs.
-- Preview popup behavior for expanded loads.
-- Changing load-profile status beyond draft authoring and deletion.
+- Full-screen renderer authoring UX for drafts.
+- Rename, create, update, or delete write behavior already covered by other items.
+- Generalized configurator CRUD beyond load-profile detail reads.
 handoff_notes:
-- Use existing screen and draft-state patterns from the renderer instead of introducing
-  a new form framework or modal-heavy flow.
-- Keep post-save and post-delete navigation assertions in renderer tests so configurator
-  list refresh behavior stays stable on mobile routes.
+- This item must land before draft edit or historical detail renderer work because
+  list summaries do not contain the stored definition payload needed for prefill.
+- Keep the detail schema minimal but sufficient for both draft editor hydration and
+  historical preview popup consumption.

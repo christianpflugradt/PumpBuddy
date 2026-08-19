@@ -2,69 +2,76 @@ version: 1
 kind: backlog_item
 item:
   id: pb-062-item-05
-  title: Add draft load profile detail authoring flows
+  title: Add load profile detail read boundary
   status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: A dedicated full-screen renderer editor for creating and editing draft
-    load profiles, including fixed-list and formula definitions plus draft deletion.
-  rationale: The primary new creation value in this plan is authoring draft profiles
-    safely in a full-screen mobile flow rather than inside a cramped list or modal.
+  outcome: An authenticated load-profile detail payload that exposes persisted definition
+    data and backend-owned preview values for draft editing and historical inspection.
+  rationale: Existing draft edit and historical detail flows need a read boundary
+    that exposes stored fixed-list or formula fields instead of relying on list summaries.
 scope:
   in:
-  - Implement full-screen create and edit routes for draft load profiles.
-  - Support unique-name, weight-unit, and definition-kind authoring for fixed-list
-    and formula variants with live validation feedback.
-  - Allow draft deletion from the detail flow and return users cleanly to the configurator
-    list.
+  - Extend the OpenAPI contract and generated models with a read endpoint for one
+    authenticated load profile.
+  - Add backend domain, persistence, application, and handler support for loading
+    one load profile by id within user scope.
+  - Expose persisted definition fields needed to prefill draft editors for both fixed-list
+    and formula variants.
+  - Expose backend-owned preview values aligned with configured max-load caps so historical
+    and draft detail screens can inspect effective loads without renderer-side recomputation.
   out:
-  - Active or inactive rename warning behavior.
-  - Changing load profile status beyond new.
+  - Create, update, rename, or delete write endpoints.
+  - Full-screen renderer detail UX.
 constraints:
-- Keep form-state logic aligned with backend-owned validation and avoid duplicating
-  durable business rules unnecessarily.
-- Use dedicated full-screen mobile layouts instead of modal editing.
-- Do not introduce renderer-only interpretation that diverges from contract field
-  names or definition semantics.
+- Keep OpenAPI as the canonical API source and regenerate affected clients instead
+  of editing generated files.
+- Keep the backend authoritative for stored definition shape and preview expansion
+  semantics.
+- Do not require renderer-side reconstruction of fixed-list values or formula min
+  or step from summary payloads.
 inputs:
   required:
   - agent/design/configurator-use-cases.yaml
   - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
   - agent/design/api-contract.yaml
   optional:
-  - renderer/src/pb-settings-screen.ts
-  - renderer/src/openapi-contract.ts
+  - backend/src/persistence/load_profiles.rs
+  - backend/src/api/handlers/load_profiles.rs
 acceptance_criteria:
 - id: ac-01
-  statement: Users can create or edit draft load profiles in a dedicated full-screen
-    flow for both fixed-list and formula definitions without renderer crashes on invalid
-    input.
+  statement: Authenticated callers can load one load profile detail payload that exposes
+    persisted fixed-list values or formula min and step fields needed to prefill existing
+    draft editors.
   verification:
     type: command
-    command: make check-renderer
-    expected: Renderer quality checks pass with coverage for draft create and edit
-      form behavior across both definition kinds.
+    command: make check-backend
+    expected: Backend quality checks pass with contract and API coverage for the load-profile
+      detail read boundary.
 - id: ac-02
-  statement: Draft deletion is available from the detail flow and returns the user
-    to the load profiles list with the removed profile absent.
+  statement: Load-profile detail responses include backend-aligned preview values
+    capped by configured max weight and remain user-scoped and deterministic across
+    repeated reads.
   verification:
     type: command
-    command: make check-renderer
-    expected: Renderer tests validate draft delete affordance, API integration, and
-      post-delete navigation behavior.
+    command: make check-backend
+    expected: Backend tests validate preview-value expansion, max-load cap behavior,
+      and user-scoped detail reads.
 execution:
   plan_item_required: true
   plan_item_skip_reason: null
   risk_level: medium
   boundary_impact:
-  - renderer/configurator
-  - renderer/forms
+  - api/openapi
+  - backend/api
+  - backend/persistence
   - renderer/openapi-boundary
 handoff:
   review_focus:
-  - Form-state handling for variant-specific inputs and backend validation feedback.
-  - Navigation cleanup after save and delete operations on narrow screens.
+  - Detail payload completeness for draft prefill and historical inspection needs.
+  - Alignment between detail preview values and existing workout load-expansion semantics.
 review_feedback: []
 review_result: null

@@ -2,73 +2,74 @@ version: 1
 kind: backlog_item
 item:
   id: pb-062-item-06
-  title: Finish preview and historical-profile detail restrictions
+  title: Add draft load profile detail authoring flows
   status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Read-only historical profile detail behavior with warning-confirmed renames
-    and a reusable preview popup aligned to workout load expansion rules.
-  rationale: The slice is incomplete until users can inspect effective loads and understand
-    why active or inactive profiles preserve definition meaning.
+  outcome: A dedicated full-screen renderer editor for creating and editing draft
+    load profiles, including fixed-list and formula definitions plus draft deletion.
+  rationale: The primary new creation value in this plan is authoring draft profiles
+    safely in a full-screen mobile flow once stored draft definitions can be loaded
+    through a dedicated detail read boundary.
 scope:
   in:
-  - Render read-only definition fields for active and inactive profiles while allowing
-    rename initiation.
-  - Require explicit warning confirmation before saving active or inactive profile
-    renames.
-  - Expose a reusable preview popup that shows distinct sorted loads capped by the
-    configured max weight using backend-aligned expansion results.
-  - Add cross-layer regression coverage for preview behavior and historical-profile
-    edit restrictions.
+  - Implement full-screen create and edit routes for draft load profiles.
+  - Load persisted draft definition data from the dedicated load-profile detail boundary
+    when editing an existing draft.
+  - Support unique-name, weight-unit, and definition-kind authoring for fixed-list
+    and formula variants with live validation feedback.
+  - Allow draft deletion from the detail flow and return users cleanly to the configurator
+    list.
   out:
-  - Activation or inactivation workflows.
-  - Generalized popup-system redesign beyond reuse of the existing load inspection
-    pattern.
+  - Active or inactive rename warning behavior.
+  - Changing load profile status beyond new.
 constraints:
-- Reuse the station-detail load-profile popup interaction baseline instead of inventing
-  a new modal pattern.
-- Keep preview semantics aligned with backend load expansion rules and user max-load
-  caps.
-- Do not allow renderer-side bypass of historical-profile immutability.
+- Keep form-state logic aligned with backend-owned validation and avoid duplicating
+  durable business rules unnecessarily.
+- Use dedicated full-screen mobile layouts instead of modal editing.
+- Do not invent renderer-only prefill state from list summaries when editing an existing
+  draft.
 inputs:
   required:
   - agent/design/configurator-use-cases.yaml
   - agent/design/domain-model.yaml
   - agent/design/api-contract.yaml
-  - agent/design/domain-context.md
   optional:
-  - backend/src/persistence/load_profiles.rs
-  - renderer/src/pb-gym-detail-screen.ts
+  - agent/execution/items/open-item-05.yaml
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/openapi-contract.ts
 acceptance_criteria:
 - id: ac-01
-  statement: Active and inactive profile detail views keep definition fields read-only
-    and only persist renames after an explicit warning-confirmed flow.
+  statement: Users can create new drafts and edit existing draft load profiles in
+    a dedicated full-screen flow for both fixed-list and formula definitions, with
+    existing draft values prefilling from the detail read payload and no renderer
+    crashes on invalid input.
   verification:
     type: command
-    command: make check
-    expected: Repository quality checks pass with backend and renderer coverage for
-      historical-profile rename restrictions.
+    command: make check-renderer
+    expected: Renderer quality checks pass with coverage for draft create and edit
+      form behavior across both definition kinds.
 - id: ac-02
-  statement: The preview popup shows backend-aligned distinct sorted loads up to the
-    configured max weight and is reachable from load profile detail flows.
+  statement: Draft deletion is available from the detail flow and returns the user
+    to the load profiles list with the removed profile absent.
   verification:
     type: command
-    command: make check
-    expected: Repository quality checks pass with preview expansion and popup interaction
-      coverage across the slice.
+    command: make check-renderer
+    expected: Renderer tests validate draft delete affordance, API integration, post-delete
+      navigation behavior, and edit-mode recovery after save failures.
 execution:
   plan_item_required: true
   plan_item_skip_reason: null
   risk_level: medium
   boundary_impact:
-  - backend/load-profile-preview
   - renderer/configurator
-  - renderer/popup-patterns
+  - renderer/forms
+  - renderer/openapi-boundary
 handoff:
   review_focus:
-  - Preview-source authority and max-load cap alignment across backend and renderer.
-  - Warning-confirmed rename UX for historically relevant profiles.
+  - Form-state handling for variant-specific inputs and detail-payload prefill behavior.
+  - Navigation cleanup after save and delete operations on narrow screens.
 review_feedback: []
 review_result: null

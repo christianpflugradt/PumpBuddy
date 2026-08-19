@@ -3,62 +3,58 @@ kind: item_plan
 plan:
   item_id: '06'
   item_path: agent/execution/items/open-item-06.yaml
-  title: Plan preview and historical-profile restrictions
+  title: Plan draft load profile authoring flows
 summary:
-  goal: Finish load-profile detail behavior by enforcing read-only historical definitions,
-    warning-confirmed renames, and a reusable preview popup driven by backend-aligned
-    load expansion results.
+  goal: Add dedicated full-screen renderer flows for creating, editing, and deleting
+    draft load profiles across both fixed-list and formula definitions once detail
+    reads can prefill existing drafts.
 context:
   required:
   - agent/execution/items/open-item-06.yaml
   - agent/design/configurator-use-cases.yaml
   - agent/design/domain-model.yaml
   - agent/design/api-contract.yaml
-  - agent/design/domain-context.md
   optional:
-  - backend/src/persistence/load_profiles.rs
-  - renderer/src/pb-station-detail-screen.ts
-  - renderer/src/pb-gym-detail-screen.ts
+  - agent/execution/items/open-item-05.yaml
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/openapi-contract.ts
 implementation_approach:
-- Confirm the backend read and write contract surface for load-profile detail and
-  rename flows exposes the status, immutable definition fields, and preview values
-  needed for historical-profile rendering without moving expansion logic into the
-  renderer.
-- Extend backend coverage where needed so preview values for load-profile detail remain
-  derived from the same capped expansion logic used by workout execution and station
-  detail, including user max-load preference behavior.
-- Wire renderer detail-state handling so active and inactive profiles render definition
-  and weight-unit fields read-only, while still allowing a name-edit initiation path
-  that does not unlock immutable fields.
-- Implement an explicit warning-confirmation rename flow for active or inactive profiles,
-  keeping the draft open on cancel or server failure and only submitting the rename
-  after confirmation.
-- Reuse the existing station-detail load-profile popup interaction pattern for configurator
-  profile preview, sourcing the distinct sorted loads from backend-provided values
-  rather than recomputing them client-side.
-- Add cross-layer regression coverage for historical-profile read-only behavior, warning-confirmed
-  rename success and cancel paths, preview popup reachability, and capped preview
-  value rendering across backend and renderer checks.
+- Extend renderer view-state and app-root routing so configurator users can enter
+  full-screen draft load-profile create and edit screens from the load-profile list
+  and return cleanly after save or delete.
+- Create a dedicated screen component for draft load-profile authoring that follows
+  existing full-screen mobile screen patterns and owns local draft state for name,
+  weight unit, definition kind, field-level inputs, pending state, and inline validation
+  feedback.
+- Load existing draft detail data through the dedicated load-profile detail boundary
+  before entering edit mode, and use that payload to prefill fixed-list values or
+  formula min and step fields.
+- Integrate the screen with the generated OpenAPI boundary for create, update, detail-read,
+  and draft-delete requests, keeping backend validation as the source of truth while
+  providing lightweight client-side guards against obvious invalid input and duplicate
+  submit churn.
+- Add renderer unit or integration coverage for create and edit flows, detail-payload
+  prefill, definition-kind switching, invalid-input resilience, backend-save failure
+  retention, and draft-delete navigation back to the load-profile list.
 risks_and_assumptions:
-- 'Assume item `03` provides the backend rename and immutable-field enforcement needed
-  for active and inactive profiles before or alongside this work.'
-- 'Risk: if the renderer recomputes preview values instead of consuming backend-owned
-  data, max-load cap and sorting behavior can drift from workout execution semantics;
-  keep the backend as the preview authority.'
-- Assume the existing station-detail popup pattern is sufficient for configurator
-  preview reuse without a generalized modal framework change.
-- 'Risk: rename warning state can become brittle if it is mixed with normal draft
-  editing state; keep confirmation flow explicit and scoped to historical-profile
-  rename actions.'
+- 'Assume item `05` lands first and provides persisted draft detail data for edit
+  prefill; do not try to derive edit state from list summaries.'
+- 'Risk: switching between `fixed_list` and `formula` drafts can accidentally leak
+  stale fields across variants; keep the screen state explicit about variant-owned
+  inputs and reset rules.'
+- Assume live validation should stay lightweight and user-friendly, complementing
+  backend errors rather than reproducing every persistence rule in the renderer.
+- 'Risk: narrow-screen layout can become cramped if fixed-list editing tries to expose
+  too many controls at once; favor a simple vertically stacked full-screen flow.'
 validation_plan:
-- make check
+- make check-renderer
 out_of_scope:
-- Activation or inactivation workflows for load profiles.
-- A generalized popup-system redesign beyond the reused load-profile inspection pattern.
-- Draft create or edit authoring behavior already covered by the dedicated draft-flow
-  item.
+- Active or inactive historical-profile rename restrictions and warning dialogs.
+- Preview popup behavior for expanded loads.
+- Changing load-profile status beyond draft authoring and deletion.
 handoff_notes:
-- Prefer backend-provided preview payloads and existing station-detail popup markup
-  or interaction patterns to minimize renderer-only business logic.
-- Keep rename restriction assertions split across backend and renderer tests so immutable
-  historical semantics and user-facing confirmation behavior stay aligned.
+- Use existing screen and draft-state patterns from the renderer instead of introducing
+  a new form framework or modal-heavy flow.
+- Keep post-save and post-delete navigation assertions in renderer tests so configurator
+  list refresh behavior stays stable on mobile routes.

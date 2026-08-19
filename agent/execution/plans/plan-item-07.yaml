@@ -1,0 +1,55 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '07'
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Plan historical-profile restrictions and preview
+summary:
+  goal: Finish load-profile detail behavior by enforcing read-only historical definitions,
+    warning-confirmed renames, and a reusable preview popup driven by backend-provided
+    detail data.
+context:
+  required:
+  - agent/execution/items/open-item-07.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-context.md
+  optional:
+  - agent/execution/items/open-item-05.yaml
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-gym-detail-screen.ts
+implementation_approach:
+- Wire renderer detail-state handling so active and inactive profiles render definition
+  and weight-unit fields read-only, while still allowing a name-edit initiation path
+  that does not unlock immutable fields.
+- Implement an explicit warning-confirmation rename flow for active or inactive profiles,
+  keeping the detail screen stable on cancel or server failure and only submitting
+  the rename after confirmation.
+- Reuse the existing station-detail load-profile popup interaction pattern for configurator
+  profile preview, sourcing the distinct sorted loads from backend-provided detail
+  values rather than recomputing them client-side.
+- Add renderer coverage for historical-profile read-only behavior, warning-confirmed
+  rename success and cancel paths, preview popup reachability, and capped preview-value
+  rendering.
+risks_and_assumptions:
+- 'Assume items `03` and `05` land first so rename writes and detail-read preview
+  data are both available before this renderer work starts.'
+- 'Risk: if preview rendering drifts from the established station-detail interaction
+  pattern, the configurator flow will feel inconsistent; reuse existing popup behavior
+  wherever practical.'
+- 'Risk: rename warning state can become brittle if it is mixed with normal draft
+  editing state; keep confirmation flow explicit and scoped to historical-profile
+  rename actions.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Activation or inactivation workflows for load profiles.
+- A generalized popup-system redesign beyond the reused load-profile inspection pattern.
+- Draft create or edit authoring behavior already covered by the dedicated draft-flow
+  item.
+handoff_notes:
+- Prefer backend-provided preview payloads and existing station-detail popup markup
+  or interaction patterns to minimize renderer-only business logic.
+- Keep rename restriction assertions centered on user-facing behavior while relying
+  on backend immutability enforcement from the earlier write-lifecycle item.
