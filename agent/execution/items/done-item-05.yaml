@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-05
   title: Add load profile detail read boundary
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -74,4 +74,24 @@ handoff:
   - Detail payload completeness for draft prefill and historical inspection needs.
   - Alignment between detail preview values and existing workout load-expansion semantics.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The item adds an authenticated GET /api/load-profiles/{loadProfileId}
+      detail boundary, returns persisted fixed-list or formula definition fields for
+      editor prefill, and emits backend-owned capped preview loads through a user-scoped
+      persistence path.
+    evidence: agent/design/api-contract.yaml defines LoadProfileDetailResponse plus
+      the GET detail path; backend/src/api/router.rs and backend/src/api/handlers/load_profiles.rs
+      wire the authenticated endpoint; backend/src/application/load_profiles.rs, backend/src/domain.rs,
+      and backend/src/persistence/load_profiles.rs fetch one user-scoped profile with
+      persisted definition data and max-load-capped possible_loads_kg; backend/tests/api_workouts.rs
+      covers formula and fixed-list detail reads, cap behavior, station counts, and
+      foreign-user 404 handling.
+    runtime_build_check: No manual quality command was run during review per task
+      guidance; accept-finalize is expected to execute the deterministic quality gate
+      for the implementation commit.
+    residual_risk: Renderer-side detail consumption is still follow-up work, so end-to-end
+      UI hydration is not exercised here, but the backend read boundary required for
+      that work is present and contract-backed within this item scope.
+  findings: []

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: Plan load profile detail read boundary
 summary:
   goal: Add a contract-backed load-profile detail read endpoint that exposes persisted
