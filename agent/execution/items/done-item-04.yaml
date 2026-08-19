@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-04
   title: Build the mobile-first load profiles list screen
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,4 +66,21 @@ handoff:
   - Mobile-first card density and inactive-profile treatment.
   - Generated-model usage at the network boundary instead of ad-hoc payload typing.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The configurator now opens on a mobile-first load-profile list,
+      renders status/definition/usage card summaries with a subdued inactive section,
+      and keeps create plus existing-detail navigation inside configurator mode.
+    evidence: renderer/src/pb-configurator-load-profiles-screen.ts renders status-aware
+      cards and inactive separation; renderer/src/workout-api.ts plus renderer/src/openapi-contract.ts
+      consume /api/load-profiles through generated LoadProfileSummary models; renderer/src/workout-controller-navigation.ts,
+      renderer/src/workout-controller-screen-data.ts, and their tests cover configurator
+      list, create, and detail route flow.
+    runtime_build_check: make check-renderer passed on August 19, 2026; the run emitted
+      existing Vite warnings about config loading, undefined %VITE_APP_VERSION%, and
+      large chunks, but exited successfully with code 0.
+    residual_risk: Create and detail destinations are still placeholder shells backed
+      by list-state summaries rather than dedicated detail payload loads, which matches
+      this item scope but leaves deeper editing behavior to follow-up work.
+  findings: []
