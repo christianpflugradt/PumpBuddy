@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-07
   title: Finish preview and historical-profile detail restrictions
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,4 +72,26 @@ handoff:
   - Preview-source authority and max-load cap alignment at the renderer boundary.
   - Warning-confirmed rename UX for historically relevant profiles.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The renderer now keeps active and inactive load-profile definitions
+      read-only, gates historical renames behind an explicit warning-confirmed flow,
+      and exposes a reusable preview popup driven by backend-provided detail loads.
+    evidence: 'renderer/src/pb-configurator-load-profile-editor-screen.ts enforces
+      historical read-only behavior via #isHistoricalProfile/#isDraftEditable, opens
+      a dedicated historical rename warning before dispatching save, and renders the
+      preview popup from detail.possible_loads_kg using the station-detail dialog
+      pattern. renderer/src/pb-configurator-load-profile-editor-screen.test.ts covers
+      historical read-only state, warning-confirmed rename cancel and confirm behavior,
+      and preview popup reachability/read-only rendering. renderer/src/workout-controller.ts
+      and renderer/src/workout-controller.test.ts keep configurator detail saves and
+      navigation inside configurator mode, while renderer/src/workout-controller-screen-data.ts
+      loads the backend detail boundary for the editor.'
+    runtime_build_check: No manual full renderer quality command was run during review
+      per task guidance; accept-finalize is expected to execute the deterministic
+      quality gate for the implementation commit.
+    residual_risk: Historical rename coverage is exercised at the component and controller
+      layers rather than via a single end-to-end browser flow, but the delivered scope
+      and regression coverage requested by this item are present.
+  findings: []
