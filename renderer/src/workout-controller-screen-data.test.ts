@@ -67,6 +67,12 @@ const createState = (): AppState => ({
     errorMessage: null,
     hasLoaded: false,
   },
+  configuratorLoadProfileDetailScreen: {
+    loadProfileId: null,
+    detail: null,
+    isLoading: false,
+    errorMessage: null,
+  },
   historyScreen: {
     workouts: [],
     isLoading: false,
@@ -198,6 +204,45 @@ describe("workout-controller-screen-data plan browsing", () => {
       isLoading: false,
       errorMessage: null,
       hasLoaded: true,
+    });
+  });
+
+  it("loads configurator load profile detail into renderer editor state", async () => {
+    const { controller, fetchJson, getState } = setup();
+    fetchJson.mockResolvedValue({
+      id: "profile-1",
+      name: "Travel Plates",
+      status: "new",
+      weight_unit: "KG",
+      station_count: 0,
+      definition: {
+        kind: "formula",
+        min: 20,
+        step: 2.5,
+      },
+      possible_loads_kg: [20, 22.5, 25],
+    });
+
+    await controller.loadConfiguratorLoadProfileDetailScreenData("profile-1");
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/load-profiles/profile-1");
+    expect(getState().configuratorLoadProfileDetailScreen).toEqual({
+      loadProfileId: "profile-1",
+      detail: {
+        id: "profile-1",
+        name: "Travel Plates",
+        status: "new",
+        weight_unit: "KG",
+        station_count: 0,
+        definition: {
+          kind: "formula",
+          min: 20,
+          step: 2.5,
+        },
+        possible_loads_kg: [20, 22.5, 25],
+      },
+      isLoading: false,
+      errorMessage: null,
     });
   });
 

@@ -5,6 +5,7 @@ import type {
   GymStationDetailResponse,
   GymStationOption,
   GymSummary,
+  LoadProfileDetailResponse,
   LoadProfileSummary,
   PlanExerciseOptionSummary,
   TrainingPlanDetailResponse,
@@ -165,6 +166,12 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+  };
+  configuratorLoadProfileDetailScreen?: {
+    loadProfileId: string | null;
+    detail: LoadProfileDetailResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
   };
   aboutScreen?: {
     metadata: AboutMetadata | null;

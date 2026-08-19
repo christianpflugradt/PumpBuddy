@@ -1,9 +1,13 @@
 import type { AppState, SessionUser } from "./workout-types";
 import {
+  createLoadProfile,
   createActiveWorkoutApi,
   createFetchJson,
+  deleteLoadProfile,
   type ActiveWorkoutApi,
   type FetchJson,
+  RequestError,
+  updateLoadProfile,
 } from "./workout-api";
 import {
   canReopenFallbackOptionSelection,
@@ -101,6 +105,12 @@ export const createApp = (
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+    },
+    configuratorLoadProfileDetailScreen: {
+      loadProfileId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
     },
     aboutScreen: {
       metadata: null,
@@ -263,8 +273,23 @@ export const createApp = (
   });
   const loadConfiguratorLoadProfilesScreenData =
     screenDataController.loadConfiguratorLoadProfilesScreenData;
+  const loadConfiguratorLoadProfileDetailScreenData =
+    screenDataController.loadConfiguratorLoadProfileDetailScreenData;
   const loadWorkoutDetailScreenData =
     screenDataController.loadWorkoutDetailScreenData;
+
+  const getRequestErrorMessage = (
+    error: unknown,
+    fallback: string,
+  ): string => {
+    if (error instanceof RequestError) {
+      return error.body?.message ?? error.message;
+    }
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message;
+    }
+    return fallback;
+  };
 
   const stopSecsTimerOnCurrentExercise = (): void => {
     secsTimerController?.stopOnCurrentExercise();
@@ -516,6 +541,7 @@ export const createApp = (
         render,
         loadAboutScreenMetadata,
         loadConfiguratorLoadProfilesScreenData,
+        loadConfiguratorLoadProfileDetailScreenData,
         loadHistoryScreenData,
         loadProgressScreenData,
         loadExercisesScreenData,
@@ -546,6 +572,135 @@ export const createApp = (
         closeConfirmDialog();
         dispatchLogout();
         return;
+      case "save-configurator-load-profile": {
+        if (state.viewState.screen !== "configurator-load-profile-detail") {
+          return;
+        }
+
+        const detail = customEvent.detail as {
+          payload?: {
+            mode?: unknown;
+            loadProfileId?: unknown;
+            request?: unknown;
+          };
+          respond?: ((result: {
+            ok: boolean;
+            errorMessage?: string;
+          }) => void) | undefined;
+        };
+        const respond = detail.respond;
+        const payload = detail.payload;
+        if (
+          !respond ||
+          !payload ||
+          (payload.mode !== "create" && payload.mode !== "edit") ||
+          !payload.request ||
+          typeof payload.request !== "object"
+        ) {
+          return;
+        }
+
+        void (async () => {
+          try {
+            const summary =
+              payload.mode === "create"
+                ? await createLoadProfile(payload.request as never)
+                : await updateLoadProfile(
+                    String(payload.loadProfileId ?? ""),
+                    payload.request as never,
+                  );
+
+            state = {
+              ...state,
+              configuratorLoadProfilesScreen: {
+                ...(state.configuratorLoadProfilesScreen ?? {
+                  loadProfiles: [],
+                  isLoading: false,
+                  errorMessage: null,
+                  hasLoaded: false,
+                }),
+                loadProfiles:
+                  payload.mode === "create"
+                    ? [
+                        ...(state.configuratorLoadProfilesScreen?.loadProfiles ?? []),
+                        summary,
+                      ]
+                    : (state.configuratorLoadProfilesScreen?.loadProfiles ?? []).map(
+                        (entry) =>
+                          entry.id === summary.id ? summary : entry,
+                      ),
+              },
+              viewState: { screen: "configurator-load-profiles" },
+            };
+            render();
+            respond({ ok: true });
+            void loadConfiguratorLoadProfilesScreenData();
+          } catch (error) {
+            respond({
+              ok: false,
+              errorMessage: getRequestErrorMessage(
+                error,
+                "Unable to save load profile right now.",
+              ),
+            });
+          }
+        })();
+        return;
+      }
+      case "delete-configurator-load-profile": {
+        if (state.viewState.screen !== "configurator-load-profile-detail") {
+          return;
+        }
+
+        const detail = customEvent.detail as {
+          payload?: { loadProfileId?: unknown };
+          respond?: ((result: {
+            ok: boolean;
+            errorMessage?: string;
+          }) => void) | undefined;
+        };
+        const respond = detail.respond;
+        const loadProfileId =
+          typeof detail.payload?.loadProfileId === "string"
+            ? detail.payload.loadProfileId
+            : "";
+        if (!respond || loadProfileId.trim().length === 0) {
+          return;
+        }
+
+        void (async () => {
+          try {
+            await deleteLoadProfile(loadProfileId);
+            state = {
+              ...state,
+              configuratorLoadProfilesScreen: {
+                ...(state.configuratorLoadProfilesScreen ?? {
+                  loadProfiles: [],
+                  isLoading: false,
+                  errorMessage: null,
+                  hasLoaded: false,
+                }),
+                loadProfiles: (
+                  state.configuratorLoadProfilesScreen?.loadProfiles ?? []
+                ).filter((entry) => entry.id !== loadProfileId),
+              },
+              viewState: { screen: "configurator-load-profiles" },
+            };
+            render();
+            respond({ ok: true });
+            void loadConfiguratorLoadProfilesScreenData();
+          } catch (error) {
+            respond({
+              ok: false,
+              errorMessage: getRequestErrorMessage(
+                error,
+                "Unable to delete load profile right now.",
+              ),
+            });
+          }
+        })();
+        return;
+      }
       case "start-workout":
         void orchestrator.startWorkout();
         return;

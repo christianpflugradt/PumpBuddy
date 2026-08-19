@@ -9,6 +9,9 @@ type Dependencies = {
   render: () => void;
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
+  loadConfiguratorLoadProfileDetailScreenData: (
+    loadProfileId: string,
+  ) => Promise<void>;
   loadHistoryScreenData: () => Promise<void>;
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
@@ -146,6 +149,7 @@ export const handleScreenNavigationAction = (
     render,
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
+    loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,
@@ -201,6 +205,12 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
+        configuratorLoadProfileDetailScreen: {
+          loadProfileId: null,
+          detail: null,
+          isLoading: false,
+          errorMessage: null,
+        },
         viewState: { screen: "configurator-load-profile-detail", loadProfileId: null },
       });
       render();
@@ -231,9 +241,16 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
+        configuratorLoadProfileDetailScreen: {
+          loadProfileId,
+          detail: null,
+          isLoading: true,
+          errorMessage: null,
+        },
         viewState: { screen: "configurator-load-profile-detail", loadProfileId },
       });
       render();
+      void loadConfiguratorLoadProfileDetailScreenData(loadProfileId);
       return true;
     }
     case "navigate-back-from-configurator-load-profile-detail": {

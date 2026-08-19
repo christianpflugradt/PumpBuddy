@@ -202,6 +202,11 @@ pb-app-root,
   text-align: left;
 }
 
+.configurator-load-profile-editor-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
 .configurator-load-profile-create-button,
 .configurator-load-profile-back-button {
   width: 100%;
@@ -321,6 +326,118 @@ pb-app-root,
 .configurator-load-profile-usage {
   color: var(--text-secondary);
   font-size: 0.84rem;
+}
+
+.configurator-load-profile-editor-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-card);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 36%),
+    color-mix(in srgb, var(--surface-card) 92%, black 8%);
+  box-shadow: 0 0.9rem 1.8rem rgba(15, 23, 42, 0.16);
+}
+
+.configurator-load-profile-editor-note {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, var(--border-card) 60%);
+  border-radius: 0.85rem;
+  background: rgba(245, 158, 11, 0.08);
+  color: #fde68a;
+  font-size: 0.88rem;
+}
+
+.configurator-load-profile-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.configurator-load-profile-field-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.configurator-load-profile-field-label,
+.configurator-load-profile-preview-label {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.configurator-load-profile-input,
+.configurator-load-profile-select,
+.configurator-load-profile-textarea {
+  width: 100%;
+  border: 1px solid var(--border-panel);
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.24);
+  color: var(--text-strong);
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+}
+
+.configurator-load-profile-textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.configurator-load-profile-field-error {
+  color: #fda4af;
+  font-size: 0.82rem;
+}
+
+.configurator-load-profile-preview {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--border-panel);
+  border-radius: 0.9rem;
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.configurator-load-profile-preview-values {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 0.9rem;
+}
+
+.configurator-load-profile-editor-actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.configurator-load-profile-save-button,
+.configurator-load-profile-delete-button {
+  width: 100%;
+  border-radius: 0.95rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.configurator-load-profile-save-button {
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 65%, var(--border-panel) 35%);
+  background:
+    linear-gradient(135deg, rgba(249, 115, 22, 0.24), rgba(249, 115, 22, 0.08)),
+    color-mix(in srgb, var(--surface-card) 92%, black 8%);
+  color: #fff7ed;
+}
+
+.configurator-load-profile-delete-button {
+  border: 1px solid color-mix(in srgb, #fb7185 45%, var(--border-panel) 55%);
+  background: rgba(127, 29, 29, 0.22);
+  color: #ffe4e6;
+}
+
+@media (min-width: 42rem) {
+  .configurator-load-profile-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .about-screen {

@@ -29,6 +29,35 @@ export type LoadProfileSummary = {
   station_count: number;
 };
 
+export type LoadProfileDefinition = {
+  kind: "fixed_list" | "formula";
+  values?: number[];
+  min?: number;
+  step?: number;
+};
+
+export type LoadProfileDetailResponse = {
+  id: string;
+  name: string;
+  status: "new" | "active" | "inactive";
+  weight_unit: "KG" | "LBS";
+  station_count: number;
+  definition: LoadProfileDefinition;
+  possible_loads_kg: number[];
+};
+
+export type LoadProfileCreateRequest = {
+  name: string;
+  weight_unit: "KG" | "LBS";
+  definition: LoadProfileDefinition;
+};
+
+export type LoadProfileUpdateRequest = {
+  name: string;
+  weight_unit?: "KG" | "LBS";
+  definition?: LoadProfileDefinition;
+};
+
 export type GymStationOption = {
   station_id: string;
   station_name: string;

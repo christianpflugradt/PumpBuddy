@@ -14,6 +14,12 @@ describe("pb-app-root", () => {
       errorMessage: null,
       hasLoaded: false,
     },
+    configuratorLoadProfileDetailScreen: {
+      loadProfileId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+    },
     historyScreen: {
       workouts: [],
       isLoading: false,
@@ -251,6 +257,23 @@ describe("pb-app-root", () => {
       errorMessage: null,
       hasLoaded: true,
     };
+    state.configuratorLoadProfileDetailScreen = {
+      loadProfileId: "profile-1",
+      detail: {
+        id: "profile-1",
+        name: "Alpha Draft",
+        status: "new",
+        weight_unit: "KG",
+        station_count: 0,
+        definition: {
+          kind: "fixed_list",
+          values: [20, 25, 30],
+        },
+        possible_loads_kg: [20, 25, 30],
+      },
+      isLoading: false,
+      errorMessage: null,
+    };
     state.viewState = {
       screen: "configurator-load-profile-detail",
       loadProfileId: "profile-1",
@@ -258,7 +281,7 @@ describe("pb-app-root", () => {
 
     el.state = state;
 
-    const configuratorEl = el.querySelector("pb-configurator-load-profiles-screen");
+    const configuratorEl = el.querySelector("pb-configurator-load-profile-editor-screen");
     expect(configuratorEl).toBeTruthy();
     expect(configuratorEl?.textContent ?? "").toContain("Alpha Draft");
   });

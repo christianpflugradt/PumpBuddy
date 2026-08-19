@@ -50,6 +50,11 @@ import {
   registerPbConfiguratorLoadProfilesScreen,
   type ConfiguratorLoadProfilesScreenState,
 } from "./pb-configurator-load-profiles-screen";
+import {
+  pbConfiguratorLoadProfileEditorScreenTag,
+  registerPbConfiguratorLoadProfileEditorScreen,
+  type ConfiguratorLoadProfileEditorScreenState,
+} from "./pb-configurator-load-profile-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -76,6 +81,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbExerciseVariantDetailScreen();
     registerPbWorkoutDetailScreen();
     registerPbConfiguratorLoadProfilesScreen();
+    registerPbConfiguratorLoadProfileEditorScreen();
     this.#render();
   }
 
@@ -129,20 +135,20 @@ class PbAppRootElement extends HTMLElement {
 
     if (state.viewState.screen === "configurator-load-profile-detail") {
       const loadProfileId = state.viewState.loadProfileId;
-      const el = document.createElement(pbConfiguratorLoadProfilesScreenTag) as HTMLElement & {
-        state: ConfiguratorLoadProfilesScreenState;
+      const detailState =
+        loadProfileId === null ||
+        state.configuratorLoadProfileDetailScreen?.loadProfileId === loadProfileId
+          ? state.configuratorLoadProfileDetailScreen
+          : null;
+      const el = document.createElement(pbConfiguratorLoadProfileEditorScreenTag) as HTMLElement & {
+        state: ConfiguratorLoadProfileEditorScreenState;
       };
       el.state = {
-        mode: loadProfileId === null ? "create" : "detail",
+        mode: loadProfileId === null ? "create" : "edit",
         loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [],
-        selectedLoadProfile:
-          loadProfileId === null
-            ? null
-            : state.configuratorLoadProfilesScreen?.loadProfiles.find(
-                (loadProfile) => loadProfile.id === loadProfileId,
-              ) ?? null,
-        isLoading: false,
-        errorMessage: null,
+        detail: loadProfileId === null ? null : detailState?.detail ?? null,
+        isLoading: detailState?.isLoading ?? false,
+        errorMessage: detailState?.errorMessage ?? null,
       };
       container.append(el);
       return;

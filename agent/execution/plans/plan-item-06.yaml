@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/open-item-06.yaml
+  item_path: agent/execution/items/review-item-06.yaml
   title: Plan draft load profile authoring flows
 summary:
   goal: Add dedicated full-screen renderer flows for creating, editing, and deleting
@@ -38,8 +38,8 @@ implementation_approach:
   prefill, definition-kind switching, invalid-input resilience, backend-save failure
   retention, and draft-delete navigation back to the load-profile list.
 risks_and_assumptions:
-- 'Assume item `05` lands first and provides persisted draft detail data for edit
-  prefill; do not try to derive edit state from list summaries.'
+- Assume item `05` lands first and provides persisted draft detail data for edit prefill;
+  do not try to derive edit state from list summaries.
 - 'Risk: switching between `fixed_list` and `formula` drafts can accidentally leak
   stale fields across variants; keep the screen state explicit about variant-owned
   inputs and reset rules.'

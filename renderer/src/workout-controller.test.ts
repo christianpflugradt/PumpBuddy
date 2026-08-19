@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
+  createLoadProfile,
+  deleteLoadProfile,
   loadActiveWorkout,
   loadGymDetail,
   loadGymSummaries,
+  loadLoadProfileDetail,
   loadLoadProfileSummaries,
   loadStationDetail,
   loadStartScreenData,
@@ -13,6 +16,7 @@ import {
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
+  updateLoadProfile,
 } from "./workout-api";
 import type {
   ActiveWorkoutResponse,
@@ -23,6 +27,7 @@ import type {
   TrainingPlanExerciseVariantsResponse,
 } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
+import { RequestError } from "./workout-api";
 
 const createOrchestratorSpies = () => ({
   bootstrapStartScreen: vi.fn(async () => {}),
@@ -63,8 +68,11 @@ vi.mock("./workout-api", async () => {
   return {
     ...actual,
     loadActiveWorkout: vi.fn(),
+    createLoadProfile: vi.fn(),
+    deleteLoadProfile: vi.fn(),
     loadGymDetail: vi.fn(),
     loadGymSummaries: vi.fn(),
+    loadLoadProfileDetail: vi.fn(),
     loadLoadProfileSummaries: vi.fn(),
     loadStationDetail: vi.fn(),
     loadStartScreenData: vi.fn(),
@@ -74,12 +82,16 @@ vi.mock("./workout-api", async () => {
     loadWorkoutExercisesPerformance: vi.fn(),
     loadWorkoutHistory: vi.fn(),
     loadWorkoutProgress: vi.fn(),
+    updateLoadProfile: vi.fn(),
   };
 });
 
+const createLoadProfileMock = vi.mocked(createLoadProfile);
+const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
+const loadLoadProfileDetailMock = vi.mocked(loadLoadProfileDetail);
 const loadLoadProfileSummariesMock = vi.mocked(loadLoadProfileSummaries);
 const loadStationDetailMock = vi.mocked(loadStationDetail);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
@@ -91,6 +103,7 @@ const loadWorkoutExercisesPerformanceMock = vi.mocked(
 );
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
+const updateLoadProfileMock = vi.mocked(updateLoadProfile);
 let fetchMock: ReturnType<typeof vi.fn>;
 
 const flush = async (): Promise<void> => {
@@ -422,13 +435,42 @@ describe("workout-controller (createApp)", () => {
     loadWorkoutHistoryMock.mockResolvedValue([]);
     loadWorkoutProgressMock.mockResolvedValue({ workouts: [] });
     loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
+    createLoadProfileMock.mockResolvedValue({
+      id: "created-profile",
+      name: "Created Draft",
+      status: "new",
+      definition_kind: "fixed_list",
+      weight_unit: "KG",
+      station_count: 0,
+    });
+    deleteLoadProfileMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
+    loadLoadProfileDetailMock.mockResolvedValue({
+      id: "profile-1",
+      name: "Alpha Draft",
+      status: "new",
+      weight_unit: "KG",
+      station_count: 0,
+      definition: {
+        kind: "fixed_list",
+        values: [20, 25],
+      },
+      possible_loads_kg: [20, 25],
+    });
     loadGymDetailMock.mockResolvedValue(createGymDetail());
     loadTrainingPlanSummariesMock.mockResolvedValue([]);
     loadTrainingPlanDetailMock.mockResolvedValue(createTrainingPlanDetail());
     loadStationDetailMock.mockImplementation(
       async (_fetchJson, _gymId, stationId) => createStationDetail(stationId),
     );
+    updateLoadProfileMock.mockResolvedValue({
+      id: "profile-1",
+      name: "Alpha Draft Updated",
+      status: "new",
+      definition_kind: "formula",
+      weight_unit: "LBS",
+      station_count: 0,
+    });
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -678,6 +720,153 @@ describe("workout-controller (createApp)", () => {
       screen: "configurator-load-profile-detail",
       loadProfileId: "profile-1",
     });
+    expect(loadLoadProfileDetailMock).toHaveBeenCalledWith(expect.any(Function), "profile-1");
+  });
+
+  it("saves a draft load profile and returns to the configurator list", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+
+    loadLoadProfileSummariesMock.mockResolvedValue([]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    dispatchAction(app, "start-configurator-load-profile-create");
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-load-profile",
+      payload: {
+        mode: "create",
+        loadProfileId: null,
+        request: {
+          name: "Created Draft",
+          weight_unit: "KG",
+          definition: {
+            kind: "fixed_list",
+            values: [20, 25],
+          },
+        },
+      },
+      respond,
+    });
+
+    await flush();
+
+    expect(createLoadProfileMock).toHaveBeenCalledWith({
+      name: "Created Draft",
+      weight_unit: "KG",
+      definition: {
+        kind: "fixed_list",
+        values: [20, 25],
+      },
+    });
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+  });
+
+  it("keeps editor state in place when draft save fails", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+
+    updateLoadProfileMock.mockRejectedValueOnce(
+      new RequestError(409, { message: "Name must be unique." }),
+    );
+    loadLoadProfileSummariesMock.mockResolvedValue([
+      {
+        id: "profile-1",
+        name: "Alpha Draft",
+        status: "new",
+        definition_kind: "fixed_list",
+        weight_unit: "KG",
+        station_count: 0,
+      },
+    ]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-load-profile-detail",
+      payload: { loadProfileId: "profile-1" },
+    });
+    await flush();
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-load-profile",
+      payload: {
+        mode: "edit",
+        loadProfileId: "profile-1",
+        request: {
+          name: "Alpha Draft",
+          weight_unit: "KG",
+          definition: {
+            kind: "fixed_list",
+            values: [20, 25],
+          },
+        },
+      },
+      respond,
+    });
+
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({
+      ok: false,
+      errorMessage: "Name must be unique.",
+    });
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-load-profile-detail",
+      loadProfileId: "profile-1",
+    });
+  });
+
+  it("deletes a draft load profile and returns to the configurator list", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+
+    loadLoadProfileSummariesMock.mockResolvedValue([
+      {
+        id: "profile-1",
+        name: "Alpha Draft",
+        status: "new",
+        definition_kind: "fixed_list",
+        weight_unit: "KG",
+        station_count: 0,
+      },
+    ]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-load-profile-detail",
+      payload: { loadProfileId: "profile-1" },
+    });
+    await flush();
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "delete-configurator-load-profile",
+      payload: { loadProfileId: "profile-1" },
+      respond,
+    });
+
+    await flush();
+
+    expect(deleteLoadProfileMock).toHaveBeenCalledWith("profile-1");
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
   });
 
   it("persists successful side-menu middle navigation counts through authenticated session preferences", async () => {

@@ -4,6 +4,9 @@ import type {
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
   CreateActiveWorkoutRequest,
+  LoadProfileCreateRequest,
+  LoadProfileDetailResponse,
+  LoadProfileUpdateRequest,
   ErrorResponse,
   CreateWorkoutRequest,
   GymDetailResponse,
@@ -30,6 +33,8 @@ import {
   parseGymDetailResponse,
   parseGymStationDetailResponse,
   parseGymSummaries,
+  parseLoadProfileDetailResponse,
+  parseLoadProfileSummary,
   parseLoadProfileSummaries,
   parseTrainingPlanDetailResponse,
   parseTrainingPlanOptionsResponse,
@@ -42,6 +47,8 @@ import {
   serializeCompleteActiveWorkoutRequest,
   serializeConfirmActiveWorkoutSetRequest,
   serializeCreateActiveWorkoutRequest,
+  serializeLoadProfileCreateRequest,
+  serializeLoadProfileUpdateRequest,
   serializeCreateWorkoutRequest,
   serializeReopenActiveWorkoutExerciseRequest,
   serializeSelectActiveWorkoutExerciseOptionRequest,
@@ -153,6 +160,16 @@ export const loadLoadProfileSummaries = async (
   fetchJson: FetchJson,
 ): Promise<LoadProfileSummary[]> =>
   parseLoadProfileSummaries(await fetchJson<unknown>("/api/load-profiles"));
+
+export const loadLoadProfileDetail = async (
+  fetchJson: FetchJson,
+  loadProfileId: string,
+): Promise<LoadProfileDetailResponse> =>
+  parseLoadProfileDetailResponse(
+    await fetchJson<unknown>(
+      `/api/load-profiles/${encodeURIComponent(loadProfileId)}`,
+    ),
+  );
 
 export const loadGymDetail = async (
   fetchJson: FetchJson,
@@ -380,4 +397,75 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
         ),
       ),
   };
+};
+
+const submitLoadProfileRequest = async <T>(
+  fetchImpl: typeof fetch,
+  input: string,
+  method: string,
+  payload: unknown,
+  parse: (json: unknown) => T,
+): Promise<T> => {
+  const response = await fetchImpl(input, {
+    method,
+    headers: {
+      "content-type": "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      dispatchUnauthorized();
+    }
+    throw new RequestError(response.status, await parseErrorResponse(response));
+  }
+
+  return parse(await response.json());
+};
+
+export const createLoadProfile = async (
+  payload: LoadProfileCreateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LoadProfileSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    "/api/load-profiles",
+    "POST",
+    serializeLoadProfileCreateRequest(payload),
+    parseLoadProfileSummary,
+  );
+
+export const updateLoadProfile = async (
+  loadProfileId: string,
+  payload: LoadProfileUpdateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LoadProfileSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/load-profiles/${encodeURIComponent(loadProfileId)}`,
+    "PATCH",
+    serializeLoadProfileUpdateRequest(payload),
+    parseLoadProfileSummary,
+  );
+
+export const deleteLoadProfile = async (
+  loadProfileId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> => {
+  const response = await fetchImpl(
+    `/api/load-profiles/${encodeURIComponent(loadProfileId)}`,
+    {
+      method: "DELETE",
+      credentials: "same-origin",
+    },
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      dispatchUnauthorized();
+    }
+    throw new RequestError(response.status, await parseErrorResponse(response));
+  }
 };

@@ -17,7 +17,11 @@ import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/Er
 import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
 import { GymStationDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymStationDetailResponse";
 import { GymSummaryFromJSON } from "../generated/openapi/typescript/models/GymSummary";
+import { LoadProfileCreateRequestToJSON } from "../generated/openapi/typescript/models/LoadProfileCreateRequest";
+import { LoadProfileDetailResponseFromJSON } from "../generated/openapi/typescript/models/LoadProfileDetailResponse";
+import { LoadProfileDefinitionToJSON } from "../generated/openapi/typescript/models/LoadProfileDefinition";
 import { LoadProfileSummaryFromJSON } from "../generated/openapi/typescript/models/LoadProfileSummary";
+import { LoadProfileUpdateRequestToJSON } from "../generated/openapi/typescript/models/LoadProfileUpdateRequest";
 import { TrainingPlanDetailResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanDetailResponse";
 import type { TrainingPlanExerciseVariantSummary as OpenApiTrainingPlanExerciseVariantSummary } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantSummary";
 import { TrainingPlanExerciseVariantsResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantsResponse";
@@ -43,7 +47,11 @@ import type {
   GymDetailResponse,
   GymStationDetailResponse,
   GymSummary,
+  LoadProfileCreateRequest,
+  LoadProfileDefinition,
+  LoadProfileDetailResponse,
   LoadProfileSummary,
+  LoadProfileUpdateRequest,
   PlanExerciseOptionSummary,
   ReopenActiveWorkoutExerciseRequest,
   SelectActiveWorkoutExerciseOptionRequest,
@@ -152,6 +160,16 @@ export const parseGymSummaries = (json: unknown): GymSummary[] =>
 export const parseLoadProfileSummaries = (json: unknown): LoadProfileSummary[] =>
   requireJsonArray(json).map((entry) =>
     toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(entry)),
+  );
+
+export const parseLoadProfileSummary = (json: unknown): LoadProfileSummary =>
+  toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(json));
+
+export const parseLoadProfileDetailResponse = (
+  json: unknown,
+): LoadProfileDetailResponse =>
+  toRendererModel<LoadProfileDetailResponse>(
+    LoadProfileDetailResponseFromJSON(json),
   );
 
 export const parseGymDetailResponse = (json: unknown): GymDetailResponse =>
@@ -344,6 +362,18 @@ export const serializeAuthUpdatePasswordRequest = (payload: {
     new_password: payload.new_password,
     confirm_new_password: payload.confirm_new_password,
   });
+
+export const serializeLoadProfileDefinition = (
+  payload: LoadProfileDefinition,
+): unknown => LoadProfileDefinitionToJSON(payload);
+
+export const serializeLoadProfileCreateRequest = (
+  payload: LoadProfileCreateRequest,
+): unknown => LoadProfileCreateRequestToJSON(payload);
+
+export const serializeLoadProfileUpdateRequest = (
+  payload: LoadProfileUpdateRequest,
+): unknown => LoadProfileUpdateRequestToJSON(payload);
 
 export const serializeCreateActiveWorkoutRequest = (
   payload: CreateActiveWorkoutRequest,
