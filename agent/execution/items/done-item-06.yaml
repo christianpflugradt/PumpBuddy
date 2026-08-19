@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-06
   title: Add draft load profile detail authoring flows
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,4 +72,31 @@ handoff:
   - Form-state handling for variant-specific inputs and detail-payload prefill behavior.
   - Navigation cleanup after save and delete operations on narrow screens.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The renderer now supports dedicated full-screen draft load-profile
+      create and edit flows, prefills existing draft values from the authenticated
+      detail payload for fixed-list and formula definitions, preserves invalid-input
+      resilience through local validation, and exposes draft deletion from the editor
+      route with return to the configurator list.
+    evidence: renderer/src/pb-configurator-load-profile-editor-screen.ts implements
+      the full-screen editor with draft-only editing rules, unique-name and definition
+      validation, fixed-list and formula field handling, detail-based prefill, and
+      delete/save actions; renderer/src/pb-app-root.ts renders the dedicated editor
+      route and passes list plus detail state into it; renderer/src/workout-controller-navigation.ts
+      and renderer/src/workout-controller-screen-data.ts open the create and edit
+      routes, load persisted detail data through GET /api/load-profiles/{loadProfileId},
+      and return users to the configurator list; renderer/src/workout-controller.ts
+      wires create, update, and delete API actions plus optimistic list refresh; renderer/src/pb-configurator-load-profile-editor-screen.test.ts,
+      renderer/src/workout-controller.test.ts, renderer/src/workout-controller-screen-data.test.ts,
+      and renderer/src/pb-app-root.test.ts cover prefill, validation, create/edit
+      navigation, save failure retention, delete navigation, and detail hydration.
+    runtime_build_check: No manual quality command was run during review per task
+      guidance; accept-finalize is expected to execute the deterministic renderer
+      quality gate for the implementation commit.
+    residual_risk: Formula authoring coverage is narrower than the fixed-list path
+      in controller-level tests, so future regressions around definition-kind switching
+      would benefit from additional targeted cases, but the implemented behavior required
+      by this item is present and contract-aligned within current scope.
+  findings: []
