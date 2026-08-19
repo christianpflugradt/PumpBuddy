@@ -89,7 +89,10 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     const saveButton = el.querySelector(
       '[data-ui-action="save-load-profile"]',
     ) as HTMLButtonElement;
-    saveButton.click();
+    const reopenedSaveButton = el.querySelector(
+      '[data-ui-action="save-load-profile"]',
+    ) as HTMLButtonElement | null;
+    reopenedSaveButton?.click();
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
@@ -153,5 +156,109 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
       loadProfileId: "profile-1",
     });
+  });
+
+  it("keeps historical definition fields read-only and only emits rename save after warning confirmation", () => {
+    const el = document.createElement(
+      pbConfiguratorLoadProfileEditorScreenTag,
+    ) as HTMLElement & {
+      state: ConfiguratorLoadProfileEditorScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      detail: {
+        ...createState().detail!,
+        status: "active",
+      },
+      loadProfiles: [
+        {
+          id: "profile-1",
+          name: "Alpha Draft",
+          status: "active",
+          definition_kind: "fixed_list",
+          weight_unit: "KG",
+          station_count: 1,
+        },
+      ],
+    };
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    expect((el.querySelector('[data-field="weight-unit"]') as HTMLSelectElement).disabled).toBe(true);
+    expect((el.querySelector('[data-field="definition-kind"]') as HTMLSelectElement).disabled).toBe(true);
+    expect((el.querySelector('[data-field="fixed-list"]') as HTMLTextAreaElement).disabled).toBe(true);
+    expect(el.textContent ?? "").toContain("Only the name can change");
+
+    const nameInput = el.querySelector('[data-field="name"]') as HTMLInputElement;
+    nameInput.value = "Alpha Historical";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const saveButton = el.querySelector('[data-ui-action="save-load-profile"]') as HTMLButtonElement;
+    saveButton.click();
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(el.textContent ?? "").toContain("historical workouts are understood");
+
+    const keepEditingButton = Array.from(el.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim() === "Keep Editing",
+    ) as HTMLButtonElement | undefined;
+    keepEditingButton?.click();
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(el.textContent ?? "").not.toContain("historical workouts are understood");
+
+    const reopenedSaveButton = el.querySelector(
+      '[data-ui-action="save-load-profile"]',
+    ) as HTMLButtonElement | null;
+    reopenedSaveButton?.click();
+    const confirmButton = el.querySelector(
+      '.confirm-dialog [data-ui-action="save-load-profile"]',
+    ) as HTMLButtonElement | null;
+    confirmButton?.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
+      mode: "edit",
+      loadProfileId: "profile-1",
+      request: {
+        name: "Alpha Historical",
+      },
+    });
+  });
+
+  it("opens preview loads in a station-detail-style popup and closes only from the close button", () => {
+    const el = document.createElement(
+      pbConfiguratorLoadProfileEditorScreenTag,
+    ) as HTMLElement & {
+      state: ConfiguratorLoadProfileEditorScreenState;
+    };
+    document.body.append(el);
+    el.state = createState();
+
+    const inspectButton = el.querySelector(
+      '[data-ui-action="open-load-profile-preview"]',
+    ) as HTMLButtonElement | null;
+    inspectButton?.click();
+
+    const dialog = el.querySelector('[role="dialog"]');
+    expect(dialog?.textContent ?? "").toContain("Alpha Draft");
+    expect(dialog?.textContent ?? "").toContain("20 kg");
+    expect(dialog?.textContent ?? "").toContain("25 kg");
+    expect(
+      el.querySelectorAll(".station-load-profile-value button, .station-load-profile-value input, .station-load-profile-value select, .station-load-profile-value textarea"),
+    ).toHaveLength(0);
+
+    const backdrop = el.querySelector(".station-load-profile-dialog-backdrop") as HTMLElement;
+    backdrop.click();
+    expect(el.querySelector('[role="dialog"]')?.textContent ?? "").toContain("Alpha Draft");
+
+    const closeButton = el.querySelector(
+      '[data-ui-action="dismiss-load-profile-preview"]',
+    ) as HTMLButtonElement | null;
+    closeButton?.click();
+
+    expect(el.querySelector(".station-load-profile-dialog")).toBeNull();
   });
 });

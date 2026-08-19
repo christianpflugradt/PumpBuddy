@@ -60,6 +60,9 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const escapeAttribute = (value: string): string =>
+  escapeHtml(value).replaceAll("`", "&#96;");
+
 const formatPreviewLoads = (values: number[]): string => {
   if (values.length === 0) {
     return "No preview loads yet.";
@@ -67,6 +70,35 @@ const formatPreviewLoads = (values: number[]): string => {
 
   return values.map((value) => `${value} kg`).join(" · ");
 };
+
+const pluralize = (count: number, singular: string, plural = `${singular}s`): string =>
+  `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, Math.floor(count)))} ${
+    Math.floor(count) === 1 ? singular : plural
+  }`;
+
+const formatLoadRange = (loads: number[]): string => {
+  if (loads.length === 0) {
+    return "No loads provided";
+  }
+
+  const sortedLoads = [...loads].sort((left, right) => left - right);
+  const first = sortedLoads[0]!;
+  const last = sortedLoads[sortedLoads.length - 1]!;
+  if (first === last) {
+    return `${first} kg`;
+  }
+
+  return `${first} kg - ${last} kg`;
+};
+
+const renderInspectLoadsIcon = (): string => `
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path
+      d="M7.1 2.25a4.85 4.85 0 1 0 3.03 8.63l2.74 2.75 1.06-1.06-2.75-2.74A4.85 4.85 0 0 0 7.1 2.25Zm0 1.5a3.35 3.35 0 1 1 0 6.7 3.35 3.35 0 0 1 0-6.7Z"
+      fill="currentColor"
+    ></path>
+  </svg>
+`;
 
 const parseNumericDraft = (value: string): number | null => {
   const trimmed = value.trim();
@@ -121,6 +153,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
   #submitError: string | null = null;
   #isSaving = false;
   #isDeleting = false;
+  #previewPopupOpen = false;
+  #renameWarningOpen = false;
 
   connectedCallback(): void {
     this.#render();
@@ -148,6 +182,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       this.#submitError = null;
       this.#isSaving = false;
       this.#isDeleting = false;
+      this.#previewPopupOpen = false;
+      this.#renameWarningOpen = false;
       if (value.mode === "create") {
         this.#nameDraft = "";
         this.#weightUnitDraft = "KG";
@@ -231,6 +267,18 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     return this.#state.mode === "create" || this.#state.detail?.status === "new";
   }
 
+  #isHistoricalProfile(): boolean {
+    return this.#state.detail?.status === "active" || this.#state.detail?.status === "inactive";
+  }
+
+  #hasHistoricalRenameChange(): boolean {
+    if (!this.#isHistoricalProfile() || !this.#state.detail) {
+      return false;
+    }
+
+    return this.#nameDraft.trim() !== this.#state.detail.name.trim();
+  }
+
   #buildRequest(): LoadProfileCreateRequest | LoadProfileUpdateRequest | null {
     const nameError = this.#getNameError();
     const definitionError = this.#getDefinitionError();
@@ -292,7 +340,15 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
         return;
       }
 
+      if (this.#isHistoricalProfile() && this.#hasHistoricalRenameChange() && !this.#renameWarningOpen) {
+        this.#renameWarningOpen = true;
+        this.#submitError = null;
+        this.#render();
+        return;
+      }
+
       this.#isSaving = true;
+      this.#renameWarningOpen = false;
       this.#submitError = null;
       this.#render();
 
@@ -341,6 +397,27 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
         },
       });
       this.dispatchEvent(deleteEvent);
+      return;
+    }
+
+    if (action === "open-load-profile-preview") {
+      if (!this.#state.detail || this.#state.detail.possible_loads_kg.length === 0) {
+        return;
+      }
+      this.#previewPopupOpen = true;
+      this.#render();
+      return;
+    }
+
+    if (action === "dismiss-load-profile-preview") {
+      this.#previewPopupOpen = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "dismiss-historical-rename-warning") {
+      this.#renameWarningOpen = false;
+      this.#render();
       return;
     }
 
@@ -416,8 +493,14 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     const nameError = this.#getNameError();
     const definitionError = this.#getDefinitionError();
     const isEditable = this.#isDraftEditable();
+    const isHistoricalProfile = this.#isHistoricalProfile();
+    const historicalRenameChanged = this.#hasHistoricalRenameChange();
     const saveDisabled =
-      !isEditable || !!nameError || !!definitionError || this.#isSaving || this.#isDeleting;
+      !!nameError ||
+      !!definitionError ||
+      this.#isSaving ||
+      this.#isDeleting ||
+      (isHistoricalProfile && !historicalRenameChanged);
     const canDelete = this.#state.mode === "edit" && this.#state.detail?.status === "new";
 
     return `
@@ -426,7 +509,11 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           !isEditable
             ? `
               <p class="configurator-load-profile-editor-note" role="note">
-                Only draft load profiles are editable in this flow right now.
+                ${
+                  isHistoricalProfile
+                    ? "This historical load profile keeps its definition and weight unit read-only. Only the name can change after a warning-confirmed save."
+                    : "Only draft load profiles are editable in this flow right now."
+                }
               </p>
             `
             : ""
@@ -518,7 +605,29 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           this.#state.detail
             ? `
               <section class="configurator-load-profile-preview">
-                <p class="configurator-load-profile-preview-label">Preview Loads</p>
+                <div class="station-load-profile-summary">
+                  <div>
+                    <dt>Preview</dt>
+                    <dd>${escapeHtml(pluralize(this.#state.detail.possible_loads_kg.length, "possible load"))}</dd>
+                  </div>
+                  <div>
+                    <dt>Range</dt>
+                    <dd class="station-load-profile-range">
+                      <span class="station-load-profile-range-text">${escapeHtml(
+                        formatLoadRange(this.#state.detail.possible_loads_kg),
+                      )}</span>
+                      <button
+                        type="button"
+                        class="station-load-profile-inspect-button"
+                        data-ui-action="open-load-profile-preview"
+                        aria-label="Inspect preview loads"
+                        ${this.#state.detail.possible_loads_kg.length > 0 ? "" : "disabled"}
+                      >
+                        <span class="station-load-profile-inspect-icon">${renderInspectLoadsIcon()}</span>
+                      </button>
+                    </dd>
+                  </div>
+                </div>
                 <p class="configurator-load-profile-preview-values">${escapeHtml(
                   formatPreviewLoads(this.#state.detail.possible_loads_kg),
                 )}</p>
@@ -540,7 +649,13 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
             data-ui-action="save-load-profile"
             ${saveDisabled ? "disabled" : ""}
           >
-            ${this.#isSaving ? "Saving..." : "Save Draft"}
+            ${
+              this.#isSaving
+                ? "Saving..."
+                : isHistoricalProfile
+                  ? "Save Name"
+                  : "Save Draft"
+            }
           </button>
           ${
             canDelete
@@ -557,6 +672,90 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
               : ""
           }
         </div>
+      </div>
+    `;
+  }
+
+  #renderPreviewPopup(): string {
+    if (!this.#previewPopupOpen || !this.#state.detail) {
+      return "";
+    }
+
+    const loads = this.#state.detail.possible_loads_kg;
+
+    return `
+      <div class="station-load-profile-dialog-layer">
+        <div class="station-load-profile-dialog-backdrop" aria-hidden="true"></div>
+        <section
+          class="station-load-profile-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="configurator-load-profile-preview-title"
+        >
+          <header class="station-load-profile-dialog-header">
+            <div>
+              <h3 id="configurator-load-profile-preview-title" class="station-load-profile-dialog-title">${escapeHtml(this.#state.detail.name)}</h3>
+              <p class="station-load-profile-dialog-subtitle">${escapeHtml(pluralize(loads.length, "possible load"))}</p>
+            </div>
+            <button
+              type="button"
+              class="station-load-profile-dialog-close"
+              data-ui-action="dismiss-load-profile-preview"
+              aria-label="Close load profile preview"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </header>
+          <ol class="station-load-profile-value-list" aria-label="Possible loads">
+            ${loads
+              .map(
+                (loadValue) => `
+                  <li class="station-load-profile-value">
+                    <span>${escapeHtml(`${loadValue} kg`)}</span>
+                  </li>
+                `,
+              )
+              .join("")}
+          </ol>
+        </section>
+      </div>
+    `;
+  }
+
+  #renderHistoricalRenameWarning(): string {
+    if (!this.#renameWarningOpen || !this.#isHistoricalProfile()) {
+      return "";
+    }
+
+    return `
+      <div class="confirm-dialog-layer" role="presentation">
+        <div class="confirm-dialog-backdrop" role="presentation"></div>
+        <section
+          class="confirm-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          aria-label="Historical rename warning"
+        >
+          <p class="confirm-dialog-message">
+            Renaming an active or inactive load profile can affect how historical workouts are understood. Save this name change?
+          </p>
+          <div class="confirm-dialog-actions">
+            <button
+              type="button"
+              class="nav-button"
+              data-ui-action="dismiss-historical-rename-warning"
+            >
+              Keep Editing
+            </button>
+            <button
+              type="button"
+              class="nav-button"
+              data-ui-action="save-load-profile"
+            >
+              Save Name
+            </button>
+          </div>
+        </section>
       </div>
     `;
   }
@@ -595,6 +794,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           </button>
           ${this.#renderForm()}
         </section>
+        ${this.#renderPreviewPopup()}
+        ${this.#renderHistoricalRenameWarning()}
       </div>
     `;
   }

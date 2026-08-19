@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Plan historical-profile restrictions and preview
 summary:
   goal: Finish load-profile detail behavior by enforcing read-only historical definitions,
@@ -33,8 +33,8 @@ implementation_approach:
   rename success and cancel paths, preview popup reachability, and capped preview-value
   rendering.
 risks_and_assumptions:
-- 'Assume items `03` and `05` land first so rename writes and detail-read preview
-  data are both available before this renderer work starts.'
+- Assume items `03` and `05` land first so rename writes and detail-read preview data
+  are both available before this renderer work starts.
 - 'Risk: if preview rendering drifts from the established station-detail interaction
   pattern, the configurator flow will feel inconsistent; reuse existing popup behavior
   wherever practical.'
