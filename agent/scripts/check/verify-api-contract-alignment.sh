@@ -13,7 +13,8 @@ if [ -z "${changed_files}" ]; then
 fi
 
 contract_changed="false"
-api_surface_changed="false"
+backend_api_surface_changed="false"
+renderer_api_boundary_changed="false"
 contract_only_reason="${API_CONTRACT_ONLY_REASON:-}"
 
 for file in ${changed_files}; do
@@ -21,8 +22,11 @@ for file in ${changed_files}; do
     agent/design/api-contract.yaml)
       contract_changed="true"
       ;;
-    backend/src/api/**|renderer/src/openapi-contract.ts|renderer/src/workout-contract-state.ts|renderer/src/workout-contract.ts|renderer/src/workout-api.ts)
-      api_surface_changed="true"
+    backend/src/api/**)
+      backend_api_surface_changed="true"
+      ;;
+    renderer/src/openapi-contract.ts|renderer/src/workout-contract-state.ts|renderer/src/workout-contract.ts|renderer/src/workout-api.ts)
+      renderer_api_boundary_changed="true"
       ;;
   esac
 done
@@ -36,14 +40,14 @@ if [ -z "${contract_only_reason}" ]; then
   )"
 fi
 
-if [ "${api_surface_changed}" = "true" ] && [ "${contract_changed}" != "true" ]; then
+if [ "${backend_api_surface_changed}" = "true" ] && [ "${contract_changed}" != "true" ]; then
   echo "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml" >&2
   echo "Changed files:" >&2
   printf '%s\n' "${changed_files}" >&2
   exit 41
 fi
 
-if [ "${contract_changed}" = "true" ] && [ "${api_surface_changed}" != "true" ]; then
+if [ "${contract_changed}" = "true" ] && [ "${backend_api_surface_changed}" != "true" ] && [ "${renderer_api_boundary_changed}" != "true" ]; then
   if [ -z "${contract_only_reason}" ]; then
     echo "API contract alignment failed: agent/design/api-contract.yaml changed without a matching API-surface change or API-Contract-Only-Reason trailer" >&2
     echo "Changed files:" >&2
@@ -53,6 +57,11 @@ if [ "${contract_changed}" = "true" ] && [ "${api_surface_changed}" != "true" ];
 
   echo "API_CONTRACT_ALIGNMENT=passed_contract_only_allowed"
   echo "API_CONTRACT_ONLY_REASON=${contract_only_reason}"
+  exit 0
+fi
+
+if [ "${renderer_api_boundary_changed}" = "true" ] && [ "${backend_api_surface_changed}" != "true" ] && [ "${contract_changed}" != "true" ]; then
+  echo "API_CONTRACT_ALIGNMENT=passed_renderer_boundary_consumption_only"
   exit 0
 fi
 
