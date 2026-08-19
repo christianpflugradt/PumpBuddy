@@ -1,5 +1,8 @@
 use crate::{
-    domain::{LoadProfileDefinitionInput, LoadProfileSummary, LoadProfileUpdate, NewLoadProfile},
+    domain::{
+        LoadProfileDefinitionInput, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate,
+        NewLoadProfile,
+    },
     persistence::{LoadProfileRepository, PersistenceError},
 };
 
@@ -19,6 +22,18 @@ pub(crate) async fn list_load_profiles(
         .fetch_load_profile_summaries_for_user(user_id)
         .await
         .map_err(LoadProfileServiceError::Persistence)
+}
+
+pub(crate) async fn get_load_profile(
+    repository: &(impl LoadProfileRepository + ?Sized),
+    load_profile_id: &str,
+    user_id: &str,
+) -> Result<LoadProfileDetail, LoadProfileServiceError> {
+    repository
+        .fetch_load_profile_detail_for_user(load_profile_id, user_id)
+        .await
+        .map_err(LoadProfileServiceError::Persistence)?
+        .ok_or_else(|| LoadProfileServiceError::NotFound("Load profile not found".to_owned()))
 }
 
 pub(crate) async fn create_load_profile(

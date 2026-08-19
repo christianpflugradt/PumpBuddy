@@ -1,6 +1,7 @@
 use super::{logging, DomainRepository, PersistenceError};
 use crate::domain::{
-    LoadProfileDefinitionInput, LoadProfileSummary, LoadProfileUpdate, NewLoadProfile,
+    LoadProfileDefinitionInput, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate,
+    NewLoadProfile,
 };
 use serde_json::json;
 use sqlx::{types::JsonValue, Row};
@@ -93,6 +94,38 @@ pub(super) async fn load_profile_name_exists_for_user(
     .await?;
 
     Ok(exists)
+}
+
+pub(super) async fn fetch_load_profile_detail_for_user(
+    repository: &DomainRepository,
+    load_profile_id: &str,
+    user_id: &str,
+) -> Result<Option<LoadProfileDetail>, PersistenceError> {
+    let Some(stored) =
+        fetch_stored_load_profile_for_user(repository, load_profile_id, user_id).await?
+    else {
+        return Ok(None);
+    };
+
+    let definition = definition_input_from_json(&stored.definition)?;
+    let max_load_kg = repository
+        .fetch_max_load_kg_preference_for_user(user_id)
+        .await?;
+    let possible_loads_kg = DomainRepository::load_profile_definition_to_kg_capped(
+        &stored.definition,
+        &stored.weight_unit,
+        max_load_kg,
+    )?;
+
+    Ok(Some(LoadProfileDetail {
+        id: stored.id,
+        name: stored.name,
+        status: stored.status,
+        weight_unit: stored.weight_unit,
+        station_count: stored.station_count,
+        definition,
+        possible_loads_kg,
+    }))
 }
 
 pub(super) async fn create_load_profile_for_user(
@@ -438,6 +471,49 @@ fn definition_json(definition: &LoadProfileDefinitionInput) -> JsonValue {
         _ => json!({
             "kind": definition.kind,
         }),
+    }
+}
+
+fn definition_input_from_json(
+    definition: &JsonValue,
+) -> Result<LoadProfileDefinitionInput, PersistenceError> {
+    match definition_kind(definition)? {
+        "fixed_list" => {
+            let values = definition
+                .get("values")
+                .and_then(JsonValue::as_array)
+                .ok_or_else(|| {
+                    PersistenceError::Conflict(
+                        "fixed_list definition must include numeric values array".to_string(),
+                    )
+                })?
+                .iter()
+                .enumerate()
+                .map(|(index, value)| {
+                    value.as_f64().ok_or_else(|| {
+                        PersistenceError::Conflict(format!(
+                            "fixed_list value at index {index} must be numeric"
+                        ))
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+            Ok(LoadProfileDefinitionInput {
+                kind: "fixed_list".to_owned(),
+                values: Some(values),
+                min: None,
+                step: None,
+            })
+        }
+        "formula" => Ok(LoadProfileDefinitionInput {
+            kind: "formula".to_owned(),
+            values: None,
+            min: Some(numeric_field(definition, "min")?),
+            step: Some(numeric_field(definition, "step")?),
+        }),
+        kind => Err(PersistenceError::Conflict(format!(
+            "invalid load profile definition kind: {kind}"
+        ))),
     }
 }
 

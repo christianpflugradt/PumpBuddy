@@ -37,6 +37,17 @@ pub struct LoadProfileSummary {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct LoadProfileDetail {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    pub weight_unit: String,
+    pub station_count: i64,
+    pub definition: LoadProfileDefinitionInput,
+    pub possible_loads_kg: Vec<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct LoadProfileDefinitionInput {
     pub kind: String,
     pub values: Option<Vec<f64>>,

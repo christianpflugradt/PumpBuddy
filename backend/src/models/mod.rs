@@ -330,6 +330,14 @@ pub mod load_profile_definition {
 }
 pub use load_profile_definition::LoadProfileDefinition;
 
+pub mod load_profile_detail_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/load_profile_detail_response.rs"
+    ));
+}
+pub use load_profile_detail_response::LoadProfileDetailResponse;
+
 pub mod load_profile_update_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

@@ -941,6 +941,160 @@ async fn load_profile_routes_create_update_and_delete_draft_profiles() {
 }
 
 #[tokio::test]
+async fn load_profile_detail_route_returns_persisted_definition_and_capped_preview_values() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(&pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         VALUES ($1::uuid, 'max_load_kg', $2)
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value",
+    )
+    .bind(DEV_USER_ID)
+    .bind("180")
+    .execute(&pool)
+    .await
+    .expect("max load preference upsert should succeed");
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
+         VALUES
+           ($1::uuid, $2::uuid, $3, 'new', 'LBS', $4::jsonb),
+           ($5::uuid, $2::uuid, $6, 'active', 'KG', $7::jsonb),
+           ($8::uuid, $9::uuid, $10, 'active', 'KG', $11::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-000000000401")
+    .bind(DEV_USER_ID)
+    .bind("Draft Formula Detail")
+    .bind(r#"{"kind":"formula","min":45,"step":45}"#)
+    .bind("4f000000-0000-0000-0000-000000000402")
+    .bind("Active Fixed Detail")
+    .bind(r#"{"kind":"fixed_list","values":[5,185,90,190]}"#)
+    .bind("4f000000-0000-0000-0000-000000000403")
+    .bind(USER_B_ID)
+    .bind("Foreign Detail Profile")
+    .bind(r#"{"kind":"fixed_list","values":[10,20,30]}"#)
+    .execute(&pool)
+    .await
+    .expect("load profile detail fixtures should insert");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid),
+           ($6::uuid, $2::uuid, $3::uuid, $7, $5::uuid),
+           ($8::uuid, $2::uuid, $3::uuid, $9, $10::uuid)",
+    )
+    .bind("6f000000-0000-0000-0000-000000000401")
+    .bind(DEV_USER_ID)
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind("Detail Profile Station A")
+    .bind("4f000000-0000-0000-0000-000000000402")
+    .bind("6f000000-0000-0000-0000-000000000402")
+    .bind("Detail Profile Station B")
+    .bind("6f000000-0000-0000-0000-000000000403")
+    .bind("Draft Detail Station")
+    .bind("4f000000-0000-0000-0000-000000000401")
+    .execute(&pool)
+    .await
+    .expect("detail profile stations should insert");
+
+    let (formula_status, formula_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000401")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(formula_status, StatusCode::OK);
+    assert_eq!(formula_body["name"], json!("Draft Formula Detail"));
+    assert_eq!(formula_body["status"], json!("new"));
+    assert_eq!(formula_body["weight_unit"], json!("LBS"));
+    assert_eq!(formula_body["station_count"], json!(1));
+    assert_eq!(formula_body["definition"]["kind"], json!("formula"));
+    assert_eq!(formula_body["definition"]["min"], json!(45.0));
+    assert_eq!(formula_body["definition"]["step"], json!(45.0));
+    let formula_loads = formula_body["possible_loads_kg"]
+        .as_array()
+        .expect("formula possible loads should be array");
+    let expected_formula_loads = [
+        20.41165665,
+        40.8233133,
+        61.23496995,
+        81.6466266,
+        102.05828325,
+        122.4699399,
+        142.88159655,
+        163.2932532,
+    ];
+    assert_eq!(formula_loads.len(), expected_formula_loads.len());
+    for (actual, expected) in formula_loads.iter().zip(expected_formula_loads) {
+        let actual = actual
+            .as_f64()
+            .expect("formula possible load should be numeric");
+        assert!(
+            (actual - expected).abs() <= PROFILE_LOAD_MATCH_TOLERANCE_KG,
+            "expected {expected} but got {actual}"
+        );
+    }
+
+    let (fixed_status, fixed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000402")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(fixed_status, StatusCode::OK);
+    assert_eq!(fixed_body["name"], json!("Active Fixed Detail"));
+    assert_eq!(fixed_body["status"], json!("active"));
+    assert_eq!(fixed_body["station_count"], json!(2));
+    assert_eq!(fixed_body["definition"]["kind"], json!("fixed_list"));
+    assert_eq!(
+        fixed_body["definition"]["values"],
+        json!([5.0, 185.0, 90.0, 190.0])
+    );
+    assert_eq!(fixed_body["possible_loads_kg"], json!([5.0, 90.0]));
+
+    let (foreign_status, foreign_body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000403")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(foreign_status, StatusCode::NOT_FOUND);
+    assert_eq!(foreign_body["message"], json!("Load profile not found"));
+}
+
+#[tokio::test]
 async fn load_profile_routes_enforce_duplicate_names_and_historical_mutation_rules() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

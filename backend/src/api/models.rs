@@ -65,6 +65,7 @@ pub use crate::models::gym_station_summary::GymStationSummary as GymStationSumma
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
 pub use crate::models::load_profile_create_request::LoadProfileCreateRequest;
 pub use crate::models::load_profile_definition::LoadProfileDefinition as LoadProfileDefinitionRequest;
+pub use crate::models::load_profile_detail_response::LoadProfileDetailResponse;
 pub use crate::models::load_profile_summary::LoadProfileSummary as LoadProfileSummaryResponse;
 pub use crate::models::load_profile_update_request::LoadProfileUpdateRequest;
 pub use crate::models::reopen_active_workout_exercise_request::ReopenActiveWorkoutExerciseRequest;

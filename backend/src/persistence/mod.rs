@@ -1,7 +1,8 @@
 use crate::domain::{
     CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
-    GymStationDetail, GymSummary, LoadProfileSummary, LoadProfileUpdate, NewLoadProfile,
-    NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutHistorySummary,
+    GymStationDetail, GymSummary, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate,
+    NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
+    WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -380,6 +381,12 @@ pub(crate) trait LoadProfileRepository {
         &self,
         user_id: &str,
     ) -> Result<Vec<LoadProfileSummary>, PersistenceError>;
+
+    async fn fetch_load_profile_detail_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<Option<LoadProfileDetail>, PersistenceError>;
 
     async fn load_profile_name_exists_for_user(
         &self,
@@ -823,6 +830,14 @@ impl LoadProfileRepository for DomainRepository {
         DomainRepository::fetch_load_profile_summaries_for_user(self, user_id).await
     }
 
+    async fn fetch_load_profile_detail_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<Option<LoadProfileDetail>, PersistenceError> {
+        DomainRepository::fetch_load_profile_detail_for_user(self, load_profile_id, user_id).await
+    }
+
     async fn load_profile_name_exists_for_user(
         &self,
         user_id: &str,
@@ -1107,6 +1122,14 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
         load_profiles::fetch_load_profile_summaries_for_user(self, user_id).await
+    }
+
+    pub async fn fetch_load_profile_detail_for_user(
+        &self,
+        load_profile_id: &str,
+        user_id: &str,
+    ) -> Result<Option<LoadProfileDetail>, PersistenceError> {
+        load_profiles::fetch_load_profile_detail_for_user(self, load_profile_id, user_id).await
     }
 
     pub async fn load_profile_name_exists_for_user(

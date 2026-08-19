@@ -5,17 +5,21 @@ use axum::{
 };
 
 use crate::api::models::{
-    LoadProfileCreateRequest, LoadProfileSummaryResponse, LoadProfileUpdateRequest,
+    LoadProfileCreateRequest, LoadProfileDefinitionRequest, LoadProfileDetailResponse,
+    LoadProfileSummaryResponse, LoadProfileUpdateRequest,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::{ApiError, AppState};
 use crate::application::load_profiles::{
     create_load_profile as create_load_profile_service,
     delete_load_profile as delete_load_profile_service,
-    list_load_profiles as list_load_profiles_service,
+    get_load_profile as get_load_profile_service, list_load_profiles as list_load_profiles_service,
     update_load_profile as update_load_profile_service, LoadProfileServiceError,
 };
-use crate::domain::LoadProfileSummary as DomainLoadProfileSummary;
+use crate::domain::{
+    LoadProfileDefinitionInput, LoadProfileDetail as DomainLoadProfileDetail,
+    LoadProfileSummary as DomainLoadProfileSummary,
+};
 
 fn map_load_profile_service_error(error: LoadProfileServiceError) -> ApiError {
     match error {
@@ -33,6 +37,17 @@ fn load_profile_status_response(
         "new" => Ok(crate::models::load_profile_summary::Status::New),
         "active" => Ok(crate::models::load_profile_summary::Status::Active),
         "inactive" => Ok(crate::models::load_profile_summary::Status::Inactive),
+        _ => Err(ApiError::Internal),
+    }
+}
+
+fn load_profile_detail_status_response(
+    status: &str,
+) -> Result<crate::models::load_profile_detail_response::Status, ApiError> {
+    match status {
+        "new" => Ok(crate::models::load_profile_detail_response::Status::New),
+        "active" => Ok(crate::models::load_profile_detail_response::Status::Active),
+        "inactive" => Ok(crate::models::load_profile_detail_response::Status::Inactive),
         _ => Err(ApiError::Internal),
     }
 }
@@ -57,6 +72,16 @@ fn load_profile_weight_unit_response(
     }
 }
 
+fn load_profile_detail_weight_unit_response(
+    weight_unit: &str,
+) -> Result<crate::models::load_profile_detail_response::WeightUnit, ApiError> {
+    match weight_unit {
+        "KG" => Ok(crate::models::load_profile_detail_response::WeightUnit::Kg),
+        "LBS" => Ok(crate::models::load_profile_detail_response::WeightUnit::Lbs),
+        _ => Err(ApiError::Internal),
+    }
+}
+
 fn load_profile_summary_response(
     load_profile: DomainLoadProfileSummary,
 ) -> Result<LoadProfileSummaryResponse, ApiError> {
@@ -67,6 +92,35 @@ fn load_profile_summary_response(
         definition_kind: load_profile_definition_kind_response(&load_profile.definition_kind)?,
         weight_unit: load_profile_weight_unit_response(&load_profile.weight_unit)?,
         station_count: load_profile.station_count,
+    })
+}
+
+fn load_profile_definition_response(
+    definition: LoadProfileDefinitionInput,
+) -> LoadProfileDefinitionRequest {
+    LoadProfileDefinitionRequest {
+        kind: match definition.kind.as_str() {
+            "fixed_list" => crate::models::load_profile_definition::Kind::FixedList,
+            "formula" => crate::models::load_profile_definition::Kind::Formula,
+            _ => unreachable!("validated load profile definition kind"),
+        },
+        values: definition.values,
+        min: definition.min,
+        step: definition.step,
+    }
+}
+
+fn load_profile_detail_response(
+    load_profile: DomainLoadProfileDetail,
+) -> Result<LoadProfileDetailResponse, ApiError> {
+    Ok(LoadProfileDetailResponse {
+        id: load_profile.id,
+        name: load_profile.name,
+        status: load_profile_detail_status_response(&load_profile.status)?,
+        weight_unit: load_profile_detail_weight_unit_response(&load_profile.weight_unit)?,
+        station_count: load_profile.station_count,
+        definition: Box::new(load_profile_definition_response(load_profile.definition)),
+        possible_loads_kg: load_profile.possible_loads_kg,
     })
 }
 
@@ -85,6 +139,19 @@ pub(crate) async fn list_load_profiles(
             .map(load_profile_summary_response)
             .collect::<Result<Vec<_>, _>>()?,
     ))
+}
+
+pub(crate) async fn get_load_profile(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(load_profile_id): Path<String>,
+) -> Result<Json<LoadProfileDetailResponse>, ApiError> {
+    let load_profile =
+        get_load_profile_service(&state.repository, &load_profile_id, &session.user_id)
+            .await
+            .map_err(map_load_profile_service_error)?;
+
+    Ok(Json(load_profile_detail_response(load_profile)?))
 }
 
 pub(crate) async fn create_load_profile(

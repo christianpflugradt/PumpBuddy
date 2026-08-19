@@ -1,6 +1,6 @@
 use axum::{
     extract::{Extension, Path, Query, State},
-    routing::{delete, get, patch, post, put},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 
@@ -10,7 +10,7 @@ use super::handlers::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
     create_active_workout, create_load_profile, create_workout, delete_latest_active_workout_set,
     delete_load_profile, get_about_metadata, get_active_workout, get_gym_detail,
-    get_gym_station_detail, get_training_plan, get_workout_detail,
+    get_gym_station_detail, get_load_profile, get_training_plan, get_workout_detail,
     get_workout_exercises_performance, get_workout_progress, get_workout_summary, list_gyms,
     list_load_profiles, list_training_plan_exercise_variants, list_training_plans, list_workouts,
     reopen_active_workout_exercise, select_active_workout_exercise_option,
@@ -90,7 +90,14 @@ pub fn app_router(app_state: AppState) -> Router {
         )
         .route(
             "/load-profiles/{load_profile_id}",
-            patch(
+            get(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(load_profile_id): Path<String>| async move {
+                    get_load_profile(State(state), Extension(session), Path(load_profile_id)).await
+                },
+            )
+            .patch(
                 |State(state): State<AppState>,
                  Extension(session): Extension<AuthenticatedSession>,
                  Path(load_profile_id): Path<String>,

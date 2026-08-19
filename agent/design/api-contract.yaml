@@ -358,6 +358,33 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/load-profiles/{loadProfileId}:
+    get:
+      summary: Load one load profile detail
+      operationId: getLoadProfile
+      parameters:
+        - name: loadProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Load profile detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadProfileDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Load profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Update a load profile
       operationId: updateLoadProfile
@@ -1376,6 +1403,54 @@ components:
           description: |
             Number of visible equipment stations currently referencing this load
             profile for usage transparency on the configurator list.
+    LoadProfileDetailResponse:
+      type: object
+      description: |
+        Read-only configurator detail projection for one authenticated user's
+        load profile. The persisted definition is returned directly so draft
+        editors and historical inspection views do not need to reconstruct
+        fields from list summaries. Preview values are backend-expanded and
+        capped by the authenticated user's configured max-load preference.
+      required:
+        - id
+        - name
+        - status
+        - weight_unit
+        - station_count
+        - definition
+        - possible_loads_kg
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
+          description: Current lifecycle state for detail-screen behavior.
+        weight_unit:
+          type: string
+          enum: [KG, LBS]
+          description: Source unit of the persisted load profile definition.
+        station_count:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Number of visible equipment stations currently referencing this load
+            profile for usage transparency on the detail screen.
+        definition:
+          $ref: '#/components/schemas/LoadProfileDefinition'
+        possible_loads_kg:
+          type: array
+          description: |
+            Sorted canonical kg preview values expanded from the persisted load
+            profile definition and capped by the authenticated user's max-load
+            preference.
+          items:
+            type: number
+            format: double
     LoadProfileDefinition:
       type: object
       description: |
