@@ -133,11 +133,21 @@ async fn ensure_testcontainer_database_url() -> Result<String, TestDatabaseError
 }
 
 fn docker_socket_exists() -> bool {
+    if let Ok(docker_host) = env::var("DOCKER_HOST") {
+        if let Some(socket_path) = docker_host.strip_prefix("unix://") {
+            return PathBuf::from(socket_path).exists();
+        }
+
+        // Non-Unix Docker endpoints cannot be validated as filesystem paths.
+        return true;
+    }
+
     let mut candidates = vec![PathBuf::from("/var/run/docker.sock")];
 
     if let Some(home) = env::var_os("HOME") {
         candidates.push(PathBuf::from(&home).join(".docker/run/docker.sock"));
-        candidates.push(PathBuf::from(home).join(".rd/docker.sock"));
+        candidates.push(PathBuf::from(&home).join(".rd/docker.sock"));
+        candidates.push(PathBuf::from(&home).join(".colima/default/docker.sock"));
     }
 
     candidates.into_iter().any(|path| path.exists())
