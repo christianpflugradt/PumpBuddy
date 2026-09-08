@@ -1,6 +1,9 @@
 [tools]
 python = "3.13.15"
 
+[bootstrap.packages]
+"brew:argon2" = "latest"
+
 [tasks.check]
 description = "Run all repository quality checks"
 run = "make check"
