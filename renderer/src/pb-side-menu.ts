@@ -1,10 +1,3 @@
-import {
-  getOrderedSideMenuMiddleScreens,
-  normalizeSideMenuMiddleClickCounts,
-  type SideMenuMiddleClickCounts,
-  type SideMenuMiddleScreen,
-} from "./side-menu-preferences";
-
 export const pbSideMenuTag = "pb-side-menu";
 
 type SideMenuMode = "workout" | "configurator";
@@ -38,6 +31,7 @@ type SideMenuEntry = {
   label: string;
   action: SideMenuAction | null;
   screen?: SideMenuScreen;
+  emphasis?: "main-workout";
 };
 
 const sideMenuScreens: SideMenuScreen[] = [
@@ -56,6 +50,7 @@ const workoutEntry: SideMenuEntry = {
   screen: "workout",
   label: "Workout",
   action: "navigate-workout",
+  emphasis: "main-workout",
 };
 
 const configuratorEntry: SideMenuEntry = {
@@ -64,36 +59,38 @@ const configuratorEntry: SideMenuEntry = {
   action: "navigate-configurator-load-profiles",
 };
 
-const middleEntryByScreen: Record<SideMenuMiddleScreen, SideMenuEntry> = {
-  progress: {
+const mainNavigationEntries: SideMenuEntry[] = [
+  {
     screen: "progress",
     label: "Progress",
     action: "navigate-progress",
   },
-  history: { screen: "history", label: "History", action: "navigate-history" },
-  exercises: {
+  { screen: "history", label: "History", action: "navigate-history" },
+  {
     screen: "exercises",
     label: "Exercises",
     action: "navigate-exercises",
   },
-  "training-plans": {
+  {
     screen: "training-plans",
     label: "Training Plans",
     action: "navigate-training-plans",
   },
-  gyms: { screen: "gyms", label: "Gyms", action: "navigate-gyms" },
+  { screen: "gyms", label: "Gyms", action: "navigate-gyms" },
+];
+
+const configuratorReturnEntry: SideMenuEntry = {
+  screen: "workout",
+  label: "Back to Workout",
+  action: "navigate-workout",
 };
 
-const configuratorPrimaryEntries: SideMenuEntry[] = [
-  workoutEntry,
+const configuratorNavigationEntries: SideMenuEntry[] = [
   {
     screen: "configurator-load-profiles",
     label: "Load Profiles",
     action: "navigate-configurator-load-profiles",
   },
-];
-
-const configuratorPlaceholderEntries: SideMenuEntry[] = [
   { label: "Exercises (Soon)", action: null },
   { label: "Gyms (Soon)", action: null },
 ];
@@ -128,14 +125,16 @@ const renderEntry = (
   entry: SideMenuEntry,
   activeScreen: SideMenuScreen,
   group: "primary" | "middle" | "utility",
-  extraItemClass = "",
 ): string => {
   const isLogout = entry.action === "logout";
   const action = resolveAction(entry, activeScreen);
-  const itemClass = `side-menu-item side-menu-item--${group}${extraItemClass}`;
+  const itemClass = `side-menu-item side-menu-item--${group}`;
   const entryClass = [
     "side-menu-entry",
     `side-menu-entry--${group}`,
+    entry.emphasis === "main-workout"
+      ? "side-menu-entry--main-workout"
+      : "",
     action === null ? "side-menu-entry--placeholder" : "",
     isLogout ? "side-menu-entry--logout" : "",
   ]
@@ -153,43 +152,50 @@ const renderEntry = (
   `;
 };
 
+const renderEntries = (
+  entries: SideMenuEntry[],
+  activeScreen: SideMenuScreen,
+  group: "primary" | "middle" | "utility",
+): string => entries.map((entry) => renderEntry(entry, activeScreen, group)).join("");
+
+const renderDivider = (): string =>
+  '<li class="side-menu-divider" role="presentation"></li>';
+
 const renderSideMenuList = (
   mode: SideMenuMode,
   activeScreen: SideMenuScreen,
-  middleEntries: SideMenuEntry[],
 ): string => {
-  const primaryEntries =
+  const entries =
     mode === "configurator"
-      ? configuratorPrimaryEntries
-      : [workoutEntry, configuratorEntry];
+      ? [
+          renderEntries([configuratorReturnEntry], activeScreen, "primary"),
+          renderDivider(),
+          renderEntries(configuratorNavigationEntries, activeScreen, "middle"),
+          renderDivider(),
+          renderEntries(utilityEntries, activeScreen, "utility"),
+        ]
+      : [
+          renderEntries([workoutEntry], activeScreen, "primary"),
+          renderEntries(mainNavigationEntries, activeScreen, "middle"),
+          renderDivider(),
+          renderEntries([configuratorEntry], activeScreen, "middle"),
+          renderDivider(),
+          renderEntries(utilityEntries, activeScreen, "utility"),
+        ];
 
   return `
     <ul class="side-menu-list">
-      ${primaryEntries
-        .map((entry) => renderEntry(entry, activeScreen, "primary"))
-        .join("")}
-      ${middleEntries.map((entry) => renderEntry(entry, activeScreen, "middle")).join("")}
-      ${utilityEntries
-        .map((entry, index) =>
-          renderEntry(
-            entry,
-            activeScreen,
-            "utility",
-            index === 0 ? " side-menu-item--utility-start" : "",
-          ),
-        )
-        .join("")}
+      ${entries.join("")}
     </ul>
   `;
 };
 
 class PbSideMenuElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ["active-screen", "menu-id", "middle-click-counts", "mode"];
+    return ["active-screen", "menu-id", "mode"];
   }
 
   #isOpen = false;
-  #openMiddleEntries: SideMenuEntry[] | null = null;
 
   connectedCallback(): void {
     this.#render();
@@ -215,59 +221,9 @@ class PbSideMenuElement extends HTMLElement {
       return;
     }
 
-    this.#openMiddleEntries = nextOpen ? this.#resolveMiddleEntries() : null;
     this.#isOpen = nextOpen;
     this.#render();
     this.#syncOutsideClickListener();
-  }
-
-  #resolveAttributeMiddleClickCounts(): SideMenuMiddleClickCounts | null {
-    const raw = this.getAttribute("middle-click-counts");
-    if (raw === null) {
-      return null;
-    }
-
-    try {
-      return normalizeSideMenuMiddleClickCounts(JSON.parse(raw));
-    } catch {
-      return normalizeSideMenuMiddleClickCounts(null);
-    }
-  }
-
-  #resolveMiddleClickCounts(): SideMenuMiddleClickCounts {
-    const attributeCounts = this.#resolveAttributeMiddleClickCounts();
-    if (attributeCounts) {
-      return attributeCounts;
-    }
-
-    const root = this.closest("pb-app-root") as
-      | (HTMLElement & {
-          state?: {
-            sessionUser?: { sideMenuMiddleClickCounts?: unknown } | null;
-          } | null;
-        })
-      | null;
-    return normalizeSideMenuMiddleClickCounts(
-      root?.state?.sessionUser?.sideMenuMiddleClickCounts,
-    );
-  }
-
-  #resolveMiddleEntries(): SideMenuEntry[] {
-    if (resolveMode(this.getAttribute("mode")) === "configurator") {
-      return configuratorPlaceholderEntries;
-    }
-
-    return getOrderedSideMenuMiddleScreens(
-      this.#resolveMiddleClickCounts(),
-    ).map((screen) => middleEntryByScreen[screen]);
-  }
-
-  #currentMiddleEntries(): SideMenuEntry[] {
-    if (this.#isOpen) {
-      return this.#openMiddleEntries ?? this.#resolveMiddleEntries();
-    }
-
-    return this.#resolveMiddleEntries();
   }
 
   #onGlobalPointerDown = (event: Event): void => {
@@ -376,7 +332,7 @@ class PbSideMenuElement extends HTMLElement {
         <div class="side-menu-backdrop" role="presentation"></div>
         <nav class="side-menu-panel" id="${menuId}" aria-label="Main navigation">
           <p class="side-menu-title">${mode === "configurator" ? "Configurator" : "Navigation"}</p>
-          ${renderSideMenuList(mode, activeScreen, this.#currentMiddleEntries())}
+          ${renderSideMenuList(mode, activeScreen)}
         </nav>
       </div>
     `;

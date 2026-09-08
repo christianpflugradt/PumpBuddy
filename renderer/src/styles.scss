@@ -598,9 +598,9 @@ pb-app-root,
   min-width: 0;
 }
 
-.side-menu-item--utility-start {
-  margin-top: 0.35rem;
-  padding-top: 0.8rem;
+.side-menu-divider {
+  height: 0;
+  margin: 0.35rem 0;
   border-top: 1px solid color-mix(in srgb, var(--border-card) 58%, transparent 42%);
 }
 
@@ -617,7 +617,7 @@ pb-app-root,
   overflow-wrap: anywhere;
 }
 
-.side-menu-entry--primary {
+.side-menu-entry--main-workout {
   border-color: color-mix(in srgb, var(--brand-accent) 72%, white 28%);
   background:
     linear-gradient(90deg, rgba(249, 115, 22, 0.24), rgba(249, 115, 22, 0.08)),

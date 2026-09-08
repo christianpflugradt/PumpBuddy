@@ -27,45 +27,41 @@ describe("pb-side-menu", () => {
     registerPbSideMenu();
   });
 
-  it("renders Workout and Configurator first with primary styling and separates utility actions", () => {
+  it("renders the prescribed main navigation order with Workout as the only orange entry", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("active-screen", "progress");
     document.body.append(el);
 
     const entries = Array.from(el.querySelectorAll(".side-menu-entry"));
-    const utilityItems = Array.from(
-      el.querySelectorAll('[data-menu-group="utility"]'),
-    );
+    const labels = entries.map((entry) => entry.textContent?.trim());
     const logoutEntry = buttonByText(el, "Log out");
 
-    expect(entries[0]?.textContent?.trim()).toBe("Workout");
-    expect(entries[0]?.classList.contains("side-menu-entry--primary")).toBe(
-      true,
-    );
-    expect(entries[1]?.textContent?.trim()).toBe("Configurator");
-    expect(entries[1]?.classList.contains("side-menu-entry--primary")).toBe(
-      true,
-    );
-    expect(entries[0]?.closest('[data-menu-group="primary"]')).toBeTruthy();
-    expect(middleEntryLabels(el)).toEqual([
+    expect(labels).toEqual([
+      "Workout",
       "Progress",
       "History",
       "Exercises",
       "Training Plans",
       "Gyms",
-    ]);
-    expect(utilityItems.map((item) => item.textContent?.trim())).toEqual([
+      "Configurator",
       "Settings",
       "About",
       "Log out",
     ]);
+    expect(entries[0]?.classList.contains("side-menu-entry--main-workout")).toBe(
+      true,
+    );
     expect(
-      utilityItems[0]?.classList.contains("side-menu-item--utility-start"),
-    ).toBe(true);
+      buttonByText(el, "Configurator")?.classList.contains(
+        "side-menu-entry--main-workout",
+      ),
+    ).toBe(false);
+    expect(entries[0]?.closest('[data-menu-group="primary"]')).toBeTruthy();
+    expect(el.querySelectorAll(".side-menu-divider")).toHaveLength(2);
     expect(logoutEntry?.classList.contains("side-menu-entry--logout")).toBe(
       true,
     );
-    expect(logoutEntry?.classList.contains("side-menu-entry--primary")).toBe(
+    expect(logoutEntry?.classList.contains("side-menu-entry--main-workout")).toBe(
       false,
     );
   });
@@ -140,71 +136,21 @@ describe("pb-side-menu", () => {
     ).toBe(false);
   });
 
-  it("orders middle entries by session counts with default tie breaks", () => {
-    const root = document.createElement("pb-app-root") as HTMLElement & {
-      state?: unknown;
-    };
-    root.state = {
-      sessionUser: {
-        sideMenuMiddleClickCounts: {
-          history: 2,
-          gyms: 2,
-          exercises: 1,
-        },
-      },
-    };
-
+  it("keeps the prescribed main navigation order", () => {
     const el = document.createElement(pbSideMenuTag);
-    root.append(el);
-    document.body.append(root);
-
-    const toggle = el.querySelector(
-      '[data-ui-action="toggle-side-menu"]',
-    ) as HTMLButtonElement | null;
-    toggle?.click();
+    document.body.append(el);
 
     expect(middleEntryLabels(el)).toEqual([
-      "History",
-      "Gyms",
-      "Exercises",
       "Progress",
+      "History",
+      "Exercises",
       "Training Plans",
+      "Gyms",
+      "Configurator",
     ]);
   });
 
-  it("accepts explicit counts for standalone reuse and falls back for malformed input", () => {
-    const userA = document.createElement(pbSideMenuTag);
-    userA.setAttribute(
-      "middle-click-counts",
-      JSON.stringify({
-        history: 2,
-        gyms: 2,
-        exercises: 1,
-      }),
-    );
-    document.body.append(userA);
-
-    const userB = document.createElement(pbSideMenuTag);
-    userB.setAttribute("middle-click-counts", "not-json");
-    document.body.append(userB);
-
-    expect(middleEntryLabels(userA)).toEqual([
-      "History",
-      "Gyms",
-      "Exercises",
-      "Progress",
-      "Training Plans",
-    ]);
-    expect(middleEntryLabels(userB)).toEqual([
-      "Progress",
-      "History",
-      "Exercises",
-      "Training Plans",
-      "Gyms",
-    ]);
-  });
-
-  it("keeps the open menu order stable until the next open", () => {
+  it("keeps the prescribed main navigation order while the menu is open", () => {
     const el = document.createElement(pbSideMenuTag);
     document.body.append(el);
 
@@ -218,48 +164,37 @@ describe("pb-side-menu", () => {
       "Exercises",
       "Training Plans",
       "Gyms",
+      "Configurator",
     ]);
-
-    el.setAttribute("middle-click-counts", JSON.stringify({ history: 5 }));
-    expect(middleEntryLabels(el)).toEqual([
-      "Progress",
-      "History",
-      "Exercises",
-      "Training Plans",
-      "Gyms",
-    ]);
-
-    toggle = el.querySelector(
-      '[data-ui-action="toggle-side-menu"]',
-    ) as HTMLButtonElement | null;
-    toggle?.click();
-    toggle = el.querySelector(
-      '[data-ui-action="toggle-side-menu"]',
-    ) as HTMLButtonElement | null;
-    toggle?.click();
-
-    expect(middleEntryLabels(el)[0]).toBe("History");
   });
 
-  it("renders configurator mode with a workout return action and placeholders", () => {
+  it("renders configurator mode with a neutral return action, separators, and placeholders", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("mode", "configurator");
     el.setAttribute("active-screen", "configurator-load-profiles");
     document.body.append(el);
 
     const entries = Array.from(el.querySelectorAll(".side-menu-entry"));
-    const workoutEntry = buttonByText(el, "Workout");
+    const workoutEntry = buttonByText(el, "Back to Workout");
     const loadProfilesEntry = buttonByText(el, "Load Profiles");
     const exercisePlaceholder = buttonByText(el, "Exercises (Soon)");
     const gymPlaceholder = buttonByText(el, "Gyms (Soon)");
 
-    expect(entries[0]?.textContent?.trim()).toBe("Workout");
+    expect(entries[0]?.textContent?.trim()).toBe("Back to Workout");
     expect(entries[1]?.textContent?.trim()).toBe("Load Profiles");
     expect(workoutEntry?.dataset.uiAction).toBe("navigate-workout");
     expect(loadProfilesEntry?.dataset.uiAction).toBe("close-side-menu");
+    expect(
+      workoutEntry?.classList.contains("side-menu-entry--main-workout"),
+    ).toBe(false);
+    expect(
+      loadProfilesEntry?.classList.contains("side-menu-entry--main-workout"),
+    ).toBe(false);
+    expect(el.querySelectorAll(".side-menu-divider")).toHaveLength(2);
     expect(exercisePlaceholder?.disabled).toBe(true);
     expect(gymPlaceholder?.disabled).toBe(true);
     expect(middleEntryLabels(el)).toEqual([
+      "Load Profiles",
       "Exercises (Soon)",
       "Gyms (Soon)",
     ]);
