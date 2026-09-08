@@ -84,12 +84,14 @@ export type ViewState =
       screen: "training-plan-detail";
       trainingPlanId: string;
       selectedGymId: string | null;
+      selectedVersionNumber: number | null;
     }
   | {
       screen: "training-plan-exercise-detail";
       trainingPlanId: string;
       trainingPlanExerciseId: string;
       selectedGymId: string | null;
+      selectedVersionNumber: number | null;
     }
   | {
       screen: "exercise-variant-detail";
@@ -107,6 +109,7 @@ export type ViewState =
       returnTrainingPlanId?: string;
       returnTrainingPlanExerciseId?: string;
       returnSelectedGymId?: string | null;
+      returnSelectedVersionNumber?: number | null;
       fallbackExerciseName?: string;
       fallbackVariantName?: string;
     }
@@ -119,6 +122,7 @@ export type ViewState =
       returnTrainingPlanId?: string;
       returnTrainingPlanExerciseId?: string;
       returnSelectedGymId?: string | null;
+      returnSelectedVersionNumber?: number | null;
     }
   | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
@@ -215,6 +219,7 @@ export type AppState = {
   trainingPlanDetailScreen: {
     trainingPlanId: string | null;
     selectedGymId: string | null;
+    selectedVersionNumber: number | null;
     detail: TrainingPlanDetailResponse | null;
     isLoading: boolean;
     errorMessage: string | null;

@@ -595,6 +595,8 @@ describe("workout-api credentials", () => {
     const fetchJson = vi.fn().mockResolvedValue({
       id: "plan/with/slash",
       name: "Plan",
+      selected_version_number: 1,
+      versions: [{ version_number: 1, is_current: true }],
       selected_gym_id: null,
       is_executable: null,
       execution_status: null,
@@ -631,6 +633,8 @@ describe("workout-api credentials", () => {
     await expect(loadTrainingPlanDetail(fetchJson, "plan/with/slash")).resolves.toEqual({
       id: "plan/with/slash",
       name: "Plan",
+      selected_version_number: 1,
+      versions: [{ version_number: 1, is_current: true }],
       selected_gym_id: null,
       is_executable: null,
       execution_status: null,
@@ -671,6 +675,8 @@ describe("workout-api credentials", () => {
     const fetchJson = vi.fn().mockResolvedValue({
       id: "plan/with/slash",
       name: "Plan",
+      selected_version_number: 1,
+      versions: [{ version_number: 1, is_current: true }],
       selected_gym_id: "gym with/slash",
       is_executable: false,
       execution_status: "RED",
@@ -730,6 +736,8 @@ describe("workout-api credentials", () => {
     ).resolves.toEqual({
       id: "plan/with/slash",
       name: "Plan",
+      selected_version_number: 1,
+      versions: [{ version_number: 1, is_current: true }],
       selected_gym_id: "gym with/slash",
       is_executable: false,
       execution_status: "RED",

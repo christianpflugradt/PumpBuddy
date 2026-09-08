@@ -212,13 +212,21 @@ export const loadTrainingPlanDetail = async (
   fetchJson: FetchJson,
   trainingPlanId: string,
   gymId?: string | null,
+  versionNumber?: number | null,
 ): Promise<TrainingPlanDetailResponse> => {
   const encodedPlanId = encodeURIComponent(trainingPlanId);
   const normalizedGymId = gymId?.trim() ?? "";
-  const query =
-    normalizedGymId.length > 0 ? `?gymId=${encodeURIComponent(normalizedGymId)}` : "";
+  const query: string[] = [];
+  if (normalizedGymId.length > 0) {
+    query.push(`gymId=${encodeURIComponent(normalizedGymId)}`);
+  }
+  if (Number.isInteger(versionNumber) && (versionNumber ?? 0) > 0) {
+    query.push(`versionNumber=${versionNumber}`);
+  }
   return parseTrainingPlanDetailResponse(
-    await fetchJson<unknown>(`/api/training-plans/${encodedPlanId}${query}`),
+    await fetchJson<unknown>(
+      `/api/training-plans/${encodedPlanId}${query.length > 0 ? `?${query.join("&")}` : ""}`,
+    ),
   );
 };
 

@@ -84,6 +84,7 @@ pub use crate::models::training_plan_exercise_variant_detail::TrainingPlanExerci
 pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
+pub use crate::models::training_plan_version_summary::TrainingPlanVersionSummary;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
 use crate::models::workout_detail_completion_stats::WorkoutProgressStatus as WorkoutDetailProgressStatus;
 use crate::models::workout_detail_exercise::RepetitionKind as WorkoutDetailExerciseRepetitionKindResponse;
@@ -128,6 +129,8 @@ pub struct AboutMetadataResponse {
 
 #[derive(Deserialize)]
 pub struct TrainingPlanDetailQuery {
+    #[serde(rename = "versionNumber")]
+    pub version_number: Option<i32>,
     #[serde(rename = "gymId")]
     pub gym_id: Option<String>,
 }

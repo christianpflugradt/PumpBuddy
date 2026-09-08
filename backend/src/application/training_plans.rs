@@ -50,6 +50,7 @@ pub(crate) async fn list_training_plan_exercise_variants(
 pub(crate) async fn get_training_plan(
     repository: &(impl TrainingPlanRepository + ?Sized),
     training_plan_id: &str,
+    selected_version_number: Option<i32>,
     selected_gym_id: Option<&str>,
     user_id: &str,
 ) -> Result<TrainingPlanDetail, TrainingPlanServiceError> {
@@ -76,30 +77,46 @@ pub(crate) async fn get_training_plan(
         ));
     }
 
-    if let Some(gym_id) = selected_gym_id {
-        let gym_exists = repository
-            .training_plan_detail_gym_exists_for_user(gym_id, user_id)
-            .await
-            .map_err(TrainingPlanServiceError::Persistence)?;
-
-        if !gym_exists {
-            return Err(TrainingPlanServiceError::NotFound(
-                "Gym not found".to_owned(),
-            ));
-        }
-    }
-
     let plan = repository
-        .fetch_training_plan_detail_for_user(training_plan_id, selected_gym_id, user_id)
+        .fetch_training_plan_detail_for_user(
+            training_plan_id,
+            selected_version_number,
+            selected_gym_id,
+            user_id,
+        )
         .await
         .map_err(TrainingPlanServiceError::Persistence)?
-        .ok_or_else(|| TrainingPlanServiceError::NotFound("Training plan not found".to_owned()))?;
+        .ok_or_else(|| {
+            TrainingPlanServiceError::NotFound("Training plan version not found".to_owned())
+        })?;
+
+    if plan
+        .versions
+        .iter()
+        .any(|version| version.is_current && version.version_number == plan.selected_version_number)
+    {
+        if let Some(gym_id) = selected_gym_id {
+            let gym_exists = repository
+                .training_plan_detail_gym_exists_for_user(gym_id, user_id)
+                .await
+                .map_err(TrainingPlanServiceError::Persistence)?;
+
+            if !gym_exists {
+                return Err(TrainingPlanServiceError::NotFound(
+                    "Gym not found".to_owned(),
+                ));
+            }
+        }
+    }
 
     Ok(apply_training_plan_execution_metadata(plan))
 }
 
 fn apply_training_plan_execution_metadata(mut plan: TrainingPlanDetail) -> TrainingPlanDetail {
-    if plan.selected_gym_id.is_none() {
+    let is_current_version = plan.versions.iter().any(|version| {
+        version.is_current && version.version_number == plan.selected_version_number
+    });
+    if !is_current_version || plan.selected_gym_id.is_none() {
         plan.is_executable = None;
         plan.execution_status = None;
         plan.execution_summary = None;
@@ -247,6 +264,7 @@ mod tests {
         async fn fetch_training_plan_detail_for_user(
             &self,
             _training_plan_id: &str,
+            _selected_version_number: Option<i32>,
             _selected_gym_id: Option<&str>,
             _user_id: &str,
         ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
@@ -315,7 +333,7 @@ mod tests {
     async fn get_training_plan_stops_at_visibility_check_when_summary_is_absent() {
         let repository = FakeTrainingPlanRepository::new(vec![summary("visible-plan")], None);
 
-        match get_training_plan(&repository, "missing-plan", None, "user-id")
+        match get_training_plan(&repository, "missing-plan", None, None, "user-id")
             .await
             .expect_err("missing summary should be treated as not found")
         {

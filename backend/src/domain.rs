@@ -2,11 +2,19 @@
 pub struct TrainingPlanDetail {
     pub id: String,
     pub name: String,
+    pub selected_version_number: i32,
+    pub versions: Vec<TrainingPlanVersionSummary>,
     pub selected_gym_id: Option<String>,
     pub is_executable: Option<bool>,
     pub execution_status: Option<TrainingPlanExecutionStatus>,
     pub execution_summary: Option<String>,
     pub exercises: Vec<TrainingPlanDetailExercise>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanVersionSummary {
+    pub version_number: i32,
+    pub is_current: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

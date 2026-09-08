@@ -498,11 +498,18 @@ export type TrainingPlanExerciseDetail = {
 export type TrainingPlanDetailResponse = {
   id: string;
   name: string;
+  selected_version_number: number;
+  versions: TrainingPlanVersionSummary[];
   selected_gym_id: string | null;
   is_executable: boolean | null;
   execution_status: TrainingPlanExecutionStatus | null;
   execution_summary: string | null;
   exercises: TrainingPlanExerciseDetail[];
+};
+
+export type TrainingPlanVersionSummary = {
+  version_number: number;
+  is_current: boolean;
 };
 
 export type MissingExerciseDetail = {

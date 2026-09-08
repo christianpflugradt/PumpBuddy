@@ -23,6 +23,7 @@ type Dependencies = {
   loadTrainingPlanDetailScreenData: (
     trainingPlanId: string,
     selectedGymId?: string | null,
+    selectedVersionNumber?: number | null,
   ) => Promise<void>;
 };
 
@@ -395,10 +396,15 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
-        viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId },
+        viewState: {
+          screen: "training-plan-detail",
+          trainingPlanId,
+          selectedGymId,
+          selectedVersionNumber: null,
+        },
       });
       render();
-      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId);
+      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId, null);
       return true;
     }
     case "open-training-plan-exercise-detail": {
@@ -424,6 +430,7 @@ export const handleScreenNavigationAction = (
           trainingPlanId: state.viewState.trainingPlanId,
           trainingPlanExerciseId,
           selectedGymId: state.viewState.selectedGymId,
+          selectedVersionNumber: state.viewState.selectedVersionNumber,
         },
       });
       render();
@@ -445,10 +452,45 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
-        viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId },
+        viewState: {
+          screen: "training-plan-detail",
+          trainingPlanId,
+          selectedGymId,
+          selectedVersionNumber: state.viewState.selectedVersionNumber,
+        },
       });
       render();
-      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId);
+      void loadTrainingPlanDetailScreenData(
+        trainingPlanId,
+        selectedGymId,
+        state.viewState.selectedVersionNumber,
+      );
+      return true;
+    }
+    case "select-training-plan-detail-version": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { selectedVersionNumber?: unknown } | undefined;
+      const selectedVersionNumber = payload?.selectedVersionNumber;
+      if (
+        typeof selectedVersionNumber !== "number" ||
+        !Number.isInteger(selectedVersionNumber) ||
+        selectedVersionNumber <= 0
+      ) {
+        return true;
+      }
+
+      const { trainingPlanId, selectedGymId } = state.viewState;
+      setState({
+        ...state,
+        viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId, selectedVersionNumber },
+      });
+      render();
+      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId, selectedVersionNumber);
       return true;
     }
     case "navigate-back-from-training-plan-detail": {
@@ -476,6 +518,7 @@ export const handleScreenNavigationAction = (
           screen: "training-plan-detail",
           trainingPlanId: state.viewState.trainingPlanId,
           selectedGymId: state.viewState.selectedGymId,
+          selectedVersionNumber: state.viewState.selectedVersionNumber,
         },
       });
       render();
@@ -508,6 +551,7 @@ export const handleScreenNavigationAction = (
           returnTrainingPlanId: state.viewState.trainingPlanId,
           returnTrainingPlanExerciseId: state.viewState.trainingPlanExerciseId,
           returnSelectedGymId: state.viewState.selectedGymId,
+          returnSelectedVersionNumber: state.viewState.selectedVersionNumber,
           fallbackExerciseName: match.exercise.exercise_name,
           fallbackVariantName: match.variant.variant_name,
         },
@@ -557,6 +601,7 @@ export const handleScreenNavigationAction = (
           returnTrainingPlanId: state.viewState.trainingPlanId,
           returnTrainingPlanExerciseId: state.viewState.trainingPlanExerciseId,
           returnSelectedGymId: state.viewState.selectedGymId,
+          returnSelectedVersionNumber: state.viewState.selectedVersionNumber,
         },
       });
       render();
@@ -869,6 +914,7 @@ export const handleScreenNavigationAction = (
             trainingPlanId,
             trainingPlanExerciseId,
             selectedGymId: state.viewState.returnSelectedGymId ?? null,
+            selectedVersionNumber: state.viewState.returnSelectedVersionNumber ?? null,
           },
         });
         render();
@@ -960,6 +1006,7 @@ export const handleScreenNavigationAction = (
             trainingPlanId,
             trainingPlanExerciseId,
             selectedGymId: state.viewState.returnSelectedGymId ?? null,
+            selectedVersionNumber: state.viewState.returnSelectedVersionNumber ?? null,
           },
         });
         render();

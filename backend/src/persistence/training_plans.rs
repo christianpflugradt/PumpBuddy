@@ -2,6 +2,7 @@ use super::{DomainRepository, PersistenceError};
 use crate::domain::{
     ConfiguredGymTrainingPlanExerciseVariantOption, GymStationOption, TrainingPlanDetail,
     TrainingPlanDetailExercise, TrainingPlanExerciseVariantDetail, TrainingPlanSummary,
+    TrainingPlanVersionSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::HashSet;
@@ -9,6 +10,7 @@ use std::collections::HashSet;
 pub(super) async fn fetch_training_plan_detail_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
+    selected_version_number: Option<i32>,
     selected_gym_id: Option<&str>,
     user_id: &str,
 ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
@@ -27,8 +29,40 @@ pub(super) async fn fetch_training_plan_detail_for_user(
         return Ok(None);
     };
 
+    let versions = sqlx::query(
+        "SELECT version_number
+         FROM training_plan_versions
+         WHERE training_plan_id = $1::uuid
+           AND user_id = $2::uuid
+         ORDER BY version_number DESC, created_at DESC, id DESC",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let current_version_number = versions
+        .first()
+        .map(|row| row.get::<i32, _>("version_number"));
+    let selected_version_number = selected_version_number.or(current_version_number);
+    let Some(selected_version_number) = selected_version_number else {
+        return Ok(None);
+    };
+    if !versions
+        .iter()
+        .any(|row| row.get::<i32, _>("version_number") == selected_version_number)
+    {
+        return Ok(None);
+    }
+    let is_current_version = current_version_number == Some(selected_version_number);
+    let selected_gym_id = if is_current_version {
+        selected_gym_id
+    } else {
+        None
+    };
+
     let rows = sqlx::query(
-        "WITH latest_plan_version AS (
+        "WITH selected_plan_version AS (
             SELECT tpv.id
             FROM training_plan_versions tpv
             JOIN training_plans tp
@@ -36,8 +70,7 @@ pub(super) async fn fetch_training_plan_detail_for_user(
              AND tp.user_id = $2::uuid
             WHERE tpv.training_plan_id = $1::uuid
               AND tpv.user_id = $2::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
+              AND tpv.version_number = $4
          ),
          compatible_variant_stations AS (
             SELECT
@@ -74,7 +107,7 @@ pub(super) async fn fetch_training_plan_detail_for_user(
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit
          FROM training_plan_exercises tpe
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
+         JOIN selected_plan_version spv ON spv.id = tpe.training_plan_version_id
          JOIN exercises e ON e.id = tpe.exercise_id
          LEFT JOIN training_plan_exercise_variants peo
            ON peo.training_plan_exercise_id = tpe.id
@@ -100,12 +133,24 @@ pub(super) async fn fetch_training_plan_detail_for_user(
     .bind(training_plan_id)
     .bind(user_id)
     .bind(selected_gym_id)
+    .bind(selected_version_number)
     .fetch_all(&repository.pool)
     .await?;
 
     Ok(Some(TrainingPlanDetail {
         id: plan_row.get("id"),
         name: plan_row.get("name"),
+        selected_version_number,
+        versions: versions
+            .into_iter()
+            .map(|row| {
+                let version_number = row.get("version_number");
+                TrainingPlanVersionSummary {
+                    version_number,
+                    is_current: Some(version_number) == current_version_number,
+                }
+            })
+            .collect(),
         selected_gym_id: selected_gym_id.map(str::to_owned),
         is_executable: None,
         execution_status: None,

@@ -15,6 +15,7 @@ use crate::api::models::{
     TrainingPlanExerciseVariantsResponse, TrainingPlanSummaryResponse,
     TrainingPlanVariantAvailabilityResponse, TrainingPlanVariantLoadInputModeResponse,
     TrainingPlanVariantRepetitionKindResponse, TrainingPlanVariantSetTrackingModeResponse,
+    TrainingPlanVersionSummary as TrainingPlanVersionSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
@@ -285,6 +286,7 @@ pub(crate) async fn get_training_plan(
     let plan = get_training_plan_service(
         &state.repository,
         &training_plan_id,
+        query.version_number,
         query.gym_id.as_deref(),
         &user_id,
     )
@@ -294,6 +296,15 @@ pub(crate) async fn get_training_plan(
     Ok(Json(TrainingPlanDetailResponse {
         id: plan.id,
         name: plan.name,
+        selected_version_number: plan.selected_version_number,
+        versions: plan
+            .versions
+            .into_iter()
+            .map(|version| TrainingPlanVersionSummaryResponse {
+                version_number: version.version_number,
+                is_current: version.is_current,
+            })
+            .collect(),
         selected_gym_id: plan.selected_gym_id,
         is_executable: plan.is_executable,
         execution_status: plan

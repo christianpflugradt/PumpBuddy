@@ -10,6 +10,7 @@ export const pbTrainingPlanDetailScreenTag = "pb-training-plan-detail-screen";
 export type TrainingPlanDetailScreenState = {
   trainingPlanId: string;
   selectedGymId: string | null;
+  selectedVersionNumber: number | null;
   detail: TrainingPlanDetailResponse | null;
   gyms: GymSummary[];
   isLoading: boolean;
@@ -19,6 +20,7 @@ export type TrainingPlanDetailScreenState = {
 type UiAction =
   | "navigate-back-from-training-plan-detail"
   | "select-training-plan-detail-gym"
+  | "select-training-plan-detail-version"
   | "open-training-plan-exercise-detail";
 
 type StatusTone = "green" | "yellow" | "red" | "gray";
@@ -139,6 +141,7 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
   #state: TrainingPlanDetailScreenState = {
     trainingPlanId: "",
     selectedGymId: null,
+    selectedVersionNumber: null,
     detail: null,
     gyms: [],
     isLoading: false,
@@ -209,6 +212,14 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
       return;
     }
 
+    if (target.dataset.selectAction === "select-training-plan-detail-version") {
+      const selectedVersionNumber = Number.parseInt(target.value, 10);
+      if (Number.isInteger(selectedVersionNumber) && selectedVersionNumber > 0) {
+        this.#emitUiAction("select-training-plan-detail-version", { selectedVersionNumber });
+      }
+      return;
+    }
+
     if (target.dataset.selectAction !== "select-training-plan-detail-gym") {
       return;
     }
@@ -230,7 +241,6 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
 
     return `
       <label class="training-plan-detail-gym-field">
-        <span class="training-plan-detail-gym-label">Select gym</span>
         <select class="training-plan-detail-gym-select" data-select-action="select-training-plan-detail-gym">
           <option value=""${selectedGymId.length === 0 ? " selected" : ""}>No gym selected</option>
           ${selectedFallbackOption}
@@ -246,6 +256,40 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
         </select>
       </label>
     `;
+  }
+
+  #renderVersionSelect(detail: TrainingPlanDetailResponse): string {
+    if (detail.versions.length <= 1) {
+      return "";
+    }
+
+    return `
+      <label class="training-plan-detail-gym-field">
+        <select
+          class="training-plan-detail-gym-select"
+          data-select-action="select-training-plan-detail-version"
+          aria-label="Plan version"
+        >
+          ${detail.versions
+            .map(
+              (version) => `
+                <option value="${version.version_number}"${
+                  version.version_number === detail.selected_version_number ? " selected" : ""
+                }>
+                  Version ${version.version_number}${version.is_current ? " (Current)" : ""}
+                </option>
+              `,
+            )
+            .join("")}
+        </select>
+      </label>
+    `;
+  }
+
+  #isCurrentVersion(detail: TrainingPlanDetailResponse): boolean {
+    return detail.versions.some(
+      (version) => version.version_number === detail.selected_version_number && version.is_current,
+    );
   }
 
   #renderStatus(): string {
@@ -265,7 +309,7 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
   }
 
   #renderPlanExecution(detail: TrainingPlanDetailResponse): string {
-    if (!this.#state.selectedGymId) {
+    if (!this.#isCurrentVersion(detail) || !this.#state.selectedGymId) {
       return "";
     }
 
@@ -358,7 +402,7 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
       return `<p class="start-copy">No exercises configured for this training plan.</p>`;
     }
 
-    const hasSelectedGym = Boolean(this.#state.selectedGymId);
+    const hasSelectedGym = this.#isCurrentVersion(detail) && Boolean(this.#state.selectedGymId);
     return `
       <section class="training-plan-detail-exercises" aria-label="Exercises in training plan">
         <h3 class="training-plan-section-title">Exercises in this plan</h3>
@@ -392,7 +436,8 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
             <h2 class="exercise-variant-detail-header-title">${escapeHtml(detail?.name ?? "Training Plan")}</h2>
             <p class="exercise-variant-detail-header-subtitle">Training Plan</p>
           </header>
-          ${this.#renderGymSelect()}
+          ${detail ? this.#renderVersionSelect(detail) : ""}
+          ${!detail || this.#isCurrentVersion(detail) ? this.#renderGymSelect() : ""}
           ${this.#renderStatus()}
           ${detail ? this.#renderPlanExecution(detail) : ""}
           ${detail ? this.#renderExercises(detail) : ""}

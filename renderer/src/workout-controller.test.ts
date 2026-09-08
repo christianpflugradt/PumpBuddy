@@ -261,6 +261,8 @@ const createTrainingPlanDetail = (
 ): TrainingPlanDetailResponse => ({
   id: "plan-1",
   name: "Leg Day",
+  selected_version_number: 1,
+  versions: [{ version_number: 1, is_current: true }],
   selected_gym_id: null,
   is_executable: null,
   execution_status: null,
@@ -1209,10 +1211,12 @@ describe("workout-controller (createApp)", () => {
       screen: "training-plan-detail",
       trainingPlanId: "plan-2",
       selectedGymId: null,
+      selectedVersionNumber: null,
     });
     expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(
       expect.any(Function),
       "plan-2",
+      null,
       null,
     );
     expect(app.state?.trainingPlanDetailScreen.detail?.id).toBe("plan-2");
@@ -1232,11 +1236,13 @@ describe("workout-controller (createApp)", () => {
       screen: "training-plan-detail",
       trainingPlanId: "plan-2",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
     });
     expect(loadTrainingPlanDetailMock).toHaveBeenLastCalledWith(
       expect.any(Function),
       "plan-2",
       "gym-1",
+      null,
     );
     expect(app.state?.trainingPlanDetailScreen.detail?.selected_gym_id).toBe(
       "gym-1",
@@ -1313,6 +1319,10 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: null,
+      selectedVersionNumber: null,
+      selectedVersionNumber: null,
+      selectedVersionNumber: null,
+      selectedVersionNumber: null,
     });
     expect(
       app.state?.trainingPlanDetailScreen.detail?.exercises[0]?.variants.map(
@@ -1330,6 +1340,7 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: null,
+      selectedVersionNumber: null,
     });
     expect(loadStationDetailMock).not.toHaveBeenCalled();
 
@@ -1345,6 +1356,7 @@ describe("workout-controller (createApp)", () => {
       returnTrainingPlanId: "plan-1",
       returnTrainingPlanExerciseId: "exercise-1",
       returnSelectedGymId: null,
+      returnSelectedVersionNumber: null,
       fallbackExerciseName: "Squat",
       fallbackVariantName: "Back Squat",
     });
@@ -1356,6 +1368,7 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: null,
+      selectedVersionNumber: null,
     });
   });
 
@@ -1427,6 +1440,8 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
+      selectedVersionNumber: null,
     });
     expect(
       app.state?.trainingPlanDetailScreen.detail?.exercises[0]?.variants.find(
@@ -1450,6 +1465,7 @@ describe("workout-controller (createApp)", () => {
       returnTrainingPlanId: "plan-1",
       returnTrainingPlanExerciseId: "exercise-1",
       returnSelectedGymId: "gym-1",
+      returnSelectedVersionNumber: null,
       fallbackExerciseName: "Squat",
       fallbackVariantName: "Back Squat",
     });
@@ -1460,6 +1476,7 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
     });
 
     dispatchActionWithDetail(app, {
@@ -1471,6 +1488,7 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
     });
     expect(loadStationDetailMock).not.toHaveBeenCalled();
 
@@ -1487,6 +1505,7 @@ describe("workout-controller (createApp)", () => {
       returnTrainingPlanId: "plan-1",
       returnTrainingPlanExerciseId: "exercise-1",
       returnSelectedGymId: "gym-1",
+      returnSelectedVersionNumber: null,
     });
     expect(loadStationDetailMock).toHaveBeenLastCalledWith(
       expect.any(Function),
@@ -1500,6 +1519,7 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
     });
   });
 

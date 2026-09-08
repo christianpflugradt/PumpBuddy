@@ -9,6 +9,8 @@ import type { TrainingPlanDetailResponse } from "./workout-contract";
 const createDetail = (overrides: Partial<TrainingPlanDetailResponse> = {}): TrainingPlanDetailResponse => ({
   id: "plan-1",
   name: "Leg Day",
+  selected_version_number: 1,
+  versions: [{ version_number: 1, is_current: true }],
   selected_gym_id: null,
   is_executable: null,
   execution_status: null,
@@ -192,6 +194,90 @@ describe("pb-training-plan-detail-screen", () => {
     expect(handler.mock.calls[1][0].detail).toEqual({
       action: "select-training-plan-detail-gym",
       payload: { selectedGymId: null },
+    });
+    expect(el.textContent ?? "").not.toContain("Select gym");
+  });
+
+  it("only exposes the version selector when the plan has multiple versions", () => {
+    const el = document.createElement(pbTrainingPlanDetailScreenTag) as HTMLElement & {
+      state: TrainingPlanDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = createState();
+
+    expect(el.querySelector('[data-select-action="select-training-plan-detail-version"]')).toBeNull();
+    expect(el.textContent ?? "").not.toContain("Version 1");
+  });
+
+  it("renders historical versions as gym-independent exercise snapshots", () => {
+    const el = document.createElement(pbTrainingPlanDetailScreenTag) as HTMLElement & {
+      state: TrainingPlanDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = createState({
+      selectedGymId: "gym-1",
+      selectedVersionNumber: 1,
+      detail: createDetail({
+        selected_version_number: 1,
+        versions: [
+          { version_number: 2, is_current: true },
+          { version_number: 1, is_current: false },
+        ],
+        selected_gym_id: null,
+        is_executable: null,
+        execution_status: null,
+        execution_summary: null,
+        exercises: [
+          {
+            training_plan_exercise_id: "historical-exercise",
+            exercise_name: "Wide Lat Pulldown",
+            exercise_position: 1,
+            configured_variant_count: 1,
+            executable_variant_count: null,
+            execution_status: null,
+            variants: [],
+          },
+        ],
+      }),
+    });
+
+    const versionSelect = el.querySelector(
+      '[data-select-action="select-training-plan-detail-version"]',
+    ) as HTMLSelectElement;
+    expect(versionSelect.value).toBe("1");
+    expect(versionSelect.textContent ?? "").toContain("Version 2 (Current)");
+    expect(el.querySelector('[data-select-action="select-training-plan-detail-gym"]')).toBeNull();
+    expect(el.querySelector(".training-plan-detail-plan-status")).toBeNull();
+    expect(el.textContent ?? "").not.toContain("variants executable");
+    expect(el.textContent ?? "").toContain("Wide Lat Pulldown");
+  });
+
+  it("emits version selection changes", () => {
+    const el = document.createElement(pbTrainingPlanDetailScreenTag) as HTMLElement & {
+      state: TrainingPlanDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = createState({
+      detail: createDetail({
+        selected_version_number: 2,
+        versions: [
+          { version_number: 2, is_current: true },
+          { version_number: 1, is_current: false },
+        ],
+      }),
+    });
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const select = el.querySelector(
+      '[data-select-action="select-training-plan-detail-version"]',
+    ) as HTMLSelectElement;
+    select.value = "1";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      action: "select-training-plan-detail-version",
+      payload: { selectedVersionNumber: 1 },
     });
   });
 

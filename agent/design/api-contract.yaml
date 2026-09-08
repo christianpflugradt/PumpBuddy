@@ -559,6 +559,16 @@ paths:
             Optional selected gym context for read-only plan browsing.
             When omitted, the response lists configured variants without
             availability, execution status, or station display data.
+        - name: versionNumber
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            Optional immutable plan version to browse. When omitted, the latest
+            version is selected. Historical versions are returned without gym
+            compatibility or execution metadata.
       responses:
         '200':
           description: Training plan browsing detail retrieved successfully
@@ -2567,6 +2577,8 @@ components:
       required:
         - id
         - name
+        - selected_version_number
+        - versions
         - selected_gym_id
         - is_executable
         - execution_status
@@ -2578,6 +2590,15 @@ components:
           format: uuid
         name:
           type: string
+        selected_version_number:
+          type: integer
+          minimum: 1
+          description: Immutable version represented by this detail payload.
+        versions:
+          type: array
+          description: Versions available for this training plan, newest first.
+          items:
+            $ref: '#/components/schemas/TrainingPlanVersionSummary'
         selected_gym_id:
           type: string
           format: uuid
@@ -2607,6 +2628,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrainingPlanExerciseDetail'
+    TrainingPlanVersionSummary:
+      type: object
+      required:
+        - version_number
+        - is_current
+      properties:
+        version_number:
+          type: integer
+          minimum: 1
+        is_current:
+          type: boolean
     TrainingPlanExerciseVariantSummary:
       type: object
       description: |

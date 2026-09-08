@@ -370,6 +370,14 @@ pub mod training_plan_detail_response {
 }
 pub use training_plan_detail_response::TrainingPlanDetailResponse;
 
+pub mod training_plan_version_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_version_summary.rs"
+    ));
+}
+pub use training_plan_version_summary::TrainingPlanVersionSummary;
+
 pub mod training_plan_exercise_detail {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

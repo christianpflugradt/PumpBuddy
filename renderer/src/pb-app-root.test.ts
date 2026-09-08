@@ -464,16 +464,24 @@ describe("pb-app-root", () => {
     document.body.append(el);
 
     const state = createState();
-    state.viewState = { screen: "training-plan-detail", trainingPlanId: "plan-1", selectedGymId: null };
+    state.viewState = {
+      screen: "training-plan-detail",
+      trainingPlanId: "plan-1",
+      selectedGymId: null,
+      selectedVersionNumber: null,
+    };
     state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
     state.trainingPlanDetailScreen = {
       trainingPlanId: "plan-1",
       selectedGymId: null,
+      selectedVersionNumber: null,
       isLoading: false,
       errorMessage: null,
       detail: {
         id: "plan-1",
         name: "Leg Day",
+        selected_version_number: 1,
+        versions: [{ version_number: 1, is_current: true }],
         selected_gym_id: null,
         is_executable: null,
         execution_status: null,
@@ -511,16 +519,20 @@ describe("pb-app-root", () => {
       trainingPlanId: "plan-1",
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
     };
     state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
     state.trainingPlanDetailScreen = {
       trainingPlanId: "plan-1",
       selectedGymId: "gym-1",
+      selectedVersionNumber: null,
       isLoading: false,
       errorMessage: null,
       detail: {
         id: "plan-1",
         name: "Leg Day",
+        selected_version_number: 1,
+        versions: [{ version_number: 1, is_current: true }],
         selected_gym_id: "gym-1",
         is_executable: true,
         execution_status: "GREEN",

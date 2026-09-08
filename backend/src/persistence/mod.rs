@@ -287,6 +287,7 @@ pub(crate) trait TrainingPlanRepository {
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_version_number: Option<i32>,
         selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError>;
@@ -689,12 +690,14 @@ impl TrainingPlanRepository for DomainRepository {
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_version_number: Option<i32>,
         selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
         DomainRepository::fetch_training_plan_detail_for_user(
             self,
             training_plan_id,
+            selected_version_number,
             selected_gym_id,
             user_id,
         )
@@ -1057,12 +1060,14 @@ impl DomainRepository {
     pub async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_version_number: Option<i32>,
         selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
         training_plans::fetch_training_plan_detail_for_user(
             self,
             training_plan_id,
+            selected_version_number,
             selected_gym_id,
             user_id,
         )

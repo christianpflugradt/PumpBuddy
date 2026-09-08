@@ -237,9 +237,11 @@ class PbAppRootElement extends HTMLElement {
     if (state.viewState.screen === "training-plan-detail") {
       const trainingPlanId = state.viewState.trainingPlanId;
       const selectedGymId = state.viewState.selectedGymId;
+      const selectedVersionNumber = state.viewState.selectedVersionNumber;
       const detailState =
         state.trainingPlanDetailScreen.trainingPlanId === trainingPlanId &&
-        state.trainingPlanDetailScreen.selectedGymId === selectedGymId
+        state.trainingPlanDetailScreen.selectedGymId === selectedGymId &&
+        state.trainingPlanDetailScreen.selectedVersionNumber === selectedVersionNumber
           ? state.trainingPlanDetailScreen
           : null;
       const el = document.createElement(pbTrainingPlanDetailScreenTag) as HTMLElement & {
@@ -248,6 +250,7 @@ class PbAppRootElement extends HTMLElement {
       el.state = {
         trainingPlanId,
         selectedGymId,
+        selectedVersionNumber,
         detail: detailState?.detail ?? null,
         gyms: state.startScreen.gyms,
         isLoading: detailState?.isLoading ?? false,
@@ -261,9 +264,11 @@ class PbAppRootElement extends HTMLElement {
       const trainingPlanId = state.viewState.trainingPlanId;
       const trainingPlanExerciseId = state.viewState.trainingPlanExerciseId;
       const selectedGymId = state.viewState.selectedGymId;
+      const selectedVersionNumber = state.viewState.selectedVersionNumber;
       const detailState =
         state.trainingPlanDetailScreen.trainingPlanId === trainingPlanId &&
-        state.trainingPlanDetailScreen.selectedGymId === selectedGymId
+        state.trainingPlanDetailScreen.selectedGymId === selectedGymId &&
+        state.trainingPlanDetailScreen.selectedVersionNumber === selectedVersionNumber
           ? state.trainingPlanDetailScreen
           : null;
       const detail = detailState?.detail ?? null;

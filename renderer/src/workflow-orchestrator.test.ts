@@ -859,6 +859,8 @@ describe("workflow-orchestrator", () => {
     fetchJson.mockResolvedValueOnce({
       id: "plan-1",
       name: "Leg Day",
+      selected_version_number: 1,
+      versions: [{ version_number: 1, is_current: true }],
       selected_gym_id: null,
       is_executable: null,
       execution_status: null,

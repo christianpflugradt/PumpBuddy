@@ -42,6 +42,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadTrainingPlanDetailScreenData: (
     trainingPlanId: string,
     selectedGymId?: string | null,
+    selectedVersionNumber?: number | null,
   ) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson } = deps;
@@ -467,6 +468,7 @@ export const createScreenDataController = (deps: Dependencies): {
   const loadTrainingPlanDetailScreenData = async (
     trainingPlanId: string,
     selectedGymId?: string | null,
+    selectedVersionNumber?: number | null,
   ): Promise<void> => {
     const normalizedTrainingPlanId = trainingPlanId.trim();
     if (!normalizedTrainingPlanId) {
@@ -474,6 +476,10 @@ export const createScreenDataController = (deps: Dependencies): {
     }
 
     const normalizedGymId = normalizeOptionalId(selectedGymId);
+    const normalizedVersionNumber =
+      Number.isInteger(selectedVersionNumber) && (selectedVersionNumber ?? 0) > 0
+        ? selectedVersionNumber ?? null
+        : null;
     const requestToken = ++trainingPlanDetailLoadToken;
     const state = getState();
     setState({
@@ -486,6 +492,7 @@ export const createScreenDataController = (deps: Dependencies): {
       trainingPlanDetailScreen: {
         trainingPlanId: normalizedTrainingPlanId,
         selectedGymId: normalizedGymId,
+        selectedVersionNumber: normalizedVersionNumber,
         detail: null,
         isLoading: true,
         errorMessage: null,
@@ -494,7 +501,12 @@ export const createScreenDataController = (deps: Dependencies): {
     render();
 
     try {
-      const detail = await loadTrainingPlanDetail(fetchJson, normalizedTrainingPlanId, normalizedGymId);
+      const detail = await loadTrainingPlanDetail(
+        fetchJson,
+        normalizedTrainingPlanId,
+        normalizedGymId,
+        normalizedVersionNumber,
+      );
       if (requestToken !== trainingPlanDetailLoadToken) {
         return;
       }
@@ -502,7 +514,8 @@ export const createScreenDataController = (deps: Dependencies): {
       const nextState = getState();
       if (
         nextState.trainingPlanDetailScreen.trainingPlanId !== normalizedTrainingPlanId ||
-        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId
+        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId ||
+        nextState.trainingPlanDetailScreen.selectedVersionNumber !== normalizedVersionNumber
       ) {
         return;
       }
@@ -512,6 +525,7 @@ export const createScreenDataController = (deps: Dependencies): {
         trainingPlanDetailScreen: {
           trainingPlanId: normalizedTrainingPlanId,
           selectedGymId: normalizedGymId,
+          selectedVersionNumber: normalizedVersionNumber,
           detail,
           isLoading: false,
           errorMessage: null,
@@ -526,7 +540,8 @@ export const createScreenDataController = (deps: Dependencies): {
       const nextState = getState();
       if (
         nextState.trainingPlanDetailScreen.trainingPlanId !== normalizedTrainingPlanId ||
-        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId
+        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId ||
+        nextState.trainingPlanDetailScreen.selectedVersionNumber !== normalizedVersionNumber
       ) {
         return;
       }
@@ -536,6 +551,7 @@ export const createScreenDataController = (deps: Dependencies): {
         trainingPlanDetailScreen: {
           trainingPlanId: normalizedTrainingPlanId,
           selectedGymId: normalizedGymId,
+          selectedVersionNumber: normalizedVersionNumber,
           detail: null,
           isLoading: false,
           errorMessage: "Unable to load training plan detail right now.",

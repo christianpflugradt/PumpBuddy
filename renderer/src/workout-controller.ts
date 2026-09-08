@@ -154,6 +154,7 @@ export const createApp = (
     trainingPlanDetailScreen: {
       trainingPlanId: null,
       selectedGymId: null,
+      selectedVersionNumber: null,
       detail: null,
       isLoading: false,
       errorMessage: null,
