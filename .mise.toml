@@ -1,2 +1,18 @@
 [tools]
 python = "3.13.15"
+
+[tasks.check]
+description = "Run all repository quality checks"
+run = "make check"
+
+[tasks.run-app]
+description = "Start the development application"
+run = "make run-app"
+
+[tasks.stop-app]
+description = "Stop the development application"
+run = "make stop-app"
+
+[tasks.rebuild-app]
+description = "Rebuild and start the development application"
+run = "make rebuild-app"
