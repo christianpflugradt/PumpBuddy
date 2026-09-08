@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { registerPbExerciseScreen, pbExerciseScreenTag } from "./pb-exercise-screen";
+import {
+  formatElapsedTime,
+  registerPbExerciseScreen,
+  pbExerciseScreenTag,
+} from "./pb-exercise-screen";
 import type { ExerciseScreenState } from "./pb-exercise-screen";
 import type { WorkoutPlan } from "./workout-types";
 
@@ -73,6 +77,40 @@ describe("pb-exercise-screen", () => {
 
     const text = el.textContent ?? "";
     expect(text).toContain("Bench Press");
+  });
+
+  it("only shows the workout-wide elapsed timer after a set completes and updates it", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-08T12:30:00.000Z"));
+
+    try {
+      const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+        state: ExerciseScreenState;
+      };
+      document.body.append(el);
+
+      const state = createState();
+      el.state = state;
+      expect(el.querySelector(".workout-rest-timer")).toBeNull();
+
+      state.activeWorkout.lastSetCompletedAt = "2026-09-08T10:24:18.000Z";
+      el.state = state;
+      expect(el.querySelector(".workout-rest-timer")?.textContent).toContain("125:42");
+
+      vi.advanceTimersByTime(1000);
+      expect(el.querySelector(".workout-rest-timer-value")?.textContent).toBe("125:43");
+
+      el.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("formats elapsed time as unbounded, two-digit minutes and seconds", () => {
+    expect(formatElapsedTime(5)).toBe("00:05");
+    expect(formatElapsedTime(65)).toBe("01:05");
+    expect(formatElapsedTime(3_600)).toBe("60:00");
+    expect(formatElapsedTime(7_542)).toBe("125:42");
   });
 
   it("emits next-set action on button click", () => {

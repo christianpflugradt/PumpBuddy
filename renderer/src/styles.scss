@@ -3637,6 +3637,27 @@ pb-app-root,
   line-height: 1.35;
 }
 
+.workout-rest-timer {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.1rem 0 0;
+  padding: 0 0.1rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.workout-rest-timer-value {
+  color: var(--text-strong);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.workout-rest-timer-label {
+  color: var(--text-secondary);
+}
+
 @keyframes completed-set-enter {
   from {
     opacity: 0.65;

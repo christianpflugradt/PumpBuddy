@@ -490,6 +490,7 @@ describe("workflow-orchestrator", () => {
       selectedStationId: "station-2",
       completedSets: [],
     });
+    expect(getState().activeWorkout.lastSetCompletedAt).toBe("now");
   });
 
   it("persistActiveSet sends per-side draft loads for configured-gym PER_SIDE variants", async () => {
@@ -842,6 +843,7 @@ describe("workflow-orchestrator", () => {
       id: null,
       startedAt: null,
       persistedExerciseCount: 0,
+      lastSetCompletedAt: null,
     });
     expect(getState().startScreen.selectedTrainingPlanId).toBe("plan-1");
     expect(getState().startScreen.selectedGymId).toBe("gym-1");

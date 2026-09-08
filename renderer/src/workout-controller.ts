@@ -197,6 +197,7 @@ export const createApp = (
       id: null,
       startedAt: null,
       persistedExerciseCount: 0,
+      lastSetCompletedAt: null,
     },
     workoutSave: {
       isSaving: false,

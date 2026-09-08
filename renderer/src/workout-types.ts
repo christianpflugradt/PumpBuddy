@@ -260,6 +260,8 @@ export type AppState = {
     id: string | null;
     startedAt: string | null;
     persistedExerciseCount: number;
+    /** Frontend-only timestamp for the active workout's most recently completed set. */
+    lastSetCompletedAt?: string | null;
   };
   workoutSave: {
     isSaving: boolean;

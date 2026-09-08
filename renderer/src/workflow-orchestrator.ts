@@ -94,6 +94,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         id: null,
         startedAt: null,
         persistedExerciseCount: 0,
+        lastSetCompletedAt: null,
       },
       workoutSave: {
         isSaving: false,
@@ -164,6 +165,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
             id: activeWorkoutResponse.workout.id,
             startedAt: activeWorkoutResponse.workout.started_at,
             persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
+            lastSetCompletedAt: null,
           },
           workoutSave: {
             isSaving: false,
@@ -262,6 +264,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: createResponse.workout.id,
           startedAt: createResponse.workout.started_at,
           persistedExerciseCount: countPersistedExercises(createResponse),
+          lastSetCompletedAt: null,
         },
         workoutSave: {
           isSaving: false,
@@ -394,6 +397,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: null,
           startedAt,
           persistedExerciseCount: 0,
+          lastSetCompletedAt: null,
         },
         workoutSave: {
           isSaving: false,
@@ -494,6 +498,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: now(),
         },
         workoutSave: {
           isSaving: false,
@@ -599,6 +604,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: getState().activeWorkout.lastSetCompletedAt ?? null,
         },
         workoutSave: {
           isSaving: false,
@@ -676,6 +682,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: getState().activeWorkout.lastSetCompletedAt ?? null,
         },
         workoutSave: {
           isSaving: false,
@@ -742,6 +749,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: getState().activeWorkout.lastSetCompletedAt ?? null,
         },
         workoutSave: {
           isSaving: false,
@@ -816,6 +824,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: getState().activeWorkout.lastSetCompletedAt ?? null,
         },
         workoutSave: {
           isSaving: false,
@@ -886,6 +895,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           id: response.workout.id,
           startedAt: response.workout.started_at,
           persistedExerciseCount: countPersistedExercises(response),
+          lastSetCompletedAt: getState().activeWorkout.lastSetCompletedAt ?? null,
         },
         workoutSave: {
           isSaving: false,

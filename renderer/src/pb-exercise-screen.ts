@@ -50,6 +50,21 @@ const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 };
 
+export const formatElapsedTime = (totalSeconds: number): string => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(normalized / 60);
+  const seconds = normalized % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const elapsedSecondsSince = (timestamp: string): number | null => {
+  const completedAt = Date.parse(timestamp);
+  if (!Number.isFinite(completedAt)) {
+    return null;
+  }
+  return Math.max(0, Math.floor((Date.now() - completedAt) / 1000));
+};
+
 const splitSecondsForPicker = (totalSeconds: number): { minutes: number; seconds: number } => {
   const normalized = Math.max(0, Math.floor(totalSeconds));
   return {
@@ -613,6 +628,7 @@ class PbExerciseScreenElement extends HTMLElement {
   #repsPicker = { isOpen: false, value: minRepsPickerValue };
   #loadPicker = { isOpen: false, options: [] as number[], value: null as number | null };
   #secsWheelSnapTimers: { minutes: number | null; seconds: number | null } = { minutes: null, seconds: null };
+  #elapsedTimer: number | null = null;
 
   #captureInputSelection(): () => void {
     const active = document.activeElement;
@@ -639,6 +655,7 @@ class PbExerciseScreenElement extends HTMLElement {
     this.addEventListener("change", this.#onChange);
     this.addEventListener("input", this.#onInput);
     this.addEventListener("scroll", this.#onScroll, true);
+    this.#syncElapsedTimer();
   }
 
   disconnectedCallback(): void {
@@ -646,11 +663,13 @@ class PbExerciseScreenElement extends HTMLElement {
     this.removeEventListener("change", this.#onChange);
     this.removeEventListener("input", this.#onInput);
     this.removeEventListener("scroll", this.#onScroll, true);
+    this.#stopElapsedTimer();
   }
 
   set state(value: ExerciseScreenState | null) {
     this.#state = value;
     this.#render();
+    this.#syncElapsedTimer();
   }
 
   get state(): ExerciseScreenState | null {
@@ -911,6 +930,35 @@ class PbExerciseScreenElement extends HTMLElement {
     return plan.exercises[exerciseIndex] ?? null;
   }
 
+  #stopElapsedTimer(): void {
+    if (this.#elapsedTimer !== null) {
+      window.clearInterval(this.#elapsedTimer);
+      this.#elapsedTimer = null;
+    }
+  }
+
+  #refreshElapsedTimer(): void {
+    const completedAt = this.#state?.activeWorkout.lastSetCompletedAt;
+    const value = completedAt ? elapsedSecondsSince(completedAt) : null;
+    const timerValue = this.querySelector<HTMLElement>(".workout-rest-timer-value");
+    if (value === null || !timerValue) {
+      return;
+    }
+    timerValue.textContent = formatElapsedTime(value);
+  }
+
+  #syncElapsedTimer(): void {
+    const completedAt = this.#state?.activeWorkout.lastSetCompletedAt;
+    if (!completedAt || elapsedSecondsSince(completedAt) === null) {
+      this.#stopElapsedTimer();
+      return;
+    }
+    this.#refreshElapsedTimer();
+    if (this.#elapsedTimer === null) {
+      this.#elapsedTimer = window.setInterval(() => this.#refreshElapsedTimer(), 1000);
+    }
+  }
+
   #setPickerValue(wheel: "minutes" | "seconds", value: number, syncScroll: boolean): void {
     const bounded = Math.max(0, Math.min(59, Math.floor(value)));
     this.#secsPicker[wheel] = bounded;
@@ -1092,6 +1140,9 @@ class PbExerciseScreenElement extends HTMLElement {
         ? "disabled"
         : "";
     const completedSetHistory = renderCompletedSetHistory(exerciseStep);
+    const elapsedSeconds = activeWorkout.lastSetCompletedAt
+      ? elapsedSecondsSince(activeWorkout.lastSetCompletedAt)
+      : null;
     const restoreInputSelection = this.#captureInputSelection();
 
     this.innerHTML = `
@@ -1174,6 +1225,12 @@ class PbExerciseScreenElement extends HTMLElement {
                   ${completedSetHistory}
                 </section>`
             : ""
+        }
+
+        ${
+          elapsedSeconds === null
+            ? ""
+            : `<p class="workout-rest-timer" aria-live="off"><span class="workout-rest-timer-value">${formatElapsedTime(elapsedSeconds)}</span><span class="workout-rest-timer-label">since last set</span></p>`
         }
 
         ${
