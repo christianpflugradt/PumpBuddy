@@ -4,7 +4,8 @@
   "minimumReleaseAgeBehaviour": "timestamp-required",
   "rebaseWhen": "behind-base-branch",
   "extends": [
-    "config:best-practices"
+    "config:best-practices",
+    ":maintainLockFilesMonthly"
   ],
   "packageRules": [
     {

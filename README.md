@@ -68,7 +68,7 @@ patch level compatible with the release tooling. When bumping Node, update
 
 - [`package.json`](package.json) and [`renderer/package.json`](renderer/package.json) (`engines.node`)
 - [`package-lock.json`](package-lock.json) and [`renderer/package-lock.json`](renderer/package-lock.json) (lockfile metadata and renderer Node typings)
-- [`.github/workflows/ci-quality.yaml`](.github/workflows/ci-quality.yaml), [`.github/workflows/release.yaml`](.github/workflows/release.yaml), and [`.github/workflows/security.yaml`](.github/workflows/security.yaml) (Node setup reads `.node-version`)
+- [`.github/workflows/ci-quality.yaml`](.github/workflows/ci-quality.yaml) and [`.github/workflows/release.yaml`](.github/workflows/release.yaml) (Node setup reads `.node-version`)
 - [`renderer/Dockerfile`](renderer/Dockerfile) (`node:24-bookworm-slim` builder image tag and digest)
 
 Install managed pre-push hook:
