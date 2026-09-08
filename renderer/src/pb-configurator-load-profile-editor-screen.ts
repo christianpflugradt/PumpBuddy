@@ -453,7 +453,18 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     }
 
     this.#submitError = null;
+    const selectionStart = target.selectionStart;
+    const selectionEnd = target.selectionEnd;
+    const selectionDirection = target.selectionDirection ?? "none";
     this.#render();
+
+    const updatedInput = this.querySelector(`[data-field="${field}"]`);
+    if (updatedInput instanceof HTMLInputElement || updatedInput instanceof HTMLTextAreaElement) {
+      updatedInput.focus();
+      if (selectionStart !== null && selectionEnd !== null) {
+        updatedInput.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
+      }
+    }
   };
 
   #onChange = (event: Event): void => {

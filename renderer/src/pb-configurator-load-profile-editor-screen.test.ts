@@ -64,6 +64,45 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     expect(textarea?.value).toContain("25");
   });
 
+  it("keeps text fields focused through live validation renders", () => {
+    const el = document.createElement(
+      pbConfiguratorLoadProfileEditorScreenTag,
+    ) as HTMLElement & {
+      state: ConfiguratorLoadProfileEditorScreenState;
+    };
+    document.body.append(el);
+    el.state = createState();
+
+    const updateTextField = (field: string, value: string): void => {
+      const input = el.querySelector(`[data-field="${field}"]`) as
+        | HTMLInputElement
+        | HTMLTextAreaElement;
+      input.focus();
+      input.value = value;
+      input.setSelectionRange(value.length, value.length);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      const updatedInput = el.querySelector(`[data-field="${field}"]`);
+      expect(document.activeElement).toBe(updatedInput);
+      const focusedInput = updatedInput as HTMLInputElement | HTMLTextAreaElement;
+      expect(focusedInput.value).toBe(value);
+      expect(focusedInput.selectionStart).toBe(value.length);
+      expect(focusedInput.selectionEnd).toBe(value.length);
+    };
+
+    updateTextField("name", "Alpha Updated");
+    updateTextField("fixed-list", "20\n25\n30\n35");
+
+    const definitionKind = el.querySelector(
+      '[data-field="definition-kind"]',
+    ) as HTMLSelectElement;
+    definitionKind.value = "formula";
+    definitionKind.dispatchEvent(new Event("change", { bubbles: true }));
+
+    updateTextField("formula-min", "20");
+    updateTextField("formula-step", "2.5");
+  });
+
   it("emits a save event for create mode once the draft is valid", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,
