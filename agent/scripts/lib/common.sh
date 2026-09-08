@@ -110,6 +110,16 @@ bootstrap_agent_python_runtime() {
 
   venv_dir="${root_dir}/.venv"
   venv_python="${venv_dir}/bin/python"
+
+  # A virtual environment can outlive the interpreter it was created with
+  # (for example after a Homebrew or mise Python upgrade).  Python's venv
+  # module cannot reliably repair that partial environment in place, so
+  # recreate it before attempting to install the agent dependencies.
+  if [ -d "${venv_dir}" ] && { [ ! -x "${venv_python}" ] || ! "${venv_python}" -c 'pass' >/dev/null 2>&1; }; then
+    echo "Recreating unusable local Python runtime in ${venv_dir}..." >&2
+    rm -rf "${venv_dir}"
+  fi
+
   if [ -x "${venv_python}" ] && python_has_agent_deps "${venv_python}"; then
     PATH="${venv_dir}/bin:${PATH}"
     export PATH
