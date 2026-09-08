@@ -484,7 +484,9 @@ async fn fetch_training_plan_exercise_variant_summaries_with_version_cte(
             peo.id ASC,
             cvs.station_id ASC NULLS FIRST"
     );
-    let rows = sqlx::query(&query)
+    // The only interpolated fragment is selected_plan_version_cte, supplied by private callers
+    // as one of the static CTE constants above; all request-derived values remain bound below.
+    let rows = sqlx::query(sqlx::AssertSqlSafe(query))
         .bind(training_plan_id)
         .bind(active_workout_id)
         .bind(gym_id)

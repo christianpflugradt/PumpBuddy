@@ -2,7 +2,7 @@
 
 use super::test_runtime::{TESTCONTAINERS_POSTGRES_IMAGE_NAME, TESTCONTAINERS_POSTGRES_IMAGE_TAG};
 use sqlx::{
-    postgres::{PgConnectOptions, PgPoolOptions},
+    postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
     PgPool,
 };
 use std::{env, path::PathBuf, str::FromStr, sync::OnceLock};
@@ -165,8 +165,10 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
     let start = std::time::Instant::now();
 
     while start.elapsed() < TEST_DB_CONNECT_TOTAL_TIMEOUT {
-        let connect_options =
-            PgConnectOptions::from_str(database_url).expect("database URL should be valid");
+        let connect_options = PgConnectOptions::from_str(database_url)
+            .expect("database URL should be valid")
+            // The Testcontainers Postgres image is deliberately configured without TLS.
+            .ssl_mode(PgSslMode::Disable);
 
         match timeout(
             TEST_DB_CONNECT_ATTEMPT_TIMEOUT,
