@@ -1,5 +1,5 @@
 [tools]
-python = "3.13.15"
+python = "3.14.7"
 
 [tasks.check]
 description = "Run all repository quality checks"
