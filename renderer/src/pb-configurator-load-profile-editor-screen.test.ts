@@ -46,7 +46,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     errorMessage: null,
   });
 
-  it("prefills edit state from the detail payload and renders preview loads", () => {
+  it("prefills edit state from the detail payload with a compact parsed summary", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,
     ) as HTMLElement & {
@@ -56,8 +56,8 @@ describe("pb-configurator-load-profile-editor-screen", () => {
 
     el.state = createState();
 
-    expect(el.textContent ?? "").toContain("Alpha Draft");
-    expect(el.textContent ?? "").toContain("20 kg");
+    expect(el.querySelector("h1")?.textContent).toBe("Load Profile");
+    expect(el.textContent ?? "").toContain("3 values · 20–30 KG");
     const textarea = el.querySelector(
       '[data-field="fixed-list"]',
     ) as HTMLTextAreaElement | null;
@@ -148,7 +148,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     });
   });
 
-  it("shows live validation feedback for duplicate names and malformed numeric input", () => {
+  it("keeps a new form quiet until interaction, then shows specific validation feedback", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,
     ) as HTMLElement & {
@@ -161,17 +161,43 @@ describe("pb-configurator-load-profile-editor-screen", () => {
       detail: null,
     };
 
+    expect(el.textContent ?? "").not.toContain("Name is required.");
+    expect(el.textContent ?? "").not.toContain("Add at least one fixed value.");
+
     const nameInput = el.querySelector('[data-field="name"]') as HTMLInputElement;
     nameInput.value = "Bravo Draft";
     nameInput.dispatchEvent(new Event("input", { bubbles: true }));
     const textarea = el.querySelector('[data-field="fixed-list"]') as HTMLTextAreaElement;
-    textarea.value = "20\nabc";
+    textarea.value = "20 12..5";
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(el.textContent ?? "").toContain("Name must be unique.");
     expect(el.textContent ?? "").toContain(
-      "Fixed list values must be numbers separated by commas or lines.",
+      "Could not read '12..5' as a weight.",
     );
+  });
+
+  it("accepts spaces, commas, and line breaks in fixed-list values", () => {
+    const el = document.createElement(
+      pbConfiguratorLoadProfileEditorScreenTag,
+    ) as HTMLElement & { state: ConfiguratorLoadProfileEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), mode: "create", detail: null };
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+    const nameInput = el.querySelector('[data-field="name"]') as HTMLInputElement;
+    nameInput.value = "Mixed Separators";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+    const textarea = el.querySelector('[data-field="fixed-list"]') as HTMLTextAreaElement;
+    textarea.value = "2.5, 5 7.5\n10";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-load-profile"]') as HTMLButtonElement).click();
+
+    expect(handler.mock.calls[0]?.[0].detail.payload.request.definition).toEqual({
+      kind: "fixed_list",
+      values: [2.5, 5, 7.5, 10],
+    });
   });
 
   it("emits delete requests for editable draft details", () => {
@@ -197,7 +223,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     });
   });
 
-  it("keeps historical definition fields read-only and only emits rename save after warning confirmation", () => {
+  it("presents historical structure as read-only metadata and only emits rename save after warning confirmation", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,
     ) as HTMLElement & {
@@ -225,10 +251,11 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    expect((el.querySelector('[data-field="weight-unit"]') as HTMLSelectElement).disabled).toBe(true);
-    expect((el.querySelector('[data-field="definition-kind"]') as HTMLSelectElement).disabled).toBe(true);
-    expect((el.querySelector('[data-field="fixed-list"]') as HTMLTextAreaElement).disabled).toBe(true);
-    expect(el.textContent ?? "").toContain("Only the name can change");
+    expect(el.querySelector('[data-field="weight-unit"]')).toBeNull();
+    expect(el.querySelector('[data-field="definition-kind"]')).toBeNull();
+    expect(el.querySelector('[data-field="fixed-list"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("20 KG · 25 KG · 30 KG");
+    expect(el.textContent ?? "").not.toContain("Preview");
 
     const nameInput = el.querySelector('[data-field="name"]') as HTMLInputElement;
     nameInput.value = "Alpha Historical";
@@ -267,7 +294,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     });
   });
 
-  it("opens preview loads in a station-detail-style popup and closes only from the close button", () => {
+  it("uses the shared detail header and does not render immutable values twice", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,
     ) as HTMLElement & {
@@ -276,28 +303,10 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     document.body.append(el);
     el.state = createState();
 
-    const inspectButton = el.querySelector(
-      '[data-ui-action="open-load-profile-preview"]',
-    ) as HTMLButtonElement | null;
-    inspectButton?.click();
-
-    const dialog = el.querySelector('[role="dialog"]');
-    expect(dialog?.textContent ?? "").toContain("Alpha Draft");
-    expect(dialog?.textContent ?? "").toContain("20 kg");
-    expect(dialog?.textContent ?? "").toContain("25 kg");
-    expect(
-      el.querySelectorAll(".station-load-profile-value button, .station-load-profile-value input, .station-load-profile-value select, .station-load-profile-value textarea"),
-    ).toHaveLength(0);
-
-    const backdrop = el.querySelector(".station-load-profile-dialog-backdrop") as HTMLElement;
-    backdrop.click();
-    expect(el.querySelector('[role="dialog"]')?.textContent ?? "").toContain("Alpha Draft");
-
-    const closeButton = el.querySelector(
-      '[data-ui-action="dismiss-load-profile-preview"]',
-    ) as HTMLButtonElement | null;
-    closeButton?.click();
-
-    expect(el.querySelector(".station-load-profile-dialog")).toBeNull();
+    expect(el.querySelector("pb-side-menu")).toBeNull();
+    expect(el.querySelector(".detail-back-button")).not.toBeNull();
+    expect(el.querySelector(".configurator-load-profile-back-button")).toBeNull();
+    expect(el.querySelector('[aria-label="Preview"]')).toBeNull();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
   });
 });

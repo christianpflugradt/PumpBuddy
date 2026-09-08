@@ -1,4 +1,3 @@
-import "./pb-side-menu";
 import type {
   LoadProfileCreateRequest,
   LoadProfileDetailResponse,
@@ -63,42 +62,28 @@ const escapeHtml = (value: string): string =>
 const escapeAttribute = (value: string): string =>
   escapeHtml(value).replaceAll("`", "&#96;");
 
-const formatPreviewLoads = (values: number[]): string => {
-  if (values.length === 0) {
-    return "No preview loads yet.";
-  }
-
-  return values.map((value) => `${value} kg`).join(" · ");
-};
+const formatValues = (values: number[], weightUnit: WeightUnit): string =>
+  values.length === 0 ? "No values" : values.map((value) => `${value} ${weightUnit}`).join(" · ");
 
 const pluralize = (count: number, singular: string, plural = `${singular}s`): string =>
   `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, Math.floor(count)))} ${
     Math.floor(count) === 1 ? singular : plural
   }`;
 
-const formatLoadRange = (loads: number[]): string => {
+const formatLoadRange = (loads: number[], weightUnit: WeightUnit): string => {
   if (loads.length === 0) {
-    return "No loads provided";
+    return "";
   }
 
   const sortedLoads = [...loads].sort((left, right) => left - right);
   const first = sortedLoads[0]!;
   const last = sortedLoads[sortedLoads.length - 1]!;
   if (first === last) {
-    return `${first} kg`;
+    return `${first} ${weightUnit}`;
   }
 
-  return `${first} kg - ${last} kg`;
+  return `${first}–${last} ${weightUnit}`;
 };
-
-const renderInspectLoadsIcon = (): string => `
-  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-    <path
-      d="M7.1 2.25a4.85 4.85 0 1 0 3.03 8.63l2.74 2.75 1.06-1.06-2.75-2.74A4.85 4.85 0 0 0 7.1 2.25Zm0 1.5a3.35 3.35 0 1 1 0 6.7 3.35 3.35 0 0 1 0-6.7Z"
-      fill="currentColor"
-    ></path>
-  </svg>
-`;
 
 const parseNumericDraft = (value: string): number | null => {
   const trimmed = value.trim();
@@ -106,32 +91,32 @@ const parseNumericDraft = (value: string): number | null => {
     return null;
   }
 
-  const parsed = Number.parseFloat(trimmed);
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
 const parseFixedListDraft = (
   value: string,
-): { values: number[]; hasInvalidToken: boolean } => {
+): { values: number[]; invalidToken: string | null } => {
   const tokens = value
-    .split(/[\n,]+/u)
+    .split(/[\s,]+/u)
     .map((token) => token.trim())
     .filter((token) => token.length > 0);
 
   if (tokens.length === 0) {
-    return { values: [], hasInvalidToken: false };
+    return { values: [], invalidToken: null };
   }
 
   const values: number[] = [];
   for (const token of tokens) {
-    const parsed = Number.parseFloat(token);
+    const parsed = Number(token);
     if (!Number.isFinite(parsed)) {
-      return { values: [], hasInvalidToken: true };
+      return { values: [], invalidToken: token };
     }
     values.push(parsed);
   }
 
-  return { values, hasInvalidToken: false };
+  return { values, invalidToken: null };
 };
 
 class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
@@ -153,8 +138,9 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
   #submitError: string | null = null;
   #isSaving = false;
   #isDeleting = false;
-  #previewPopupOpen = false;
   #renameWarningOpen = false;
+  #touchedFields = new Set<string>();
+  #saveAttempted = false;
 
   connectedCallback(): void {
     this.#render();
@@ -182,8 +168,9 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       this.#submitError = null;
       this.#isSaving = false;
       this.#isDeleting = false;
-      this.#previewPopupOpen = false;
       this.#renameWarningOpen = false;
+      this.#touchedFields.clear();
+      this.#saveAttempted = false;
       if (value.mode === "create") {
         this.#nameDraft = "";
         this.#weightUnitDraft = "KG";
@@ -243,8 +230,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
   #getDefinitionError(): string | null {
     if (this.#definitionKindDraft === "fixed_list") {
       const parsed = parseFixedListDraft(this.#fixedListDraft);
-      if (parsed.hasInvalidToken) {
-        return "Fixed list values must be numbers separated by commas or lines.";
+      if (parsed.invalidToken) {
+        return `Could not read '${parsed.invalidToken}' as a weight.`;
       }
       if (parsed.values.length === 0) {
         return "Add at least one fixed value.";
@@ -277,6 +264,33 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     }
 
     return this.#nameDraft.trim() !== this.#state.detail.name.trim();
+  }
+
+  #hasDraftChanges(): boolean {
+    if (this.#state.mode === "create") {
+      return true;
+    }
+    const detail = this.#state.detail;
+    if (!detail) {
+      return false;
+    }
+    if (this.#nameDraft.trim() !== detail.name.trim()) {
+      return true;
+    }
+    if (!this.#isDraftEditable()) {
+      return false;
+    }
+    return (
+      this.#weightUnitDraft !== detail.weight_unit ||
+      this.#definitionKindDraft !== detail.definition.kind ||
+      this.#fixedListDraft !== (detail.definition.values ?? []).join("\n") ||
+      this.#formulaMinDraft !== (detail.definition.min === undefined ? "" : String(detail.definition.min)) ||
+      this.#formulaStepDraft !== (detail.definition.step === undefined ? "" : String(detail.definition.step))
+    );
+  }
+
+  #shouldShowFieldError(field: "name" | "definition"): boolean {
+    return this.#saveAttempted || this.#touchedFields.has(field);
   }
 
   #buildRequest(): LoadProfileCreateRequest | LoadProfileUpdateRequest | null {
@@ -335,6 +349,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       }
       const request = this.#buildRequest();
       if (!request) {
+        this.#saveAttempted = true;
         this.#submitError = this.#getNameError() ?? this.#getDefinitionError();
         this.#render();
         return;
@@ -400,21 +415,6 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       return;
     }
 
-    if (action === "open-load-profile-preview") {
-      if (!this.#state.detail || this.#state.detail.possible_loads_kg.length === 0) {
-        return;
-      }
-      this.#previewPopupOpen = true;
-      this.#render();
-      return;
-    }
-
-    if (action === "dismiss-load-profile-preview") {
-      this.#previewPopupOpen = false;
-      this.#render();
-      return;
-    }
-
     if (action === "dismiss-historical-rename-warning") {
       this.#renameWarningOpen = false;
       this.#render();
@@ -442,12 +442,16 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
 
     if (field === "name") {
       this.#nameDraft = target.value;
+      this.#touchedFields.add("name");
     } else if (field === "fixed-list") {
       this.#fixedListDraft = target.value;
+      this.#touchedFields.add("definition");
     } else if (field === "formula-min") {
       this.#formulaMinDraft = target.value;
+      this.#touchedFields.add("definition");
     } else if (field === "formula-step") {
       this.#formulaStepDraft = target.value;
+      this.#touchedFields.add("definition");
     } else {
       return;
     }
@@ -476,12 +480,14 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     const field = target.dataset.field;
     if (field === "weight-unit" && (target.value === "KG" || target.value === "LBS")) {
       this.#weightUnitDraft = target.value;
+      this.#touchedFields.add("definition");
     }
     if (
       field === "definition-kind" &&
       (target.value === "fixed_list" || target.value === "formula")
     ) {
       this.#definitionKindDraft = target.value;
+      this.#touchedFields.add("definition");
     }
 
     this.#submitError = null;
@@ -511,24 +517,12 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       !!definitionError ||
       this.#isSaving ||
       this.#isDeleting ||
-      (isHistoricalProfile && !historicalRenameChanged);
+      (isHistoricalProfile && !historicalRenameChanged) ||
+      (this.#state.mode === "edit" && !this.#hasDraftChanges());
     const canDelete = this.#state.mode === "edit" && this.#state.detail?.status === "new";
 
     return `
       <div class="configurator-load-profile-editor-card">
-        ${
-          !isEditable
-            ? `
-              <p class="configurator-load-profile-editor-note" role="note">
-                ${
-                  isHistoricalProfile
-                    ? "This historical load profile keeps its definition and weight unit read-only. Only the name can change after a warning-confirmed save."
-                    : "Only draft load profiles are editable in this flow right now."
-                }
-              </p>
-            `
-            : ""
-        }
         <label class="configurator-load-profile-field">
           <span class="configurator-load-profile-field-label">Name</span>
           <input
@@ -538,51 +532,58 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
             ${this.#isSaving || this.#isDeleting ? "disabled" : ""}
           />
           ${
-            nameError
+            nameError && this.#shouldShowFieldError("name")
               ? `<span class="configurator-load-profile-field-error">${escapeHtml(nameError)}</span>`
               : ""
           }
         </label>
 
-        <div class="configurator-load-profile-field-grid">
-          <label class="configurator-load-profile-field">
-            <span class="configurator-load-profile-field-label">Weight Unit</span>
-            <select
-              class="configurator-load-profile-select"
-              data-field="weight-unit"
-              ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
-            >
-              <option value="KG" ${this.#weightUnitDraft === "KG" ? "selected" : ""}>KG</option>
-              <option value="LBS" ${this.#weightUnitDraft === "LBS" ? "selected" : ""}>LBS</option>
-            </select>
-          </label>
-          <label class="configurator-load-profile-field">
-            <span class="configurator-load-profile-field-label">Definition</span>
-            <select
-              class="configurator-load-profile-select"
-              data-field="definition-kind"
-              ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
-            >
-              <option value="fixed_list" ${this.#definitionKindDraft === "fixed_list" ? "selected" : ""}>Fixed list</option>
-              <option value="formula" ${this.#definitionKindDraft === "formula" ? "selected" : ""}>Formula</option>
-            </select>
-          </label>
-        </div>
+        ${
+          isEditable
+            ? `
+              <div class="configurator-load-profile-field-grid">
+                <label class="configurator-load-profile-field">
+                  <span class="configurator-load-profile-field-label">Weight Unit</span>
+                  <select class="configurator-load-profile-select" data-field="weight-unit" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
+                    <option value="KG" ${this.#weightUnitDraft === "KG" ? "selected" : ""}>KG</option>
+                    <option value="LBS" ${this.#weightUnitDraft === "LBS" ? "selected" : ""}>LBS</option>
+                  </select>
+                </label>
+                <label class="configurator-load-profile-field">
+                  <span class="configurator-load-profile-field-label">Definition</span>
+                  <select class="configurator-load-profile-select" data-field="definition-kind" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
+                    <option value="fixed_list" ${this.#definitionKindDraft === "fixed_list" ? "selected" : ""}>Fixed list</option>
+                    <option value="formula" ${this.#definitionKindDraft === "formula" ? "selected" : ""}>Formula</option>
+                  </select>
+                </label>
+              </div>`
+            : `
+              <dl class="configurator-load-profile-metadata">
+                <div><dt>Weight unit</dt><dd>${escapeHtml(this.#weightUnitDraft)}</dd></div>
+                <div><dt>Definition</dt><dd>${this.#definitionKindDraft === "fixed_list" ? "Fixed list" : "Formula"}</dd></div>
+              </dl>`
+        }
 
         ${
           this.#definitionKindDraft === "fixed_list"
             ? `
-              <label class="configurator-load-profile-field">
-                <span class="configurator-load-profile-field-label">Fixed Values</span>
-                <textarea
-                  class="configurator-load-profile-textarea"
-                  data-field="fixed-list"
-                  placeholder="20&#10;25&#10;30"
-                  ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
-                >${escapeHtml(this.#fixedListDraft)}</textarea>
-              </label>
+              ${
+                isEditable
+                  ? `
+                    <label class="configurator-load-profile-field">
+                      <span class="configurator-load-profile-field-label">Values</span>
+                      <textarea class="configurator-load-profile-textarea" data-field="fixed-list" placeholder="2.5 5 7.5 10 12.5" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>${escapeHtml(this.#fixedListDraft)}</textarea>
+                      <span class="configurator-load-profile-field-helper">Separate values with spaces, commas, or line breaks.</span>
+                    </label>`
+                  : `
+                    <section class="configurator-load-profile-read-only-values" aria-label="Values">
+                      <span class="configurator-load-profile-field-label">Values · ${this.#state.detail?.definition.values?.length ?? 0}</span>
+                      <p>${escapeHtml(formatValues(this.#state.detail?.definition.values ?? [], this.#weightUnitDraft))}</p>
+                    </section>`
+              }
             `
-            : `
+            : isEditable
+              ? `
               <div class="configurator-load-profile-field-grid">
                 <label class="configurator-load-profile-field">
                   <span class="configurator-load-profile-field-label">Minimum</span>
@@ -602,48 +603,30 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
                     ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
                   />
                 </label>
-              </div>
-            `
+              </div>`
+              : `
+                <dl class="configurator-load-profile-metadata configurator-load-profile-formula-metadata">
+                  <div><dt>Minimum</dt><dd>${escapeHtml(this.#formulaMinDraft)} ${escapeHtml(this.#weightUnitDraft)}</dd></div>
+                  <div><dt>Step</dt><dd>${escapeHtml(this.#formulaStepDraft)} ${escapeHtml(this.#weightUnitDraft)}</dd></div>
+                </dl>`
         }
 
         ${
-          definitionError
+          definitionError && this.#shouldShowFieldError("definition")
             ? `<p class="configurator-load-profile-field-error">${escapeHtml(definitionError)}</p>`
             : ""
         }
 
         ${
-          this.#state.detail
-            ? `
-              <section class="configurator-load-profile-preview">
-                <div class="station-load-profile-summary">
-                  <div>
-                    <dt>Preview</dt>
-                    <dd>${escapeHtml(pluralize(this.#state.detail.possible_loads_kg.length, "possible load"))}</dd>
-                  </div>
-                  <div>
-                    <dt>Range</dt>
-                    <dd class="station-load-profile-range">
-                      <span class="station-load-profile-range-text">${escapeHtml(
-                        formatLoadRange(this.#state.detail.possible_loads_kg),
-                      )}</span>
-                      <button
-                        type="button"
-                        class="station-load-profile-inspect-button"
-                        data-ui-action="open-load-profile-preview"
-                        aria-label="Inspect preview loads"
-                        ${this.#state.detail.possible_loads_kg.length > 0 ? "" : "disabled"}
-                      >
-                        <span class="station-load-profile-inspect-icon">${renderInspectLoadsIcon()}</span>
-                      </button>
-                    </dd>
-                  </div>
-                </div>
-                <p class="configurator-load-profile-preview-values">${escapeHtml(
-                  formatPreviewLoads(this.#state.detail.possible_loads_kg),
-                )}</p>
-              </section>
-            `
+          isEditable && this.#definitionKindDraft === "fixed_list"
+            ? (() => {
+                const values = parseFixedListDraft(this.#fixedListDraft).values;
+                return values.length > 0
+                  ? `<p class="configurator-load-profile-parsed-summary">${escapeHtml(
+                      `${pluralize(values.length, "value")} · ${formatLoadRange(values, this.#weightUnitDraft)}`,
+                    )}</p>`
+                  : "";
+              })()
             : ""
         }
 
@@ -665,7 +648,9 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
                 ? "Saving..."
                 : isHistoricalProfile
                   ? "Save Name"
-                  : "Save Draft"
+                  : this.#state.mode === "create"
+                    ? "Create Profile"
+                    : "Save Changes"
             }
           </button>
           ${
@@ -683,52 +668,6 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
               : ""
           }
         </div>
-      </div>
-    `;
-  }
-
-  #renderPreviewPopup(): string {
-    if (!this.#previewPopupOpen || !this.#state.detail) {
-      return "";
-    }
-
-    const loads = this.#state.detail.possible_loads_kg;
-
-    return `
-      <div class="station-load-profile-dialog-layer">
-        <div class="station-load-profile-dialog-backdrop" aria-hidden="true"></div>
-        <section
-          class="station-load-profile-dialog"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="configurator-load-profile-preview-title"
-        >
-          <header class="station-load-profile-dialog-header">
-            <div>
-              <h3 id="configurator-load-profile-preview-title" class="station-load-profile-dialog-title">${escapeHtml(this.#state.detail.name)}</h3>
-              <p class="station-load-profile-dialog-subtitle">${escapeHtml(pluralize(loads.length, "possible load"))}</p>
-            </div>
-            <button
-              type="button"
-              class="station-load-profile-dialog-close"
-              data-ui-action="dismiss-load-profile-preview"
-              aria-label="Close load profile preview"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </header>
-          <ol class="station-load-profile-value-list" aria-label="Possible loads">
-            ${loads
-              .map(
-                (loadValue) => `
-                  <li class="station-load-profile-value">
-                    <span>${escapeHtml(`${loadValue} kg`)}</span>
-                  </li>
-                `,
-              )
-              .join("")}
-          </ol>
-        </section>
       </div>
     `;
   }
@@ -772,40 +711,27 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
   }
 
   #render(): void {
-    const title =
-      this.#state.mode === "create"
-        ? "New Load Profile"
-        : this.#state.detail?.name ?? "Load Profile";
+    const title = this.#state.mode === "create" ? "New Load Profile" : "Load Profile";
 
     this.innerHTML = `
       <div class="app-screen-shell">
-        <pb-side-menu
-          mode="configurator"
-          active-screen="configurator-load-profiles"
-          menu-id="configurator-load-profile-editor-side-menu"
-        ></pb-side-menu>
+        <button
+          type="button"
+          class="side-menu-toggle detail-back-button"
+          data-ui-action="navigate-back-from-configurator-load-profile-detail"
+          aria-label="Back"
+        >
+          <span aria-hidden="true">←</span>
+        </button>
         <section
           class="screen-panel configurator-load-profile-editor-screen"
           aria-label="Load profile editor"
         >
-          <header class="app-header app-header-compact">
-            <p class="app-kicker">Configurator</p>
-            <h1 class="app-title">${escapeHtml(title)}</h1>
-            <p class="start-copy">
-              Build draft load profiles in a full-screen mobile flow with lightweight live validation
-              and backend-owned persistence rules.
-            </p>
+          <header class="exercise-variant-detail-header configurator-load-profile-detail-header">
+            <h1 class="exercise-variant-detail-header-title">${escapeHtml(title)}</h1>
           </header>
-          <button
-            type="button"
-            class="configurator-load-profile-back-button"
-            data-ui-action="navigate-back-from-configurator-load-profile-detail"
-          >
-            ‹ Back to Load Profiles
-          </button>
           ${this.#renderForm()}
         </section>
-        ${this.#renderPreviewPopup()}
         ${this.#renderHistoricalRenameWarning()}
       </div>
     `;

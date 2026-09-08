@@ -283,7 +283,7 @@ describe("pb-app-root", () => {
 
     const configuratorEl = el.querySelector("pb-configurator-load-profile-editor-screen");
     expect(configuratorEl).toBeTruthy();
-    expect(configuratorEl?.textContent ?? "").toContain("Alpha Draft");
+    expect(configuratorEl?.querySelector("h1")?.textContent).toBe("Load Profile");
   });
 
   it("renders about screen when about view is selected", () => {

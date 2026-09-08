@@ -57,11 +57,10 @@ describe("pb-configurator-load-profiles-screen", () => {
     expect(el.textContent ?? "").toContain("+ New Load Profile");
     expect(el.textContent ?? "").toContain("Alpha Draft");
     expect(el.textContent ?? "").toContain("Draft");
-    expect(el.textContent ?? "").toContain("Fixed list · KG");
-    expect(el.textContent ?? "").toContain("Not used");
+    expect(el.textContent ?? "").toContain("Fixed list · KG · Not used");
     expect(el.textContent ?? "").toContain("Bravo Active");
-    expect(el.textContent ?? "").toContain("Formula · LBS");
-    expect(el.textContent ?? "").toContain("3 stations");
+    expect(el.textContent ?? "").toContain("Formula · LBS · 3 stations");
+    expect(el.querySelector(".configurator-load-profile-card-metadata")?.textContent).not.toContain("|");
     expect(el.textContent ?? "").toContain("Inactive");
     expect(el.querySelector('[data-role="load-profile-search"]')).toBeTruthy();
     expect(

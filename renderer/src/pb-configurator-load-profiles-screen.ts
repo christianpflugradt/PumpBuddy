@@ -172,11 +172,11 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
       <div class="configurator-load-profile-list" aria-label="Load profiles">
         ${visibleLoadProfiles
           .map((loadProfile) => {
-            const definitionSummary = `${definitionLabelByValue[loadProfile.definition_kind]} · ${loadProfile.weight_unit}`;
             const usageSummary =
               loadProfile.station_count > 0
                 ? pluralize(loadProfile.station_count, "station")
                 : "Not used";
+            const metadataSummary = `${definitionLabelByValue[loadProfile.definition_kind]} · ${loadProfile.weight_unit} · ${usageSummary}`;
 
             return `
               <button
@@ -190,10 +190,8 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
                   <span class="configurator-load-profile-name">${escapeHtml(loadProfile.name)}</span>
                   <span class="configurator-load-profile-status configurator-load-profile-status--${escapeAttribute(loadProfile.status)}">${escapeHtml(statusLabelByValue[loadProfile.status])}</span>
                 </span>
-                <span class="configurator-load-profile-metadata">
-                  <span>${escapeHtml(definitionSummary)}</span>
-                  <span aria-hidden="true">|</span>
-                  <span>${escapeHtml(usageSummary)}</span>
+                <span class="configurator-load-profile-card-metadata">
+                  ${escapeHtml(metadataSummary)}
                 </span>
               </button>
             `;
