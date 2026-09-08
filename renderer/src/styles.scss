@@ -207,7 +207,6 @@ pb-app-root,
   text-align: left;
 }
 
-.configurator-load-profile-create-button,
 .configurator-load-profile-back-button {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--brand-accent) 65%, var(--border-panel) 35%);
@@ -223,69 +222,82 @@ pb-app-root,
   box-shadow: 0 0.85rem 1.8rem rgba(15, 23, 42, 0.22);
 }
 
-.configurator-load-profile-list {
-  display: grid;
-  gap: 0.85rem;
+.configurator-load-profiles-screen .configurator-load-profile-create-button {
+  width: fit-content;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0.45rem 0.9rem var(--button-primary-shadow);
 }
 
-.configurator-load-profile-divider {
-  margin: 0.3rem 0 -0.1rem;
-  color: var(--text-secondary);
-  font-size: var(--font-size-kicker);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.configurator-load-profile-search {
+  display: block;
+}
+
+.configurator-load-profile-search input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  background: var(--surface-input);
+  color: var(--text-primary);
+  padding: 0.55rem 0.75rem;
+}
+
+.configurator-load-profile-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.configurator-load-profile-search input:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
+}
+
+.configurator-load-profile-list {
+  display: grid;
+  gap: var(--space-sm);
 }
 
 .configurator-load-profile-card {
   width: 100%;
-  padding: 0.95rem 1rem 1rem;
+  min-height: 4.5rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--border-card);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at top right, rgba(249, 115, 22, 0.16), transparent 36%),
-    color-mix(in srgb, var(--surface-card) 92%, black 8%);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
   color: var(--text-strong);
   display: grid;
-  gap: 0.45rem;
+  gap: var(--space-xs);
   text-align: left;
-  box-shadow: 0 0.9rem 1.8rem rgba(15, 23, 42, 0.16);
+  cursor: pointer;
 }
 
-.configurator-load-profile-card--new {
-  border-color: color-mix(in srgb, var(--brand-accent) 58%, var(--border-card) 42%);
+.configurator-load-profile-card:hover {
+  border-color: var(--border-input);
 }
 
-.configurator-load-profile-card--active {
-  border-color: color-mix(in srgb, #34d399 34%, var(--border-card) 66%);
-}
-
-.configurator-load-profile-card--inactive {
-  background:
-    linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.03)),
-    color-mix(in srgb, var(--surface-card) 88%, black 12%);
-  border-color: color-mix(in srgb, #94a3b8 34%, var(--border-card) 66%);
-  color: color-mix(in srgb, var(--text-strong) 82%, var(--text-secondary) 18%);
-  box-shadow: none;
+.configurator-load-profile-card:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
 }
 
 .configurator-load-profile-card-topline {
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-md);
 }
 
 .configurator-load-profile-name {
   min-width: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 750;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .configurator-load-profile-status {
   flex: 0 0 auto;
-  padding: 0.2rem 0.5rem;
+  padding: 0.16rem 0.42rem;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -308,24 +320,13 @@ pb-app-root,
   color: #cbd5e1;
 }
 
-.configurator-load-profile-summary,
-.configurator-load-profile-usage {
-  display: block;
-}
-
-.configurator-load-profile-summary {
-  color: var(--text-strong);
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.configurator-load-profile-card--inactive .configurator-load-profile-summary {
-  color: color-mix(in srgb, var(--text-strong) 76%, var(--text-secondary) 24%);
-}
-
-.configurator-load-profile-usage {
+.configurator-load-profile-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
   color: var(--text-secondary);
   font-size: 0.84rem;
+  line-height: 1.2;
 }
 
 .configurator-load-profile-editor-card {

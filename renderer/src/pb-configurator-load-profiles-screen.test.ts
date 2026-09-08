@@ -43,29 +43,46 @@ describe("pb-configurator-load-profiles-screen", () => {
     errorMessage: null,
   });
 
-  it("renders mobile-first load profile cards with status, definition, usage, and inactive divider", () => {
+  it("renders compact load profile cards with subdued metadata", () => {
     const el = document.createElement(pbConfiguratorLoadProfilesScreenTag) as HTMLElement & {
       state: ConfiguratorLoadProfilesScreenState;
     };
     document.body.append(el);
     el.state = createState();
 
-    expect(el.textContent ?? "").toContain("Configurator");
     expect(el.textContent ?? "").toContain("Load Profiles");
+    expect(el.textContent ?? "").toContain(
+      "Define the available weight options for your gym equipment.",
+    );
+    expect(el.textContent ?? "").toContain("+ New Load Profile");
     expect(el.textContent ?? "").toContain("Alpha Draft");
     expect(el.textContent ?? "").toContain("Draft");
     expect(el.textContent ?? "").toContain("Fixed list · KG");
-    expect(el.textContent ?? "").toContain("Not used by any stations");
+    expect(el.textContent ?? "").toContain("Not used");
     expect(el.textContent ?? "").toContain("Bravo Active");
     expect(el.textContent ?? "").toContain("Formula · LBS");
-    expect(el.textContent ?? "").toContain("Used by 3 stations");
+    expect(el.textContent ?? "").toContain("3 stations");
     expect(el.textContent ?? "").toContain("Inactive");
-    expect(
-      el.querySelector(".configurator-load-profile-card--inactive"),
-    ).toBeTruthy();
+    expect(el.querySelector('[data-role="load-profile-search"]')).toBeTruthy();
     expect(
       el.querySelector('[data-ui-action="navigate-workout"]'),
     ).toBeTruthy();
+  });
+
+  it("filters load profiles by name", () => {
+    const el = document.createElement(pbConfiguratorLoadProfilesScreenTag) as HTMLElement & {
+      state: ConfiguratorLoadProfilesScreenState;
+    };
+    document.body.append(el);
+    el.state = createState();
+
+    const searchInput = el.querySelector('[data-role="load-profile-search"]') as HTMLInputElement;
+    searchInput.value = "bravo";
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(el.textContent ?? "").toContain("Bravo Active");
+    expect(el.textContent ?? "").not.toContain("Alpha Draft");
+    expect(el.textContent ?? "").not.toContain("Charlie Inactive");
   });
 
   it("renders loading, error, and empty list states", () => {

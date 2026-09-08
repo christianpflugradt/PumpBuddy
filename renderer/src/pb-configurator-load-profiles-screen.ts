@@ -66,14 +66,17 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
     isLoading: false,
     errorMessage: null,
   };
+  #searchQuery = "";
 
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
+    this.addEventListener("input", this.#onInput);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
+    this.removeEventListener("input", this.#onInput);
   }
 
   set state(value: ConfiguratorLoadProfilesScreenState) {
@@ -124,6 +127,25 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
     this.#emitUiAction(action);
   };
 
+  #onInput = (event: Event): void => {
+    const target = event.target;
+    if (
+      !(target instanceof HTMLInputElement) ||
+      target.dataset.role !== "load-profile-search"
+    ) {
+      return;
+    }
+
+    this.#searchQuery = target.value;
+    this.#render();
+
+    const searchInput = this.querySelector<HTMLInputElement>(
+      '[data-role="load-profile-search"]',
+    );
+    searchInput?.focus();
+    searchInput?.setSelectionRange(this.#searchQuery.length, this.#searchQuery.length);
+  };
+
   #renderListBody(): string {
     if (this.#state.isLoading) {
       return `<p class="start-status" role="status">Loading load profiles...</p>`;
@@ -137,28 +159,29 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
       return `<p class="start-copy">No load profiles available yet.</p>`;
     }
 
-    let inactiveDividerRendered = false;
+    const normalizedSearchQuery = this.#searchQuery.trim().toLocaleLowerCase();
+    const visibleLoadProfiles = this.#state.loadProfiles.filter((loadProfile) =>
+      loadProfile.name.toLocaleLowerCase().includes(normalizedSearchQuery),
+    );
+
+    if (visibleLoadProfiles.length === 0) {
+      return `<p class="start-copy" role="status">No load profiles match your search.</p>`;
+    }
+
     return `
       <div class="configurator-load-profile-list" aria-label="Load profiles">
-        ${this.#state.loadProfiles
+        ${visibleLoadProfiles
           .map((loadProfile) => {
-            const needsInactiveDivider =
-              loadProfile.status === "inactive" && !inactiveDividerRendered;
-            if (needsInactiveDivider) {
-              inactiveDividerRendered = true;
-            }
-
             const definitionSummary = `${definitionLabelByValue[loadProfile.definition_kind]} · ${loadProfile.weight_unit}`;
             const usageSummary =
               loadProfile.station_count > 0
-                ? `Used by ${pluralize(loadProfile.station_count, "station")}`
-                : "Not used by any stations";
+                ? pluralize(loadProfile.station_count, "station")
+                : "Not used";
 
             return `
-              ${needsInactiveDivider ? '<p class="configurator-load-profile-divider">Inactive</p>' : ""}
               <button
                 type="button"
-                class="configurator-load-profile-card configurator-load-profile-card--${escapeAttribute(loadProfile.status)}"
+                class="configurator-load-profile-card"
                 data-ui-action="open-configurator-load-profile-detail"
                 data-load-profile-id="${escapeAttribute(loadProfile.id)}"
                 aria-label="Open ${escapeAttribute(loadProfile.name)} load profile"
@@ -167,8 +190,11 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
                   <span class="configurator-load-profile-name">${escapeHtml(loadProfile.name)}</span>
                   <span class="configurator-load-profile-status configurator-load-profile-status--${escapeAttribute(loadProfile.status)}">${escapeHtml(statusLabelByValue[loadProfile.status])}</span>
                 </span>
-                <span class="configurator-load-profile-summary">${escapeHtml(definitionSummary)}</span>
-                <span class="configurator-load-profile-usage">${escapeHtml(usageSummary)}</span>
+                <span class="configurator-load-profile-metadata">
+                  <span>${escapeHtml(definitionSummary)}</span>
+                  <span aria-hidden="true">|</span>
+                  <span>${escapeHtml(usageSummary)}</span>
+                </span>
               </button>
             `;
           })
@@ -236,12 +262,11 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
           aria-label="Configurator load profiles screen"
         >
           <header class="app-header app-header-compact">
-            <p class="app-kicker">Configurator</p>
             <h1 class="app-title">${escapeHtml(title)}</h1>
             <p class="start-copy">
               ${
                 isList
-                  ? "Browse load profiles as mobile-first cards with backend-owned ordering, status, definition, and usage context."
+                  ? "Define the available weight options for your gym equipment."
                   : "Stay in configurator mode while opening draft creation and existing profile detail destinations."
               }
             </p>
@@ -251,11 +276,20 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
               ? `
                 <button
                   type="button"
-                  class="configurator-load-profile-create-button"
+                  class="configurator-load-profile-create-button nav-button nav-button-primary action-button action-button-primary"
                   data-ui-action="start-configurator-load-profile-create"
                 >
-                  New Load Profile
+                  + New Load Profile
                 </button>
+                <label class="configurator-load-profile-search" aria-label="Search load profiles">
+                  <input
+                    type="search"
+                    data-role="load-profile-search"
+                    value="${escapeAttribute(this.#searchQuery)}"
+                    placeholder="Search profiles..."
+                    autocomplete="off"
+                  />
+                </label>
               `
               : `
                 <button
