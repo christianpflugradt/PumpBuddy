@@ -20,9 +20,10 @@ describe("pb-configurator-station-editor-screen", () => {
     const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
     input.value = "  Row 1  "; input.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="open-load-profile-picker"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).toBeTruthy();
     expect(el.textContent).not.toContain("Retired Stack");
-    (el.querySelector('[data-field="load-profile"]') as HTMLSelectElement).value = "profile-2";
-    (el.querySelector('[data-field="load-profile"]') as HTMLSelectElement).dispatchEvent(new Event("change", { bubbles: true }));
+    (el.querySelector('[data-profile-id="profile-2"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: null, request: { name: "Row 1", load_profile_id: "profile-2" } });
   });
@@ -65,5 +66,27 @@ describe("pb-configurator-station-editor-screen", () => {
     const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     (el.querySelector('[data-ui-action="delete-configurator-station"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1" });
+  });
+
+  it("searches a scrollable picker and never offers inactive profiles for a draft reassignment", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = createState();
+    (el.querySelector('[data-ui-action="open-load-profile-picker"]') as HTMLButtonElement).click();
+    const search = el.querySelector('[data-field="load-profile-search"]') as HTMLInputElement;
+    search.value = "draft"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    const options = el.querySelector('.configurator-load-profile-picker-options') as HTMLElement;
+    expect(options).toBeTruthy();
+    expect(options.textContent).toContain("Draft Stack");
+    expect(options.textContent).not.toContain("Cable Stack");
+    expect(el.textContent).not.toContain("Retired Stack");
+  });
+
+  it("requires a replacement when a draft Station retains an inactive Load Profile", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), station: { ...createState().station!, load_profile: { id: "profile-3", name: "Retired Stack", status: "inactive" } } };
+    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.value = "Updated Tower"; input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(el.textContent).toContain("Load Profile is required.");
+    expect((el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).disabled).toBe(true);
   });
 });

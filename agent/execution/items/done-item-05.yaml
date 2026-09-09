@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-05
   title: Add the Station Load Profile picker
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -16,8 +16,8 @@ scope:
   in:
   - Implement a mobile-friendly searchable and scrollable overlay picker using established
     sheet or overlay mechanics.
-  - 'Offer only `new` and `active` Load Profiles for a new Station assignment or draft
-    reassignment.'
+  - Offer only `new` and `active` Load Profiles for a new Station assignment or draft
+    reassignment.
   - Continue displaying an inactive Load Profile retained by a historical Station
     without allowing it as a new selection.
   out:
