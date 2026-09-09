@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-01
   title: Add lifecycle-aware Gym core
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -107,7 +107,7 @@ review_feedback:
     \ contract supplies status\n    values new, active, and inactive plus normalized\
     \ per-user Gym-name uniqueness.\n    This item explicitly forbids schema, seed,\
     \ migration, or initialization changes.\n"
-  findings: &id001
+  findings:
   - criterion: ac-01/ac-02
     evidence: The required make check-backend gate fails in api_workouts::gym_routes_return_list_metadata_and_detail_projection
       because TestDatabase resets from runtime/database/00-schema.sql, whose gyms
@@ -118,6 +118,16 @@ review_feedback:
       values new, active, and inactive plus normalized per-user Gym-name uniqueness.
       This item explicitly forbids schema, seed, migration, or initialization changes.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02: Gym reads and explicit new creation are lifecycle-aware;
+      renames preserve status; only new Gyms delete; and normalized names are unique
+      per user.'
+    evidence: Domain and SQLx projections carry status; creation inserts new explicitly;
+      deletion locks and rejects non-new rows; tests cover each status, ownership
+      isolation, and normalized database uniqueness.
+    runtime_build_check: make check-backend passed for implementation commit e3078d40,
+      including PostgreSQL-backed persistence integration tests.
+    residual_risk: The deployed database must apply the same status check and normalized-name
+      index represented by the runtime schema.
+  findings: []
