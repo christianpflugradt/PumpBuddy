@@ -1,0 +1,60 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '01'
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Add lifecycle-aware Gym core
+summary:
+  goal: Extend the Gym domain, application service, and SQLx repository with user-scoped
+    lifecycle-aware reads and permitted writes.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/domain-context.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/domain.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/mod.rs
+  optional:
+  - backend/src/application/load_profiles.rs
+  - backend/src/persistence/load_profiles.rs
+implementation_approach:
+- 'Add Gym status to the domain list and detail projections, plus create and name-only
+  update command types; keep `new`, `active`, and `inactive` as stored/API values.'
+- Extend GymRepository and DomainRepository delegation with user-scoped create, normalized-name
+  existence, rename, and delete operations, preserving favorite-first list ordering
+  and existing workout transparency reads.
+- 'Update Gym SQLx queries to select status; insert created Gyms with status `new`
+  explicitly; scope every lookup and mutation by user ID; and map duplicate-key persistence
+  failures to the existing conflict convention.'
+- Implement application-level trim and non-blank validation, case-normalized per-user
+  duplicate checks for create and rename, explicit conflict/not-found mapping, and
+  name-only updates that never accept or change status.
+- 'Use a transaction for Gym deletion: load the user-scoped record, allow physical
+  deletion only when status is `new`, reject active or inactive records as conflicts,
+  and preserve existing errors for absent or foreign-owned IDs.'
+- Add focused application fake-repository tests and PostgreSQL-backed persistence
+  coverage for lifecycle reads, explicit Draft creation, permitted renames, Draft-only
+  deletion, normalized duplicate handling, and user isolation.
+risks_and_assumptions:
+- 'Assumption: the stakeholder-managed database already exposes `gyms.status`, treats
+  existing rows as `active`, permits `new`, and enforces the required normalized per-user
+  unique constraint.'
+- 'Risk: changing shared Gym projections can affect workout consumers; retain all
+  current fields, joins, grouping, and favorite-first ordering while adding status.'
+- 'Risk: concurrent writes can bypass an application-only duplicate check; translate
+  the database uniqueness violation to a conflict as a second enforcement layer.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Database schemas, migrations, seed data, initialization, and live-instance operations.
+- Gym lifecycle transitions, status mutation, Equipment Station behavior, and API
+  or Configurator work assigned to later items.
+handoff_notes:
+- 'Use Draft only in domain-facing or product-facing wording; reserve `new` for persisted
+  and API values.'
+- Do not add a status field to the ordinary Gym update command or any path that transitions
+  lifecycle status.
