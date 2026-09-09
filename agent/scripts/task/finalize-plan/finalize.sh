@@ -292,6 +292,12 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
+if [ "${OUTCOME}" = "accept" ] && [ "${RESUME_MODE}" != "true" ]; then
+  echo "PLAN_QUALITY_GATE_RUN=make check"
+  make check
+  echo "PLAN_QUALITY_GATE_RESULT=passed"
+fi
+
 if [ "${RESUME_MODE}" != "true" ]; then
   python3 "${SCRIPT_DIR}/lib/telemetry.py" \
     --telemetry-file "${TELEMETRY_FILE}" \
