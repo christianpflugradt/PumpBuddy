@@ -1,0 +1,84 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-063-item-01
+  title: Add lifecycle-aware Gym core
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Gym domain, application, and persistence layers support lifecycle-aware,
+    user-scoped Gym reads and writes.
+  rationale: The existing Gym implementation is read-only and lacks lifecycle state,
+    so all later API and Configurator work needs a server-side core that owns the
+    rules.
+scope:
+  in:
+  - 'Add `new`, `active`, and `inactive` status to Gym domain/list/detail projections
+    and persistence queries.'
+  - 'Add user-scoped persistence and application operations to create a Gym explicitly
+    as `new`, retrieve it, rename it in every status, and delete it only while stored
+    status is `new`.'
+  - Validate Gym names server-side as trimmed, non-blank, and case-normalized unique
+    within one user; map duplicate and forbidden-delete outcomes to existing persistence/application
+    error conventions.
+  - Preserve existing favorite-first Gym list behavior and read-only workout transparency
+    consumers while adding status to their projections.
+  out:
+  - Do not alter database schema, seed data, migration scripts, initialization behavior,
+    or any live database.
+  - Do not add Gym lifecycle transitions, status mutation, Station behavior, or invented
+    Gym fields.
+constraints:
+- 'Database state is an external stakeholder-managed prerequisite: it already provides
+  Gym status, treats pre-existing Gyms as `active`, and permits explicitly persisted
+  `new` values for Configurator-created Gyms.'
+- 'Use `new` only as the persisted/API status; use Draft only in user-facing or domain-facing
+  wording.'
+- Keep business rules in the application/persistence boundary and retain SQLx with
+  explicit user scoping.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-context.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/domain.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/mod.rs
+  optional:
+  - backend/src/application/load_profiles.rs
+  - backend/src/persistence/load_profiles.rs
+acceptance_criteria:
+- id: ac-01
+  statement: 'Gym reads return one of `new`, `active`, or `inactive`, and Configurator
+    creation explicitly writes `new` rather than relying on a database default.'
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend compilation and focused tests pass.
+- id: ac-02
+  statement: The core permits renames in all three statuses, rejects active/inactive
+    deletion, allows Draft deletion, and enforces normalized per-user name uniqueness
+    without cross-user conflicts.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend test suite passes with lifecycle and validation behavior covered.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - Gym domain
+  - Gym application service
+  - SQLx persistence
+handoff:
+  review_focus:
+  - Ensure every Gym read and write remains authenticated-user scoped.
+  - Verify no code path changes a Gym status and no database-change instruction was
+    introduced.
+review_feedback: []
+review_result: null

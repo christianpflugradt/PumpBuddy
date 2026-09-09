@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-063-item-03
+  title: Add Configurator Gym list navigation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator users can navigate to a compact, lifecycle-aware Gym list
+    and open creation or existing-Gym detail routes.
+  rationale: The first visible Gym slice must reuse the established Load Profile Configurator
+    language without carrying over Gym transparency or Station content.
+scope:
+  in:
+  - Add Gym Configurator route/state, authenticated list loading, side-menu navigation,
+    back behavior, loading/error/empty states, and route restoration consistent with
+    Load Profiles.
+  - 'Render minimal tappable Gym rows with name and lifecycle badge, mapping `new`
+    to Draft and presenting inactive rows with the existing subdued convention.'
+  - 'Provide a compact `+ New Gym` action and routes to create or open an existing
+    Gym.'
+  out:
+  - Do not show Station counts, Station lists, equipment summaries, workouts, plans,
+    addresses, descriptions, search-only metadata, or other invented details.
+  - Do not implement the Gym editor's write controls, lifecycle transitions, or workout-status
+    filtering.
+constraints:
+- Reuse existing Configurator headers, spacing, density, status badges, colors, design
+  tokens, and components from Load Profiles.
+- 'Use Draft, Active, and Inactive as UI labels; never render `new` as a user-facing
+  status.'
+- Keep the renderer a thin API consumer with no authority for lifecycle permissions.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/configurator-use-cases.yaml
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/workout-contract.ts
+  optional:
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-gyms-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: 'The Configurator opens a Gym list that displays only a Gym name and
+    mapped lifecycle state, with inactive presentation subdued and `new` labelled
+    Draft.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer unit and workflow checks pass.
+- id: ac-02
+  statement: Users can enter the Gym create route and open any visible existing Gym
+    without leaving Configurator mode.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer navigation coverage passes.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator navigation
+  - Gym list Web Component
+  - Renderer API client state
+handoff:
+  review_focus:
+  - Reject any introduction of Station or historical workout metadata on Configurator
+    rows.
+  - Confirm status labels and visual language match the Load Profile precedent.
+review_feedback: []
+review_result: null

@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-063-item-04
+  title: Build Configurator Gym editor
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A compact Gym create/edit screen lets users create Drafts, rename any Gym,
+    and delete only Draft Gyms.
+  rationale: This completes the useful management slice while keeping lifecycle enforcement
+    on the server and avoiding future Station work.
+scope:
+  in:
+  - 'Create a dedicated compact screen with back navigation, static `Gym` detail title,
+    a single Name field, and `Create Gym` for create mode.'
+  - 'Use the Gym API to create with `new`, fetch/open existing details, save trimmed
+    names, and refresh list/detail state after writes.'
+  - 'Show `Delete Draft` only for a persisted `new` Gym and surface server validation/conflict
+    errors.'
+  - Apply the established consequential-rename warning pattern to active and inactive
+    Gym name changes.
+  - Provide client-side non-blank and normalized duplicate feedback as a usability
+    aid while retaining server-side authority.
+  out:
+  - Do not expose a status selector, activation controls, permanent explanatory UI,
+    Station management, or any additional Gym property.
+  - Do not permit delete UI for active/inactive Gyms or rely on UI visibility as the
+    deletion safeguard.
+constraints:
+- 'Use Draft in all screen copy, including `Delete Draft`; never expose `new` as a
+  label.'
+- 'Do not duplicate a Gym name as both the page heading and Name field; existing detail
+  pages use the static title `Gym`.'
+- Preserve the Load Profile editor's accessibility, error, confirmation, and optimistic-state
+  conventions where applicable.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-context.md
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-contract.ts
+  optional:
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: Create mode persists a Draft Gym with the single Name field, and existing
+    Gym detail permits renaming for new, active, and inactive statuses.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer editor behavior tests pass.
+- id: ac-02
+  statement: 'Only Draft detail exposes `Delete Draft`; active and inactive rename
+    flows use the established consequential-warning behavior and no screen offers
+    a status change.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer lifecycle interaction coverage passes.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator Gym editor
+  - Renderer API write integration
+handoff:
+  review_focus:
+  - Confirm no permanent explanatory copy or out-of-scope fields were added.
+  - Confirm client validation improves feedback but does not replace backend enforcement.
+review_feedback: []
+review_result: null

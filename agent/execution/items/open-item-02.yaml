@@ -1,0 +1,79 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-063-item-02
+  title: Expose authenticated Gym management API
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The canonical OpenAPI contract and authenticated backend expose lifecycle-aware
+    Gym list, detail, create, rename, and Draft-only delete operations.
+  rationale: The renderer needs a contract-first API whose server enforcement cannot
+    be bypassed by hiding controls.
+scope:
+  in:
+  - Update the Gym OpenAPI schemas to include status in list/detail payloads and define
+    create and name-only update requests.
+  - 'Add POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
+    beside the existing user-scoped Gym reads.'
+  - Wire generated models, routes, handlers, request validation, response mapping,
+    and error mapping together in the same change.
+  - 'Return `409` for duplicate normalized names and attempted deletion outside `new`;
+    never accept status in an ordinary update payload.'
+  out:
+  - Do not add a status-update endpoint, activation, deactivation, reactivation, Station
+    endpoints, or public maintenance access.
+  - Do not prescribe or perform any database migration, seed change, or live-instance
+    update.
+constraints:
+- OpenAPI is canonical and endpoint, payload, generated-model, and handler changes
+  must land together.
+- '`new` is the transport value; Draft is a UI/domain label and is not an alternate
+  API enum.'
+- All operations must use the authenticated session user and preserve the existing
+  internal-only backend topology.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/api/models.rs
+  - backend/src/api/routes.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - Makefile
+  optional:
+  - backend/src/api/handlers/load_profiles.rs
+  - agent/design/domain-context.md
+acceptance_criteria:
+- id: ac-01
+  statement: The contract and generated clients represent Gym status and only name-bearing
+    create/update payloads, while the authenticated Gym routes implement every declared
+    write operation.
+  verification:
+    type: command
+    command: make check
+    expected: Contract generation, backend, and renderer contract checks pass.
+- id: ac-02
+  statement: API attempts to delete active or inactive Gyms are rejected server-side,
+    and ordinary updates cannot mutate lifecycle status.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend API coverage passes.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - OpenAPI contract
+  - Generated API models
+  - Authenticated Axum handlers
+handoff:
+  review_focus:
+  - Check contract-to-handler parity and that no status field is accepted on write.
+  - 'Check `404`, `409`, and ownership behavior do not reveal another user''s Gym.'
+review_feedback: []
+review_result: null

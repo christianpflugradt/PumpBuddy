@@ -1,0 +1,82 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-063-item-05
+  title: Cover Gym lifecycle regression matrix
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Focused backend, API, and renderer coverage proves the entire first Gym
+    Configurator lifecycle slice.
+  rationale: The story changes durable, user-scoped reference data and must remain
+    safe when implementation and review occur without planning context.
+scope:
+  in:
+  - Add focused PostgreSQL-backed persistence/API tests for status reads, explicit
+    Draft creation, name normalization, duplicate rejection, all allowed renames,
+    Draft deletion, forbidden active/inactive deletion, no status mutation, and user
+    ownership isolation.
+  - Add renderer tests for list labels and styling, navigation, create/edit behavior,
+    validation feedback, Draft-only delete action, and active/inactive rename confirmation.
+  - Exercise existing lifecycle-aware fixture data as active where appropriate without
+    adding migration or seed work.
+  out:
+  - Do not add tests for lifecycle transitions, Stations, workout eligibility, bulk
+    actions, or database migration behavior.
+  - Do not replace focused boundary coverage with broad brittle end-to-end simulation.
+constraints:
+- 'Use `new` in persisted/API assertions and Draft only in UI assertions.'
+- Backend tests must validate server rejection independently of renderer controls.
+- The external manually prepared database prerequisite is not test setup to implement
+  or document as a migration.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/tests/api_workouts.rs
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/src/test_support/postgres.rs
+  - renderer/src/pb-app-root.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Backend coverage proves lifecycle status, explicit Draft creation, normalized
+    per-user uniqueness, permitted renames, Draft-only deletion, status immutability,
+    and ownership isolation.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend unit and PostgreSQL-backed integration tests pass.
+- id: ac-02
+  statement: Renderer coverage proves Draft wording and controls, inactive presentation,
+    navigation, and consequential active/inactive renames.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass.
+- id: ac-03
+  statement: The combined project quality gate passes after the focused regression
+    coverage is in place.
+  verification:
+    type: command
+    command: make check
+    expected: All repository quality checks pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - PostgreSQL-backed backend tests
+  - Authenticated API tests
+  - Configurator renderer tests
+handoff:
+  review_focus:
+  - Verify every lifecycle permission is asserted at the backend boundary.
+  - Verify tests preserve the explicit exclusion of database migration and Station
+    behavior.
+review_feedback: []
+review_result: null
