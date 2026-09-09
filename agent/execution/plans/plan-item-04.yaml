@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Build Configurator Gym editor
 summary:
   goal: Deliver a compact Configurator Gym create and rename editor with Draft-only

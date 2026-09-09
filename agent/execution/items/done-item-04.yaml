@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-04
   title: Build Configurator Gym editor
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -84,7 +84,7 @@ review_feedback:
     \ name has changed.'\n  risk: Users receive an unnecessary historical-meaning\
     \ warning (and can submit a\n    semantically unchanged update); the required\
     \ normalized-name behavior is not met.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: 'renderer/src/pb-configurator-gym-editor-screen.ts compares the trimmed
       draft name with the stored trimmed name in #hasChanges, so a case-only historical
@@ -94,6 +94,18 @@ review_feedback:
       a semantically unchanged update); the required normalized-name behavior is not
       met.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: create submits the trimmed name-only request,
+      edits are lifecycle-aware, and only Draft details render Delete Draft.'
+    evidence: The dedicated Gym editor uses status only for Draft-delete and historical-warning
+      decisions, has no lifecycle controls or out-of-scope fields, validates normalized
+      duplicates locally, preserves backend errors, and now treats case-only historical
+      edits as unchanged; its focused component coverage exercises create, Draft-only
+      deletion, consequential warning, and the normalized no-op case.
+    runtime_build_check: make check-renderer passed, including lint, 37 test files
+      / 473 tests, build, and browser smoke checks.
+    residual_risk: Client duplicate feedback can become stale during concurrent writes,
+      but the authenticated server remains authoritative and surfaced request errors
+      stay visible.
+  findings: []
