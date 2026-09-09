@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-02
   title: Expose authenticated Gym management API
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -75,5 +75,26 @@ handoff:
   review_focus:
   - Check contract-to-handler parity and that no status field is accepted on write.
   - Check `404`, `409`, and ownership behavior do not reveal another user's Gym.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-09T09:56:06Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'GymCreateRequest and GymUpdateRequest\
+    \ declare only name but omit additionalProperties:\n    false. In OpenAPI, undeclared\
+    \ object properties are allowed by default, while\n    GymWriteRequest uses serde(deny_unknown_fields)\
+    \ to reject a status field.'\n  risk: The canonical contract currently permits\
+    \ a status-bearing write payload that\n    the authenticated API rejects, so generated\
+    \ clients and server enforcement do\n    not describe the same request surface.\n\
+    \  requires_api_contract_update: true\n"
+  findings: &id001
+  - criterion: ac-01
+    evidence: 'GymCreateRequest and GymUpdateRequest declare only name but omit additionalProperties:
+      false. In OpenAPI, undeclared object properties are allowed by default, while
+      GymWriteRequest uses serde(deny_unknown_fields) to reject a status field.'
+    risk: The canonical contract currently permits a status-bearing write payload
+      that the authenticated API rejects, so generated clients and server enforcement
+      do not describe the same request surface.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
