@@ -107,11 +107,16 @@ CREATE TABLE IF NOT EXISTS exercises (
 CREATE TABLE IF NOT EXISTS gyms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT gyms_id_user_unique UNIQUE (id, user_id)
+    CONSTRAINT gyms_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT gyms_status_check CHECK (status IN ('new', 'active', 'inactive'))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS gyms_user_normalized_name_unique
+    ON gyms (user_id, lower(btrim(name)));
 
 CREATE TABLE IF NOT EXISTS load_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
