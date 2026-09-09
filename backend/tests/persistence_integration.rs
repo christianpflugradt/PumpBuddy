@@ -6,9 +6,9 @@ use pumpbuddy_backend::application::workouts::{
     fetch_workout_summary_from_repository, WorkoutValidationError,
 };
 use pumpbuddy_backend::domain::{
-    GymStationAvailability, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+    GymStationAvailability, GymUpdate, NewGym, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
 };
-use pumpbuddy_backend::persistence::DomainRepository;
+use pumpbuddy_backend::persistence::{DomainRepository, PersistenceError};
 use sqlx::Row;
 use std::collections::{BTreeMap, HashSet};
 

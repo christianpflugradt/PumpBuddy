@@ -55,6 +55,107 @@ fn assert_load_profile_name_unique_violation(error: sqlx::Error) {
 }
 
 #[tokio::test]
+async fn gym_lifecycle_writes_preserve_status_and_user_scope() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let draft = repository
+        .create_gym_for_user(
+            DEV_USER_ID,
+            &NewGym {
+                name: "Lifecycle Draft Gym".to_owned(),
+            },
+        )
+        .await
+        .expect("gym creation should explicitly persist a draft");
+    assert_eq!(draft.status, "new");
+
+    let active_id = "5f000000-0000-0000-0000-0000000000d1";
+    let inactive_id = "5f000000-0000-0000-0000-0000000000d2";
+    let foreign_id = "5f000000-0000-0000-0000-0000000000d3";
+    for (id, user_id, name, status) in [
+        (active_id, DEV_USER_ID, "Lifecycle Active Gym", "active"),
+        (inactive_id, DEV_USER_ID, "Lifecycle Inactive Gym", "inactive"),
+        (foreign_id, USER_B_ID, "Lifecycle Foreign Gym", "new"),
+    ] {
+        sqlx::query(
+            "INSERT INTO gyms (id, user_id, name, status)
+             VALUES ($1::uuid, $2::uuid, $3, $4)",
+        )
+        .bind(id)
+        .bind(user_id)
+        .bind(name)
+        .bind(status)
+        .execute(pool)
+        .await
+        .expect("lifecycle fixture should insert");
+    }
+
+    for (gym_id, expected_status) in [
+        (draft.id.as_str(), "new"),
+        (active_id, "active"),
+        (inactive_id, "inactive"),
+    ] {
+        let updated = repository
+            .update_gym_for_user(
+                gym_id,
+                DEV_USER_ID,
+                &GymUpdate {
+                    name: format!("Renamed {expected_status} Gym"),
+                },
+            )
+            .await
+            .expect("all lifecycle statuses should permit a rename");
+        assert_eq!(updated.status, expected_status);
+    }
+
+    assert!(repository
+        .gym_name_exists_for_user(DEV_USER_ID, "  renamed active gym  ", None)
+        .await
+        .expect("normalized name lookup should succeed"));
+    assert!(!repository
+        .gym_name_exists_for_user(USER_B_ID, "renamed active gym", None)
+        .await
+        .expect("other users should not conflict on names"));
+
+    repository
+        .delete_gym_for_user(&draft.id, DEV_USER_ID)
+        .await
+        .expect("draft gyms should be deletable");
+    assert!(repository
+        .fetch_gym_detail_for_user(&draft.id, DEV_USER_ID)
+        .await
+        .expect("deleted gym lookup should succeed")
+        .is_none());
+
+    for gym_id in [active_id, inactive_id] {
+        assert!(matches!(
+            repository.delete_gym_for_user(gym_id, DEV_USER_ID).await,
+            Err(PersistenceError::Conflict(message)) if message == "Only draft gyms can be deleted"
+        ));
+    }
+
+    assert!(matches!(
+        repository
+            .update_gym_for_user(
+                foreign_id,
+                DEV_USER_ID,
+                &GymUpdate {
+                    name: "Unauthorized Rename".to_owned(),
+                },
+            )
+            .await,
+        Err(PersistenceError::NotFound(message)) if message == "Gym not found"
+    ));
+    assert!(matches!(
+        repository.delete_gym_for_user(foreign_id, DEV_USER_ID).await,
+        Err(PersistenceError::NotFound(message)) if message == "Gym not found"
+    ));
+}
+
+#[tokio::test]
 async fn option_read_path_uses_enabled_variant_station_compatibility_for_realizability() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
