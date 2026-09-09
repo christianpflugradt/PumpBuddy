@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-01
   title: Add lifecycle-aware Gym core
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -89,13 +89,34 @@ review_feedback:
     \    tests were added.\n  risk: The required rename-in-all-statuses, Draft-only\
     \ deletion, and per-user isolation\n    behavior can regress without being detected\
     \ by the required backend gate.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: backend/src/application/gyms.rs tests exercise only creation; FakeGymRepository.update_gym_for_user
       and delete_gym_for_user are unreachable, and no PostgreSQL-backed Gym lifecycle
       tests were added.
     risk: The required rename-in-all-statuses, Draft-only deletion, and per-user isolation
       behavior can regress without being detected by the required backend gate.
+- at: '2026-09-09T09:07:55Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01/ac-02\n  evidence: The required make check-backend\
+    \ gate fails in api_workouts::gym_routes_return_list_metadata_and_detail_projection\n\
+    \    because TestDatabase resets from runtime/database/00-schema.sql, whose gyms\
+    \ table\n    has no status column; the PostgreSQL lifecycle coverage also requires\
+    \ that column.\n  risk: The lifecycle core cannot run or be regression-validated\
+    \ in the repository\n    test database until the stakeholder-managed Gym database\
+    \ contract supplies status\n    values new, active, and inactive plus normalized\
+    \ per-user Gym-name uniqueness.\n    This item explicitly forbids schema, seed,\
+    \ migration, or initialization changes.\n"
+  findings: &id001
+  - criterion: ac-01/ac-02
+    evidence: The required make check-backend gate fails in api_workouts::gym_routes_return_list_metadata_and_detail_projection
+      because TestDatabase resets from runtime/database/00-schema.sql, whose gyms
+      table has no status column; the PostgreSQL lifecycle coverage also requires
+      that column.
+    risk: The lifecycle core cannot run or be regression-validated in the repository
+      test database until the stakeholder-managed Gym database contract supplies status
+      values new, active, and inactive plus normalized per-user Gym-name uniqueness.
+      This item explicitly forbids schema, seed, migration, or initialization changes.
 review_result:
   outcome: return
   findings: *id001
