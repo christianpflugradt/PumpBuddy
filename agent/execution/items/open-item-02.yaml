@@ -40,7 +40,7 @@ inputs:
   - agent/design/api-contract.yaml
   - backend/src/api/handlers/gyms.rs
   - backend/src/api/models.rs
-  - backend/src/api/routes.rs
+  - backend/src/api/router.rs
   - backend/src/application/gyms.rs
   - backend/src/persistence/gyms.rs
   - Makefile
