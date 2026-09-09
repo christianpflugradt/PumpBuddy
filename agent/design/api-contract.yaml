@@ -628,6 +628,26 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/gyms/{gymId}/configurator-stations:
+    get:
+      summary: List compact Configurator Stations in a gym
+      operationId: listConfiguratorStations
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Configurator Stations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConfiguratorStationResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Gym not found }
+        '500': { $ref: '#/components/responses/InternalServerError' }
     post:
       summary: Create a draft Configurator Station in a gym
       operationId: createConfiguratorStation

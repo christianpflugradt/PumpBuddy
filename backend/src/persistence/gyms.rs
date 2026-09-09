@@ -68,6 +68,31 @@ pub(super) async fn fetch_configurator_station_for_user(
     Ok(row.map(configurator_station_from_row))
 }
 
+pub(super) async fn fetch_configurator_stations_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    user_id: &str,
+) -> Result<Option<Vec<ConfiguratorStation>>, PersistenceError> {
+    let gym_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM gyms WHERE id = $1::uuid AND user_id = $2::uuid)",
+    )
+    .bind(gym_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+    if !gym_exists {
+        return Ok(None);
+    }
+
+    let rows = sqlx::query("SELECT es.id::text AS id, es.gym_id::text AS gym_id, es.name, es.status, lp.id::text AS load_profile_id, lp.name AS load_profile_name, lp.status AS load_profile_status FROM equipment_stations es JOIN load_profiles lp ON lp.id = es.load_profile_id AND lp.user_id = $2::uuid WHERE es.gym_id = $1::uuid AND es.user_id = $2::uuid ORDER BY lower(es.name), es.name, es.id")
+        .bind(gym_id).bind(user_id).fetch_all(&repository.pool).await?;
+    Ok(Some(
+        rows.into_iter()
+            .map(configurator_station_from_row)
+            .collect(),
+    ))
+}
+
 pub(super) async fn station_name_exists_for_user(
     repository: &DomainRepository,
     gym_id: &str,

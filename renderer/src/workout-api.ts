@@ -3,6 +3,9 @@ import type {
   AboutMetadata,
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
+  ConfiguratorStation,
+  ConfiguratorStationCreateRequest,
+  ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
   LoadProfileCreateRequest,
   LoadProfileDetailResponse,
@@ -31,6 +34,8 @@ import type {
 import {
   parseAboutMetadata,
   parseActiveWorkoutResponse,
+  parseConfiguratorStations,
+  parseConfiguratorStation,
   parseErrorResponsePayload,
   parseGymDetailResponse,
   parseGymSummary,
@@ -55,6 +60,8 @@ import {
   serializeCreateWorkoutRequest,
   serializeGymCreateRequest,
   serializeGymUpdateRequest,
+  serializeConfiguratorStationCreateRequest,
+  serializeConfiguratorStationUpdateRequest,
   serializeReopenActiveWorkoutExerciseRequest,
   serializeSelectActiveWorkoutExerciseOptionRequest,
   serializeSkipActiveWorkoutExerciseRequest,
@@ -181,6 +188,14 @@ export const loadGymDetail = async (
   gymId: string,
 ): Promise<GymDetailResponse> =>
   parseGymDetailResponse(await fetchJson<unknown>(`/api/gyms/${encodeURIComponent(gymId)}`));
+
+export const loadConfiguratorStations = async (
+  fetchJson: FetchJson,
+  gymId: string,
+): Promise<ConfiguratorStation[]> =>
+  parseConfiguratorStations(
+    await fetchJson<unknown>(`/api/gyms/${encodeURIComponent(gymId)}/configurator-stations`),
+  );
 
 export const loadStationDetail = async (
   fetchJson: FetchJson,
@@ -520,4 +535,11 @@ export const deleteGym = async (
     if (response.status === 401) dispatchUnauthorized();
     throw new RequestError(response.status, await parseErrorResponse(response));
   }
+};
+
+export const createConfiguratorStation = async (gymId: string, payload: ConfiguratorStationCreateRequest, fetchImpl: typeof fetch = fetch): Promise<ConfiguratorStation> => submitLoadProfileRequest(fetchImpl, `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations`, "POST", serializeConfiguratorStationCreateRequest(payload), parseConfiguratorStation);
+export const updateConfiguratorStation = async (gymId: string, stationId: string, payload: ConfiguratorStationUpdateRequest, fetchImpl: typeof fetch = fetch): Promise<ConfiguratorStation> => submitLoadProfileRequest(fetchImpl, `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}`, "PATCH", serializeConfiguratorStationUpdateRequest(payload), parseConfiguratorStation);
+export const deleteConfiguratorStation = async (gymId: string, stationId: string, fetchImpl: typeof fetch = fetch): Promise<void> => {
+  const response = await fetchImpl(`/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}`, { method: "DELETE", credentials: "same-origin" });
+  if (!response.ok) { if (response.status === 401) dispatchUnauthorized(); throw new RequestError(response.status, await parseErrorResponse(response)); }
 };

@@ -235,7 +235,7 @@ export const handleScreenNavigationAction = (
       if (!gymId || !state.configuratorGymsScreen?.gyms.some((gym) => gym.id === gymId)) {
         return true;
       }
-      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, isLoading: true, errorMessage: null }, viewState: { screen: "configurator-gym-detail", gymId } });
+      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: true, errorMessage: null }, viewState: { screen: "configurator-gym-detail", gymId } });
       render();
       void loadConfiguratorGymDetailScreenData(gymId);
       return true;
@@ -248,6 +248,25 @@ export const handleScreenNavigationAction = (
       setState({ ...state, viewState: { screen: "configurator-gyms" } });
       render();
       return true;
+    }
+    case "start-configurator-station-create": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-gym-detail" || state.viewState.gymId === null) return true;
+      setState({ ...state, viewState: { screen: "configurator-station-detail", gymId: state.viewState.gymId, stationId: null } }); render();
+      void loadConfiguratorLoadProfilesScreenData();
+      return true;
+    }
+    case "open-configurator-station-detail": {
+      const state = getState(); const payload = (event as CustomEvent<{ payload?: { stationId?: unknown } }>).detail?.payload;
+      const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
+      if (state.viewState.screen !== "configurator-gym-detail" || state.viewState.gymId === null || !stationId) return true;
+      setState({ ...state, viewState: { screen: "configurator-station-detail", gymId: state.viewState.gymId, stationId } }); render();
+      void loadConfiguratorLoadProfilesScreenData();
+      return true;
+    }
+    case "navigate-back-from-configurator-station-detail": {
+      const state = getState(); if (state.viewState.screen !== "configurator-station-detail") return true;
+      setState({ ...state, viewState: { screen: "configurator-gym-detail", gymId: state.viewState.gymId } }); render(); return true;
     }
     case "start-configurator-load-profile-create": {
       const state = getState();

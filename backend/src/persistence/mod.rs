@@ -410,6 +410,11 @@ pub(crate) trait GymRepository {
         station_id: &str,
         user_id: &str,
     ) -> Result<Option<ConfiguratorStation>, PersistenceError>;
+    async fn fetch_configurator_stations_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<Vec<ConfiguratorStation>>, PersistenceError>;
     async fn station_name_exists_for_user(
         &self,
         gym_id: &str,
@@ -928,6 +933,13 @@ impl GymRepository for DomainRepository {
         DomainRepository::fetch_configurator_station_for_user(self, gym_id, station_id, user_id)
             .await
     }
+    async fn fetch_configurator_stations_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<Vec<ConfiguratorStation>>, PersistenceError> {
+        DomainRepository::fetch_configurator_stations_for_user(self, gym_id, user_id).await
+    }
     async fn station_name_exists_for_user(
         &self,
         gym_id: &str,
@@ -1307,6 +1319,13 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<ConfiguratorStation>, PersistenceError> {
         gyms::fetch_configurator_station_for_user(self, gym_id, station_id, user_id).await
+    }
+    pub async fn fetch_configurator_stations_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<Vec<ConfiguratorStation>>, PersistenceError> {
+        gyms::fetch_configurator_stations_for_user(self, gym_id, user_id).await
     }
     pub async fn station_name_exists_for_user(
         &self,

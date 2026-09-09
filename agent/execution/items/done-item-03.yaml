@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-03
   title: Show Stations in Configurator Gym detail
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,7 +50,7 @@ acceptance_criteria:
     a Gym selector or top-level Station navigation.
   verification:
     type: manual
-    command: 'Review the Configurator Gym detail screen against `agent/execution/plan.yaml`.'
+    command: Review the Configurator Gym detail screen against `agent/execution/plan.yaml`.
     expected: Only the scoped nested management flow is present.
 execution:
   plan_item_required: false

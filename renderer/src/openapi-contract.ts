@@ -10,6 +10,9 @@ import { AuthUpdateDisplayNameRequestToJSON } from "../generated/openapi/typescr
 import { AuthUpdatePasswordRequestToJSON } from "../generated/openapi/typescript/models/AuthUpdatePasswordRequest";
 import { CompleteActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CompleteActiveWorkoutRequest";
 import { ConfirmActiveWorkoutSetRequestToJSON } from "../generated/openapi/typescript/models/ConfirmActiveWorkoutSetRequest";
+import { ConfiguratorStationResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorStationResponse";
+import { ConfiguratorStationCreateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCreateRequest";
+import { ConfiguratorStationUpdateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationUpdateRequest";
 import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } from "../generated/openapi/typescript/models/CreateWorkoutExerciseInput";
 import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateActiveWorkoutRequest";
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
@@ -42,6 +45,9 @@ import type {
   ActiveWorkoutResponse,
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
+  ConfiguratorStation,
+  ConfiguratorStationCreateRequest,
+  ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
   CreateWorkoutExerciseInput,
   CreateWorkoutRequest,
@@ -163,6 +169,15 @@ export const parseGymSummaries = (json: unknown): GymSummary[] =>
 
 export const parseGymSummary = (json: unknown): GymSummary =>
   toRendererModel<GymSummary>(GymSummaryFromJSON(json));
+
+export const parseConfiguratorStations = (json: unknown): ConfiguratorStation[] =>
+  requireJsonArray(json).map((entry) =>
+    toRendererModel<ConfiguratorStation>(ConfiguratorStationResponseFromJSON(entry)),
+  );
+export const parseConfiguratorStation = (json: unknown): ConfiguratorStation =>
+  toRendererModel<ConfiguratorStation>(ConfiguratorStationResponseFromJSON(json));
+export const serializeConfiguratorStationCreateRequest = (request: ConfiguratorStationCreateRequest): unknown => ConfiguratorStationCreateRequestToJSON(request);
+export const serializeConfiguratorStationUpdateRequest = (request: ConfiguratorStationUpdateRequest): unknown => ConfiguratorStationUpdateRequestToJSON(request);
 
 export const parseLoadProfileSummaries = (json: unknown): LoadProfileSummary[] =>
   requireJsonArray(json).map((entry) =>

@@ -3,7 +3,9 @@ import { pbConfiguratorGymEditorScreenTag, registerPbConfiguratorGymEditorScreen
 
 const createState = (status: "new" | "active" | "inactive" = "new"): ConfiguratorGymEditorScreenState => ({
   mode: "edit", gyms: [{ id: "gym-1", name: "Alpha", status }, { id: "gym-2", name: "Bravo", status: "new" }],
-  detail: { id: "gym-1", name: "Alpha", status, station_count: 0, last_visited_at: null, stations: [], exercise_groups: [] }, isLoading: false, errorMessage: null,
+  detail: { id: "gym-1", name: "Alpha", status, station_count: 0, last_visited_at: null, stations: [], exercise_groups: [] },
+  stations: [{ id: "station-1", gym_id: "gym-1", name: "Cable Tower", load_profile: { id: "profile-1", name: "Cable Stack", status: "active" }, status: "new" }],
+  isLoading: false, errorMessage: null,
 });
 
 describe("pb-configurator-gym-editor-screen", () => {
@@ -68,5 +70,20 @@ describe("pb-configurator-gym-editor-screen", () => {
     const saveButton = el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement;
     expect(saveButton.disabled).toBe(true);
     expect(el.textContent).not.toContain("historical workouts");
+  });
+
+  it("renders compact Stations and emits contextual create and detail actions", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    expect(el.textContent).toContain("Cable Tower");
+    expect(el.textContent).toContain("Cable Stack");
+    expect(el.textContent).toContain("Draft");
+    (el.querySelector('[data-ui-action="start-configurator-station-create"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-configurator-station-detail"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls.map((call) => call[0].detail)).toEqual([
+      { action: "start-configurator-station-create", payload: { gymId: "gym-1" } },
+      { action: "open-configurator-station-detail", payload: { gymId: "gym-1", stationId: "station-1" } },
+    ]);
   });
 });

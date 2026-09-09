@@ -283,6 +283,13 @@ pb-app-root,
 .configurator-gym-delete-button { border: 1px solid var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--button-secondary-text); }
 .configurator-gym-save-button:disabled,
 .configurator-gym-delete-button:disabled { cursor: not-allowed; opacity: 0.55; }
+.configurator-gym-stations { display: grid; gap: var(--space-md); margin-top: var(--space-xl); }
+.configurator-gym-stations-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.configurator-gym-stations-header h2 { margin: 0; font-size: var(--font-size-section); }
+.configurator-gym-station-list { display: grid; gap: var(--space-sm); margin: 0; padding: 0; list-style: none; }
+.configurator-gym-station-row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
+.configurator-gym-station-row > span:first-child { display: grid; gap: var(--space-xs); }
+.configurator-gym-station-row small { color: var(--text-secondary); }
 
 .configurator-load-profiles-screen .configurator-load-profile-create-button {
   width: fit-content;

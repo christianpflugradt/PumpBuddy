@@ -1,5 +1,6 @@
 import {
   loadAboutMetadata,
+  loadConfiguratorStations,
   loadGymDetail,
   loadGymSummaries,
   loadLoadProfileDetail,
@@ -247,15 +248,18 @@ export const createScreenDataController = (deps: Dependencies): {
   const loadConfiguratorGymDetailScreenData = async (gymId: string): Promise<void> => {
     if (!gymId.trim()) return;
     const requestToken = ++configuratorGymDetailToken;
-    setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, isLoading: true, errorMessage: null } });
+    setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: true, errorMessage: null } });
     render();
     try {
-      const detail = await loadGymDetail(fetchJson, gymId);
+      const [detail, stations] = await Promise.all([
+        loadGymDetail(fetchJson, gymId),
+        loadConfiguratorStations(fetchJson, gymId),
+      ]);
       if (requestToken !== configuratorGymDetailToken) return;
-      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail, isLoading: false, errorMessage: null } });
+      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail, stations, isLoading: false, errorMessage: null } });
     } catch {
       if (requestToken !== configuratorGymDetailToken) return;
-      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, isLoading: false, errorMessage: "Unable to load Gym right now." } });
+      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: false, errorMessage: "Unable to load Gym right now." } });
     }
     render();
   };

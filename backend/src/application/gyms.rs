@@ -124,6 +124,18 @@ pub(crate) async fn get_configurator_station(
         .ok_or_else(|| GymServiceError::NotFound("Station not found".to_owned()))
 }
 
+pub(crate) async fn list_configurator_stations(
+    repository: &(impl GymRepository + ?Sized),
+    gym_id: &str,
+    user_id: &str,
+) -> Result<Vec<ConfiguratorStation>, GymServiceError> {
+    repository
+        .fetch_configurator_stations_for_user(gym_id, user_id)
+        .await
+        .map_err(GymServiceError::Persistence)?
+        .ok_or_else(|| GymServiceError::NotFound("Gym not found".to_owned()))
+}
+
 pub(crate) async fn create_configurator_station(
     repository: &(impl GymRepository + ?Sized),
     gym_id: &str,
@@ -299,6 +311,13 @@ mod tests {
             _user_id: &str,
         ) -> Result<Option<crate::domain::ConfiguratorStation>, PersistenceError> {
             Ok(None)
+        }
+        async fn fetch_configurator_stations_for_user(
+            &self,
+            _gym_id: &str,
+            _user_id: &str,
+        ) -> Result<Option<Vec<crate::domain::ConfiguratorStation>>, PersistenceError> {
+            Ok(Some(Vec::new()))
         }
         async fn station_name_exists_for_user(
             &self,

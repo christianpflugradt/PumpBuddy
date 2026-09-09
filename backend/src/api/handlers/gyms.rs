@@ -25,7 +25,9 @@ use crate::application::gyms::{
     delete_configurator_station as delete_configurator_station_service,
     delete_gym as delete_gym_service, get_configurator_station as get_configurator_station_service,
     get_gym_detail as get_gym_detail_service,
-    get_gym_station_detail as get_gym_station_detail_service, list_gyms as list_gyms_service,
+    get_gym_station_detail as get_gym_station_detail_service,
+    list_configurator_stations as list_configurator_stations_service,
+    list_gyms as list_gyms_service,
     update_configurator_station as update_configurator_station_service,
     update_gym as update_gym_service, GymServiceError,
 };
@@ -486,6 +488,22 @@ pub(crate) async fn create_configurator_station(
     Ok((
         StatusCode::CREATED,
         Json(configurator_station_response(station).map_err(map_enum_translation_error)?),
+    ))
+}
+pub(crate) async fn list_configurator_stations(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(gym_id): Path<String>,
+) -> Result<Json<Vec<ConfiguratorStationResponse>>, ApiError> {
+    let stations = list_configurator_stations_service(&state.repository, &gym_id, &session.user_id)
+        .await
+        .map_err(map_gym_service_error)?;
+    Ok(Json(
+        stations
+            .into_iter()
+            .map(configurator_station_response)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_enum_translation_error)?,
     ))
 }
 pub(crate) async fn get_configurator_station(

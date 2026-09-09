@@ -65,6 +65,7 @@ import {
   registerPbConfiguratorGymEditorScreen,
   type ConfiguratorGymEditorScreenState,
 } from "./pb-configurator-gym-editor-screen";
+import { pbConfiguratorStationEditorScreenTag, registerPbConfiguratorStationEditorScreen, type ConfiguratorStationEditorScreenState } from "./pb-configurator-station-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -94,6 +95,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorLoadProfileEditorScreen();
     registerPbConfiguratorGymsScreen();
     registerPbConfiguratorGymEditorScreen();
+    registerPbConfiguratorStationEditorScreen();
     this.#render();
   }
 
@@ -171,7 +173,16 @@ class PbAppRootElement extends HTMLElement {
       const detailState = gymId === null || state.configuratorGymDetailScreen?.gymId === gymId
         ? state.configuratorGymDetailScreen : null;
       const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
-      el.state = { mode: gymId === null ? "create" : "edit", gyms: state.configuratorGymsScreen?.gyms ?? [], detail: gymId === null ? null : detailState?.detail ?? null, isLoading: detailState?.isLoading ?? false, errorMessage: detailState?.errorMessage ?? null };
+      el.state = { mode: gymId === null ? "create" : "edit", gyms: state.configuratorGymsScreen?.gyms ?? [], detail: gymId === null ? null : detailState?.detail ?? null, stations: detailState?.stations ?? [], isLoading: detailState?.isLoading ?? false, errorMessage: detailState?.errorMessage ?? null };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-station-detail") {
+      const { gymId, stationId } = state.viewState;
+      const station = stationId === null ? null : state.configuratorGymDetailScreen?.stations?.find((entry) => entry.id === stationId) ?? null;
+      const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+      el.state = { gymId, station, loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [] };
       container.append(el);
       return;
     }

@@ -90,6 +90,17 @@ export type GymStationSummary = {
   suitable_variant_count: number;
 };
 
+export type ConfiguratorStation = {
+  id: string;
+  gym_id: string;
+  name: string;
+  load_profile: { id: string; name: string; status: "new" | "active" | "inactive" };
+  status: "new" | "active" | "inactive";
+};
+
+export type ConfiguratorStationCreateRequest = { name: string; load_profile_id: string };
+export type ConfiguratorStationUpdateRequest = { name: string; load_profile_id?: string };
+
 export type GymDetailResponse = {
   id: string;
   name: string;
