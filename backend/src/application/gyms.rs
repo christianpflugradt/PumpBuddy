@@ -1,5 +1,8 @@
 use crate::{
-    domain::{GymDetail, GymStationDetail, GymSummary, GymUpdate, NewGym},
+    domain::{
+        ConfiguratorStation, ConfiguratorStationUpdate, GymDetail, GymStationDetail, GymSummary,
+        GymUpdate, NewConfiguratorStation, NewGym,
+    },
     persistence::{GymRepository, PersistenceError},
 };
 
@@ -106,6 +109,76 @@ pub(crate) async fn get_gym_station_detail(
         .await
         .map_err(GymServiceError::Persistence)?
         .ok_or_else(|| GymServiceError::NotFound("Gym station not found".to_owned()))
+}
+
+pub(crate) async fn get_configurator_station(
+    repository: &(impl GymRepository + ?Sized),
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<ConfiguratorStation, GymServiceError> {
+    repository
+        .fetch_configurator_station_for_user(gym_id, station_id, user_id)
+        .await
+        .map_err(GymServiceError::Persistence)?
+        .ok_or_else(|| GymServiceError::NotFound("Station not found".to_owned()))
+}
+
+pub(crate) async fn create_configurator_station(
+    repository: &(impl GymRepository + ?Sized),
+    gym_id: &str,
+    user_id: &str,
+    mut command: NewConfiguratorStation,
+) -> Result<ConfiguratorStation, GymServiceError> {
+    normalize_name(&mut command.name)?;
+    if repository
+        .station_name_exists_for_user(gym_id, user_id, &command.name, None)
+        .await
+        .map_err(GymServiceError::Persistence)?
+    {
+        return Err(GymServiceError::Conflict(
+            "Station name already exists in this gym".to_owned(),
+        ));
+    }
+    repository
+        .create_configurator_station_for_user(gym_id, user_id, &command)
+        .await
+        .map_err(map_persistence_error)
+}
+
+pub(crate) async fn update_configurator_station(
+    repository: &(impl GymRepository + ?Sized),
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+    mut command: ConfiguratorStationUpdate,
+) -> Result<ConfiguratorStation, GymServiceError> {
+    normalize_name(&mut command.name)?;
+    if repository
+        .station_name_exists_for_user(gym_id, user_id, &command.name, Some(station_id))
+        .await
+        .map_err(GymServiceError::Persistence)?
+    {
+        return Err(GymServiceError::Conflict(
+            "Station name already exists in this gym".to_owned(),
+        ));
+    }
+    repository
+        .update_configurator_station_for_user(gym_id, station_id, user_id, &command)
+        .await
+        .map_err(map_persistence_error)
+}
+
+pub(crate) async fn delete_configurator_station(
+    repository: &(impl GymRepository + ?Sized),
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<(), GymServiceError> {
+    repository
+        .delete_configurator_station_for_user(gym_id, station_id, user_id)
+        .await
+        .map_err(map_persistence_error)
 }
 
 #[allow(dead_code)]
@@ -217,6 +290,49 @@ mod tests {
             _user_id: &str,
         ) -> Result<Option<GymStationDetail>, PersistenceError> {
             Ok(None)
+        }
+
+        async fn fetch_configurator_station_for_user(
+            &self,
+            _gym_id: &str,
+            _station_id: &str,
+            _user_id: &str,
+        ) -> Result<Option<crate::domain::ConfiguratorStation>, PersistenceError> {
+            Ok(None)
+        }
+        async fn station_name_exists_for_user(
+            &self,
+            _gym_id: &str,
+            _user_id: &str,
+            _name: &str,
+            _excluding_id: Option<&str>,
+        ) -> Result<bool, PersistenceError> {
+            Ok(false)
+        }
+        async fn create_configurator_station_for_user(
+            &self,
+            _gym_id: &str,
+            _user_id: &str,
+            _station: &crate::domain::NewConfiguratorStation,
+        ) -> Result<crate::domain::ConfiguratorStation, PersistenceError> {
+            Err(PersistenceError::NotFound("Station not found".to_owned()))
+        }
+        async fn update_configurator_station_for_user(
+            &self,
+            _gym_id: &str,
+            _station_id: &str,
+            _user_id: &str,
+            _update: &crate::domain::ConfiguratorStationUpdate,
+        ) -> Result<crate::domain::ConfiguratorStation, PersistenceError> {
+            Err(PersistenceError::NotFound("Station not found".to_owned()))
+        }
+        async fn delete_configurator_station_for_user(
+            &self,
+            _gym_id: &str,
+            _station_id: &str,
+            _user_id: &str,
+        ) -> Result<(), PersistenceError> {
+            Err(PersistenceError::NotFound("Station not found".to_owned()))
         }
     }
 

@@ -1,8 +1,9 @@
 use crate::domain::{
-    CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
-    GymStationDetail, GymSummary, GymUpdate, LoadProfileDetail, LoadProfileSummary,
-    LoadProfileUpdate, NewGym, NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary,
-    Workout, WorkoutHistorySummary,
+    CompletedActiveWorkoutSet, ConfiguratorStation, ConfiguratorStationUpdate,
+    ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail, GymSummary,
+    GymUpdate, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate, NewConfiguratorStation,
+    NewGym, NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
+    WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -402,6 +403,39 @@ pub(crate) trait GymRepository {
         station_id: &str,
         user_id: &str,
     ) -> Result<Option<GymStationDetail>, PersistenceError>;
+
+    async fn fetch_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStation>, PersistenceError>;
+    async fn station_name_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError>;
+    async fn create_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        station: &NewConfiguratorStation,
+    ) -> Result<ConfiguratorStation, PersistenceError>;
+    async fn update_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        update: &ConfiguratorStationUpdate,
+    ) -> Result<ConfiguratorStation, PersistenceError>;
+    async fn delete_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
 }
 
 pub(crate) trait LoadProfileRepository {
@@ -884,6 +918,55 @@ impl GymRepository for DomainRepository {
     ) -> Result<Option<GymStationDetail>, PersistenceError> {
         DomainRepository::fetch_gym_station_detail_for_user(self, gym_id, station_id, user_id).await
     }
+
+    async fn fetch_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStation>, PersistenceError> {
+        DomainRepository::fetch_configurator_station_for_user(self, gym_id, station_id, user_id)
+            .await
+    }
+    async fn station_name_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        DomainRepository::station_name_exists_for_user(self, gym_id, user_id, name, excluding_id)
+            .await
+    }
+    async fn create_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        station: &NewConfiguratorStation,
+    ) -> Result<ConfiguratorStation, PersistenceError> {
+        DomainRepository::create_configurator_station_for_user(self, gym_id, user_id, station).await
+    }
+    async fn update_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        update: &ConfiguratorStationUpdate,
+    ) -> Result<ConfiguratorStation, PersistenceError> {
+        DomainRepository::update_configurator_station_for_user(
+            self, gym_id, station_id, user_id, update,
+        )
+        .await
+    }
+    async fn delete_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::delete_configurator_station_for_user(self, gym_id, station_id, user_id)
+            .await
+    }
 }
 
 impl LoadProfileRepository for DomainRepository {
@@ -1215,6 +1298,49 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<GymStationDetail>, PersistenceError> {
         gyms::fetch_gym_station_detail_for_user(self, gym_id, station_id, user_id).await
+    }
+
+    pub async fn fetch_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStation>, PersistenceError> {
+        gyms::fetch_configurator_station_for_user(self, gym_id, station_id, user_id).await
+    }
+    pub async fn station_name_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        gyms::station_name_exists_for_user(self, gym_id, user_id, name, excluding_id).await
+    }
+    pub async fn create_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        station: &NewConfiguratorStation,
+    ) -> Result<ConfiguratorStation, PersistenceError> {
+        gyms::create_configurator_station_for_user(self, gym_id, user_id, station).await
+    }
+    pub async fn update_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        update: &ConfiguratorStationUpdate,
+    ) -> Result<ConfiguratorStation, PersistenceError> {
+        gyms::update_configurator_station_for_user(self, gym_id, station_id, user_id, update).await
+    }
+    pub async fn delete_configurator_station_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        gyms::delete_configurator_station_for_user(self, gym_id, station_id, user_id).await
     }
 
     pub async fn fetch_load_profile_summaries_for_user(

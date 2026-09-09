@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-02
   title: Expose Configurator Station management API
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -20,8 +20,8 @@ scope:
     and repository operations.
   - Trim names before validation, reject blank names, preserve raw within-Gym/user
     uniqueness behavior, and enforce owner and Gym context on every read and write.
-  - 'Allow name and Load Profile edits plus hard deletion only for `new` Stations;
-    allow name-only edits for `active` and `inactive` Stations.'
+  - Allow name and Load Profile edits plus hard deletion only for `new` Stations;
+    allow name-only edits for `active` and `inactive` Stations.
   out:
   - Changes to existing workout-facing Gym or Station detail endpoints and payloads.
   - Station moves between Gyms, status transitions, bulk operations, or compatibility

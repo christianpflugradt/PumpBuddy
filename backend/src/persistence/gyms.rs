@@ -1,9 +1,9 @@
 use super::{logging, DomainRepository, PersistenceError};
 use crate::domain::{
-    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
-    GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
-    GymStationExerciseVariantSummary, GymStationOption, GymStationSummary, GymSummary, GymUpdate,
-    NewGym,
+    ConfiguratorStation, ConfiguratorStationLoadProfile, ConfiguratorStationUpdate, GymDetail,
+    GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary, GymStationAvailability,
+    GymStationDetail, GymStationExerciseGroup, GymStationExerciseVariantSummary, GymStationOption,
+    GymStationSummary, GymSummary, GymUpdate, NewConfiguratorStation, NewGym,
 };
 use sqlx::{postgres::PgRow, Row};
 use uuid::Uuid;
@@ -55,6 +55,153 @@ pub(super) async fn fetch_gym_summaries_for_user(
             last_visited_at: row.get("last_visited_at"),
         })
         .collect())
+}
+
+pub(super) async fn fetch_configurator_station_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<Option<ConfiguratorStation>, PersistenceError> {
+    let row = sqlx::query("SELECT es.id::text AS id, es.gym_id::text AS gym_id, es.name, es.status, lp.id::text AS load_profile_id, lp.name AS load_profile_name, lp.status AS load_profile_status FROM equipment_stations es JOIN gyms g ON g.id = es.gym_id AND g.user_id = $3::uuid JOIN load_profiles lp ON lp.id = es.load_profile_id AND lp.user_id = $3::uuid WHERE es.gym_id = $1::uuid AND es.id = $2::uuid AND es.user_id = $3::uuid")
+        .bind(gym_id).bind(station_id).bind(user_id).fetch_optional(&repository.pool).await?;
+    Ok(row.map(configurator_station_from_row))
+}
+
+pub(super) async fn station_name_exists_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    user_id: &str,
+    name: &str,
+    excluding_id: Option<&str>,
+) -> Result<bool, PersistenceError> {
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM equipment_stations WHERE gym_id = $1::uuid AND user_id = $2::uuid AND name = $3 AND ($4::uuid IS NULL OR id <> $4::uuid))")
+        .bind(gym_id).bind(user_id).bind(name).bind(excluding_id).fetch_one(&repository.pool).await.map_err(Into::into)
+}
+
+pub(super) async fn create_configurator_station_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    user_id: &str,
+    station: &NewConfiguratorStation,
+) -> Result<ConfiguratorStation, PersistenceError> {
+    let id = Uuid::new_v4().to_string();
+    let result = sqlx::query("INSERT INTO equipment_stations (id, gym_id, user_id, name, load_profile_id, status) SELECT $1::uuid, g.id, $3::uuid, $4, lp.id, 'new' FROM gyms g JOIN load_profiles lp ON lp.id = $5::uuid AND lp.user_id = $3::uuid AND lp.status <> 'inactive' WHERE g.id = $2::uuid AND g.user_id = $3::uuid")
+        .bind(&id).bind(gym_id).bind(user_id).bind(&station.name).bind(&station.load_profile_id).execute(&repository.pool).await;
+    match result {
+        Ok(result) if result.rows_affected() == 0 => {
+            return Err(PersistenceError::NotFound(
+                "Gym or active load profile not found".to_owned(),
+            ))
+        }
+        Ok(_) => {}
+        Err(error) => return Err(map_station_write_sqlx_error(error)?),
+    }
+    fetch_configurator_station_for_user(repository, gym_id, &id, user_id)
+        .await?
+        .ok_or_else(|| PersistenceError::NotFound("Station not found".to_owned()))
+}
+
+pub(super) async fn update_configurator_station_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+    update: &ConfiguratorStationUpdate,
+) -> Result<ConfiguratorStation, PersistenceError> {
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "update_configurator_station", "station")
+            .await?;
+    let row = sqlx::query("SELECT es.status, es.load_profile_id::text AS load_profile_id FROM equipment_stations es JOIN gyms g ON g.id = es.gym_id AND g.user_id = $3::uuid WHERE es.gym_id = $1::uuid AND es.id = $2::uuid AND es.user_id = $3::uuid FOR UPDATE")
+        .bind(gym_id).bind(station_id).bind(user_id).fetch_optional(&mut *tx).await?;
+    let Some(row) = row else {
+        logging::rollback_transaction(tx, "update_configurator_station", "station").await;
+        return Err(PersistenceError::NotFound("Station not found".to_owned()));
+    };
+    let status: String = row.get("status");
+    let current_profile: String = row.get("load_profile_id");
+    if status != "new"
+        && update
+            .load_profile_id
+            .as_deref()
+            .is_some_and(|id| id != current_profile)
+    {
+        logging::rollback_transaction(tx, "update_configurator_station", "station").await;
+        return Err(PersistenceError::Conflict(
+            "Only draft stations can change load profile".to_owned(),
+        ));
+    }
+    if let Some(profile_id) = update
+        .load_profile_id
+        .as_deref()
+        .filter(|id| *id != current_profile)
+    {
+        let usable: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM load_profiles WHERE id = $1::uuid AND user_id = $2::uuid AND status <> 'inactive')").bind(profile_id).bind(user_id).fetch_one(&mut *tx).await?;
+        if !usable {
+            logging::rollback_transaction(tx, "update_configurator_station", "station").await;
+            return Err(PersistenceError::NotFound(
+                "Active load profile not found".to_owned(),
+            ));
+        }
+    }
+    let profile_id = update
+        .load_profile_id
+        .as_deref()
+        .unwrap_or(&current_profile);
+    match sqlx::query("UPDATE equipment_stations SET name = $4, load_profile_id = $5::uuid WHERE gym_id = $1::uuid AND id = $2::uuid AND user_id = $3::uuid").bind(gym_id).bind(station_id).bind(user_id).bind(&update.name).bind(profile_id).execute(&mut *tx).await {
+        Ok(_) => {},
+        Err(error) => return Err(map_station_write_sqlx_error(error)?),
+    }
+    logging::commit_transaction(tx, "update_configurator_station", "station").await?;
+    fetch_configurator_station_for_user(repository, gym_id, station_id, user_id)
+        .await?
+        .ok_or_else(|| PersistenceError::NotFound("Station not found".to_owned()))
+}
+
+pub(super) async fn delete_configurator_station_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<(), PersistenceError> {
+    let result = sqlx::query("DELETE FROM equipment_stations WHERE gym_id = $1::uuid AND id = $2::uuid AND user_id = $3::uuid AND status = 'new'").bind(gym_id).bind(station_id).bind(user_id).execute(&repository.pool).await?;
+    if result.rows_affected() == 1 {
+        Ok(())
+    } else if fetch_configurator_station_for_user(repository, gym_id, station_id, user_id)
+        .await?
+        .is_some()
+    {
+        Err(PersistenceError::Conflict(
+            "Only draft stations can be deleted".to_owned(),
+        ))
+    } else {
+        Err(PersistenceError::NotFound("Station not found".to_owned()))
+    }
+}
+
+fn configurator_station_from_row(row: PgRow) -> ConfiguratorStation {
+    ConfiguratorStation {
+        id: row.get("id"),
+        gym_id: row.get("gym_id"),
+        name: row.get("name"),
+        status: row.get("status"),
+        load_profile: ConfiguratorStationLoadProfile {
+            id: row.get("load_profile_id"),
+            name: row.get("load_profile_name"),
+            status: row.get("load_profile_status"),
+        },
+    }
+}
+
+fn map_station_write_sqlx_error(error: sqlx::Error) -> Result<PersistenceError, PersistenceError> {
+    if let sqlx::Error::Database(db_error) = &error {
+        if db_error.code().as_deref() == Some("23505") {
+            return Ok(PersistenceError::Conflict(
+                "Station name already exists in this gym".to_owned(),
+            ));
+        }
+    }
+    Err(PersistenceError::Sqlx(error))
 }
 
 pub(super) async fn gym_name_exists_for_user(

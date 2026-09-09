@@ -72,6 +72,34 @@ pub struct EquipmentStation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorStation {
+    pub id: String,
+    pub gym_id: String,
+    pub name: String,
+    pub load_profile: ConfiguratorStationLoadProfile,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorStationLoadProfile {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewConfiguratorStation {
+    pub name: String,
+    pub load_profile_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorStationUpdate {
+    pub name: String,
+    pub load_profile_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadProfileSummary {
     pub id: String,
     pub name: String,

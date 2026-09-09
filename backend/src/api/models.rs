@@ -6,10 +6,10 @@ use crate::application::workouts::{
 use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
-    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, GymUpdate,
-    LoadProfileDefinitionInput, LoadProfileUpdate, NewGym, NewLoadProfile, NewWorkout,
-    NewWorkoutExercise, NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
-    WorkoutDetailExercise as DomainWorkoutDetailExercise,
+    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, ConfiguratorStationUpdate,
+    GymUpdate, LoadProfileDefinitionInput, LoadProfileUpdate, NewConfiguratorStation, NewGym,
+    NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+    WorkoutDetail as DomainWorkoutDetail, WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
     WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
@@ -48,6 +48,10 @@ pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutReq
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
 use crate::models::completed_active_workout_set::RepetitionKind as CompletedActiveWorkoutSetRepetitionKindResponse;
 use crate::models::completed_active_workout_set::SetSide as CompletedActiveWorkoutSetSideResponse;
+pub use crate::models::configurator_station_create_request::ConfiguratorStationCreateRequest;
+pub use crate::models::configurator_station_load_profile::ConfiguratorStationLoadProfile as ConfiguratorStationLoadProfileResponse;
+pub use crate::models::configurator_station_response::ConfiguratorStationResponse;
+pub use crate::models::configurator_station_update_request::ConfiguratorStationUpdateRequest;
 pub use crate::models::confirm_active_workout_set_request::ConfirmActiveWorkoutSetRequest;
 pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest;
 #[allow(unused_imports)]
@@ -171,6 +175,23 @@ impl From<GymCreateRequest> for GymWriteRequest {
 impl From<GymUpdateRequest> for GymWriteRequest {
     fn from(request: GymUpdateRequest) -> Self {
         Self { name: request.name }
+    }
+}
+
+impl ConfiguratorStationCreateRequest {
+    pub fn into_new_configurator_station(self) -> NewConfiguratorStation {
+        NewConfiguratorStation {
+            name: self.name,
+            load_profile_id: self.load_profile_id,
+        }
+    }
+}
+impl ConfiguratorStationUpdateRequest {
+    pub fn into_configurator_station_update(self) -> ConfiguratorStationUpdate {
+        ConfiguratorStationUpdate {
+            name: self.name,
+            load_profile_id: self.load_profile_id,
+        }
     }
 }
 

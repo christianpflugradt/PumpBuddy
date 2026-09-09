@@ -627,6 +627,99 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/gyms/{gymId}/configurator-stations:
+    post:
+      summary: Create a draft Configurator Station in a gym
+      operationId: createConfiguratorStation
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfiguratorStationCreateRequest' }
+      responses:
+        '201':
+          description: Station created successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorStationResponse' }
+        '400': { description: Invalid station create payload }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Gym or usable load profile not found }
+        '409': { description: Duplicate station name in gym }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/gyms/{gymId}/configurator-stations/{stationId}:
+    get:
+      summary: Retrieve Configurator Station management detail
+      operationId: getConfiguratorStation
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Configurator Station retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorStationResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Station not found }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    patch:
+      summary: Update a Configurator Station
+      operationId: updateConfiguratorStation
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfiguratorStationUpdateRequest' }
+      responses:
+        '200':
+          description: Station updated successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorStationResponse' }
+        '400': { description: Invalid station update payload }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Station or usable load profile not found }
+        '409': { description: Station lifecycle or uniqueness prevents update }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      summary: Delete a draft Configurator Station
+      operationId: deleteConfiguratorStation
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Draft Station deleted successfully }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Station not found }
+        '409': { description: Active or inactive Station cannot be deleted }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/training-plans:
     get:
       summary: List available training plans
@@ -1736,6 +1829,40 @@ components:
           format: int64
           minimum: 0
           description: Number of station-required variants compatible with this station.
+    ConfiguratorStationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, load_profile_id]
+      properties:
+        name: { type: string }
+        load_profile_id: { type: string, format: uuid }
+    ConfiguratorStationUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string }
+        load_profile_id:
+          type: string
+          format: uuid
+          description: Draft Stations may change this; active and inactive Stations must retain it.
+    ConfiguratorStationLoadProfile:
+      type: object
+      required: [id, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [new, active, inactive] }
+    ConfiguratorStationResponse:
+      type: object
+      description: Compact Configurator-only Station projection; it deliberately excludes workout compatibility data.
+      required: [id, gym_id, name, load_profile, status]
+      properties:
+        id: { type: string, format: uuid }
+        gym_id: { type: string, format: uuid }
+        name: { type: string }
+        load_profile: { $ref: '#/components/schemas/ConfiguratorStationLoadProfile' }
+        status: { type: string, enum: [new, active, inactive] }
     GymExerciseGroup:
       type: object
       required:

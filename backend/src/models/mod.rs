@@ -146,6 +146,35 @@ pub mod completed_active_workout_set {
 }
 pub use completed_active_workout_set::CompletedActiveWorkoutSet;
 
+pub mod configurator_station_create_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_station_create_request.rs"
+    ));
+}
+pub use configurator_station_create_request::ConfiguratorStationCreateRequest;
+pub mod configurator_station_load_profile {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_station_load_profile.rs"
+    ));
+}
+pub use configurator_station_load_profile::ConfiguratorStationLoadProfile;
+pub mod configurator_station_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_station_response.rs"
+    ));
+}
+pub use configurator_station_response::ConfiguratorStationResponse;
+pub mod configurator_station_update_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_station_update_request.rs"
+    ));
+}
+pub use configurator_station_update_request::ConfiguratorStationUpdateRequest;
+
 pub mod confirm_active_workout_set_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

@@ -9,8 +9,10 @@ use crate::api::boundary::{
     RepetitionKind, SetTrackingMode,
 };
 use crate::api::models::{
-    GymDetailResponse, GymExerciseGroupResponse, GymExerciseVariantSummaryResponse,
-    GymLoadProfileSummaryResponse, GymStationDetailResponse, GymStationExerciseGroupResponse,
+    ConfiguratorStationCreateRequest, ConfiguratorStationLoadProfileResponse,
+    ConfiguratorStationResponse, ConfiguratorStationUpdateRequest, GymDetailResponse,
+    GymExerciseGroupResponse, GymExerciseVariantSummaryResponse, GymLoadProfileSummaryResponse,
+    GymStationDetailResponse, GymStationExerciseGroupResponse,
     GymStationExerciseVariantSummaryResponse, GymStationOptionResponse, GymStationSummaryResponse,
     GymSummaryResponse, GymWriteRequest,
 };
@@ -18,14 +20,18 @@ use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
 use crate::application::gyms::{
-    create_gym as create_gym_service, delete_gym as delete_gym_service,
+    create_configurator_station as create_configurator_station_service,
+    create_gym as create_gym_service,
+    delete_configurator_station as delete_configurator_station_service,
+    delete_gym as delete_gym_service, get_configurator_station as get_configurator_station_service,
     get_gym_detail as get_gym_detail_service,
     get_gym_station_detail as get_gym_station_detail_service, list_gyms as list_gyms_service,
+    update_configurator_station as update_configurator_station_service,
     update_gym as update_gym_service, GymServiceError,
 };
 use crate::domain::{
-    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
-    GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
+    ConfiguratorStation, GymDetail, GymExerciseGroup, GymExerciseVariantSummary,
+    GymLoadProfileSummary, GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
     GymStationExerciseVariantSummary, GymSummary,
 };
 
@@ -320,6 +326,48 @@ fn gym_detail_response(gym: GymDetail) -> Result<GymDetailResponse, EnumTranslat
     })
 }
 
+fn configurator_station_status_response(
+    status: &str,
+) -> Result<crate::models::configurator_station_response::Status, EnumTranslationError> {
+    match status {
+        "new" => Ok(crate::models::configurator_station_response::Status::New),
+        "active" => Ok(crate::models::configurator_station_response::Status::Active),
+        "inactive" => Ok(crate::models::configurator_station_response::Status::Inactive),
+        value => Err(EnumTranslationError {
+            field: "station.status",
+            value: value.to_owned(),
+        }),
+    }
+}
+fn configurator_load_profile_status_response(
+    status: &str,
+) -> Result<crate::models::configurator_station_load_profile::Status, EnumTranslationError> {
+    match status {
+        "new" => Ok(crate::models::configurator_station_load_profile::Status::New),
+        "active" => Ok(crate::models::configurator_station_load_profile::Status::Active),
+        "inactive" => Ok(crate::models::configurator_station_load_profile::Status::Inactive),
+        value => Err(EnumTranslationError {
+            field: "load_profile.status",
+            value: value.to_owned(),
+        }),
+    }
+}
+fn configurator_station_response(
+    station: ConfiguratorStation,
+) -> Result<ConfiguratorStationResponse, EnumTranslationError> {
+    Ok(ConfiguratorStationResponse {
+        id: station.id,
+        gym_id: station.gym_id,
+        name: station.name,
+        status: configurator_station_status_response(&station.status)?,
+        load_profile: Box::new(ConfiguratorStationLoadProfileResponse {
+            id: station.load_profile.id,
+            name: station.load_profile.name,
+            status: configurator_load_profile_status_response(&station.load_profile.status)?,
+        }),
+    })
+}
+
 pub(crate) async fn list_gyms(
     State(state): State<AppState>,
     Extension(session): Extension<AuthenticatedSession>,
@@ -416,4 +464,72 @@ pub(crate) async fn get_gym_station_detail(
     Ok(Json(
         gym_station_detail_response(station).map_err(map_enum_translation_error)?,
     ))
+}
+
+pub(crate) async fn create_configurator_station(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(gym_id): Path<String>,
+    payload: Result<Json<ConfiguratorStationCreateRequest>, JsonRejection>,
+) -> Result<(StatusCode, Json<ConfiguratorStationResponse>), ApiError> {
+    let payload = payload
+        .map_err(|_| ApiError::Validation("Invalid station create payload".to_owned()))?
+        .0;
+    let station = create_configurator_station_service(
+        &state.repository,
+        &gym_id,
+        &session.user_id,
+        payload.into_new_configurator_station(),
+    )
+    .await
+    .map_err(map_gym_service_error)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(configurator_station_response(station).map_err(map_enum_translation_error)?),
+    ))
+}
+pub(crate) async fn get_configurator_station(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((gym_id, station_id)): Path<(String, String)>,
+) -> Result<Json<ConfiguratorStationResponse>, ApiError> {
+    let station =
+        get_configurator_station_service(&state.repository, &gym_id, &station_id, &session.user_id)
+            .await
+            .map_err(map_gym_service_error)?;
+    Ok(Json(
+        configurator_station_response(station).map_err(map_enum_translation_error)?,
+    ))
+}
+pub(crate) async fn update_configurator_station(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((gym_id, station_id)): Path<(String, String)>,
+    payload: Result<Json<ConfiguratorStationUpdateRequest>, JsonRejection>,
+) -> Result<Json<ConfiguratorStationResponse>, ApiError> {
+    let payload = payload
+        .map_err(|_| ApiError::Validation("Invalid station update payload".to_owned()))?
+        .0;
+    let station = update_configurator_station_service(
+        &state.repository,
+        &gym_id,
+        &station_id,
+        &session.user_id,
+        payload.into_configurator_station_update(),
+    )
+    .await
+    .map_err(map_gym_service_error)?;
+    Ok(Json(
+        configurator_station_response(station).map_err(map_enum_translation_error)?,
+    ))
+}
+pub(crate) async fn delete_configurator_station(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((gym_id, station_id)): Path<(String, String)>,
+) -> Result<StatusCode, ApiError> {
+    delete_configurator_station_service(&state.repository, &gym_id, &station_id, &session.user_id)
+        .await
+        .map_err(map_gym_service_error)?;
+    Ok(StatusCode::NO_CONTENT)
 }
