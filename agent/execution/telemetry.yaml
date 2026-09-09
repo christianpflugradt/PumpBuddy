@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-063
 summary:
   started_at: '2026-09-08T19:03:10Z'
-  last_updated_at: '2026-09-09T13:02:50Z'
+  last_updated_at: '2026-09-09T13:05:22Z'
   duration_seconds: 1631
   task_runs_total: 14
   items_total: 5
@@ -278,3 +278,17 @@ details:
     item_id: '02'
     outcome: accept
     findings_count: 0
+  - at: '2026-09-09T13:02:50Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '02'
+  - at: '2026-09-09T13:03:00Z'
+    task: freestyle
+    event_type: task_run_started
+    item_id: null
+    context_files: 4
+    context_bytes: 4690
+  - at: '2026-09-09T13:05:22Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '02'
