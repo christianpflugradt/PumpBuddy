@@ -124,6 +124,10 @@ backend_generated_api_client_missing() {
   return 1
 }
 
+renderer_generated_api_client_missing() {
+  [ ! -f "$repo_root/renderer/generated/openapi/typescript/runtime.ts" ]
+}
+
 renderer_install_deps_if_needed() {
   lockfile="package-lock.json"
   marker_file="node_modules/.pumpbuddy-lockfile.cksum"
@@ -178,7 +182,11 @@ run_backend_quality() {
 }
 
 run_renderer_quality() {
-  make -C "$repo_root" refresh-frontend-api-client
+  if should_refresh_api_clients || renderer_generated_api_client_missing; then
+    make -C "$repo_root" refresh-frontend-api-client
+  else
+    echo "INFO API contract unchanged; skipping renderer API client refresh"
+  fi
   (
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.
