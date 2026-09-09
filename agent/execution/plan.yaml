@@ -1,23 +1,44 @@
 version: 1
 kind: plan
 id: pb-064
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Configurator Station Management
+goal: Enable lifecycle-aware Equipment Station management within an existing Configurator Gym while preserving the established workout-facing Station experience.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add Station lifecycle status support (`new`, `active`, `inactive`) to the target schema, domain, persistence, API, and frontend contracts; manually upgraded existing Stations are active and Configurator-created Stations are new.
+  - Add minimal, user-scoped Station-management reads and create/update/delete operations within the existing Gym route family.
+  - Extend Configurator Gym detail with a compact nested Stations section and add shared Station create/detail editing screens.
+  - Provide a searchable, mobile-friendly Load Profile picker that permits new and active profiles, excludes inactive profiles for new assignments, and preserves historical inactive-profile display.
+  - Cover lifecycle, ownership, validation, API, and frontend picker/editor behavior with focused repository-convention tests.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Migration automation, deployment tooling, and manual production data migration/backfill execution.
+  - Exercise compatibility configuration, Exercise or Exercise Variant Configurator work, and Station exercise counts or lists.
+  - Moving Stations between Gyms, Station ordering, bulk operations, lifecycle transitions, or rules determining activation.
+  - Workout, Load Profile, or Gym redesign beyond the nested Configurator Station-management flow.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - A Station created from a Gym is persisted as new/Draft; its name and Load Profile can be changed and it can be hard-deleted.
+  - Active and inactive Stations can be renamed but cannot have their Gym, Load Profile, or status changed and cannot be hard-deleted.
+  - Station management is restricted to the owning user and contextual Gym, with blank names rejected and existing within-Gym/user name uniqueness preserved after trimming.
+  - The Configurator shows compact Station name, Load Profile, and lifecycle information without compatibility or workout data.
+  - The picker scales through searchable, scrollable overlay interaction, offers new and active profiles only, and still renders an inactive profile retained by a historical Station.
 constraints:
-  - constraint 1
-  - constraint 2
+  - The manual deployment prerequisite must add Station lifecycle support and backfill pre-existing Stations as active; this plan does not implement that operational work.
+  - Keep existing workout-facing Gym and Station detail routes/screens intact; introduce minimal Configurator-specific Station projections rather than exposing exercise compatibility there.
+  - Reuse established Configurator headers, navigation, lifecycle badges, actions, form styling, and existing sheet/overlay interaction mechanics.
+  - Do not add a top-level Configurator Station section or a Gym selector to Station create/edit.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/api/router.rs
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive roughly five to seven focused execution items from this plan.
+  Treat manual schema migration/backfill as an external prerequisite, not an implementation item. Preserve the existing raw, Gym/user-scoped Station-name uniqueness semantics while service-layer validation trims input. If a proposed implementation would change an existing workout-facing Station contract, refinement must report the gap instead of changing this file.
