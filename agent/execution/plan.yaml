@@ -24,7 +24,7 @@ success_criteria:
 constraints:
   - Treat the existing Load Profile Configurator as the source of truth for lifecycle vocabulary, explicit creation status, rename warning behavior, API error conventions, and component styling.
   - Use `new` solely as persisted/API terminology and Draft in user-facing or domain-facing prose.
-  - The application work assumes the manually prepared database supplies lifecycle-aware Gym rows: pre-existing Gyms are active and newly created Configurator Gyms can persist `new`.
+  - "The application work assumes the manually prepared database supplies lifecycle-aware Gym rows: pre-existing Gyms are active and newly created Configurator Gyms can persist `new`."
   - Keep the eventual refinement to approximately 5–7 cohesive implementation items and within one focused workday.
 inputs:
   - agent/design/domain-context.md

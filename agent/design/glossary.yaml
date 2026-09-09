@@ -65,3 +65,4 @@ naming_rules:
   - Use dotted lower-case IDs for capabilities.
   - Use UC-XX style IDs for use cases.
   - Reuse tokens from this file instead of introducing near-duplicates.
+  - Use `new` only as the persisted/API lifecycle value; call that state Draft in user-facing and domain-facing prose.

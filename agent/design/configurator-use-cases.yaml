@@ -102,9 +102,29 @@ use_cases:
     postconditions:
       - user_can_verify_the_effective_workout_load_choices_before_using_the_profile
 
+  - id: CUC-07
+    name: Manage Gyms
+    goal: User manages lifecycle-aware Gyms from the Configurator without managing Stations.
+    preconditions:
+      - configurator_mode_is_active
+    main_flow:
+      - user_opens_gyms
+      - system_lists_user_scoped_gyms_with_lifecycle_status
+      - user_may_create_a_new_gym
+      - system_validates_a_non_blank_unique_name_within_the_user_scope
+      - system_persists_the_created_gym_with_status_new
+      - user_may_rename_a_gym_in_any_status
+      - user_may_delete_a_draft_gym_only
+      - system_rejects_deletion_of_active_or_inactive_gyms
+    postconditions:
+      - created_gyms_are_drafts_in_user_facing_language
+      - established_and_inactive_gyms_remain_identifiable
+
 rules:
   - load_profile_names_must_be_unique_within_one_user_scope
+  - gym_names_must_be_unique_within_one_user_scope
   - app_validation_must_handle_name_collisions_gracefully_before_backend_errors_reach_the_user
   - status_values_are_new_active_inactive
+  - persisted_status_new_is_called_draft_in_user_facing_language
   - this_plan_scope_does_not_include_user_driven_transition_from_new_to_active_or_inactive
   - gyms_and_exercises_entries_may_exist_in_the_configurator_side_menu_as_future_destinations_without_full_management_flows_in_this_plan
