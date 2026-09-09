@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-04
   title: Build Configurator Gym editor
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -74,5 +74,26 @@ handoff:
   review_focus:
   - Confirm no permanent explanatory copy or out-of-scope fields were added.
   - Confirm client validation improves feedback but does not replace backend enforcement.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-09T14:05:26Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: 'renderer/src/pb-configurator-gym-editor-screen.ts\
+    \ compares the trimmed\n    draft name with the stored trimmed name in #hasChanges,\
+    \ so a case-only historical\n    edit such as Alpha to ALPHA opens the consequential\
+    \ rename warning. The item plan\n    requires confirmation only when the normalized\
+    \ name has changed.'\n  risk: Users receive an unnecessary historical-meaning\
+    \ warning (and can submit a\n    semantically unchanged update); the required\
+    \ normalized-name behavior is not met.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: 'renderer/src/pb-configurator-gym-editor-screen.ts compares the trimmed
+      draft name with the stored trimmed name in #hasChanges, so a case-only historical
+      edit such as Alpha to ALPHA opens the consequential rename warning. The item
+      plan requires confirmation only when the normalized name has changed.'
+    risk: Users receive an unnecessary historical-meaning warning (and can submit
+      a semantically unchanged update); the required normalized-name behavior is not
+      met.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
