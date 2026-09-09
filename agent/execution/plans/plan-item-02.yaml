@@ -1,0 +1,72 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Expose authenticated Gym management API
+summary:
+  goal: Extend the canonical OpenAPI contract and authenticated Axum routes with lifecycle-aware
+    Gym reads and permitted name-only writes.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/api/handlers/mod.rs
+  - backend/src/api/router.rs
+  - backend/src/api/models.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/models/mod.rs
+  - Makefile
+  optional:
+  - backend/src/api/handlers/load_profiles.rs
+  - backend/tests/api_integration.rs
+  - agent/design/domain-context.md
+implementation_approach:
+- 'Update the OpenAPI Gym list and detail schemas to require the `new|active|inactive`
+  status transport value, and add Gym create and name-only update request schemas.'
+- 'Declare POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
+  with authenticated-session responses and explicit 400, 404, and 409 behavior alongside
+  the existing reads.'
+- Regenerate backend and renderer OpenAPI client models through the Makefile, then
+  add only the generated-model wiring and request-to-domain conversions required for
+  Gym name payloads; never manually edit generated artifacts.
+- Extend Gym response mapping with a closed status translation that treats an unexpected
+  persisted value as an internal error, and map application validation, conflict,
+  and not-found errors to the established API error variants.
+- Add authenticated create, rename, and delete handlers that take the user ID exclusively
+  from AuthenticatedSession, call the Gym application service, return 201 with a Gym
+  summary for creation, 200 for rename, and 204 for deletion.
+- Register the Gym write handlers and typed request extractors in the existing internal
+  API router, preserving the existing reads and avoiding any public maintenance or
+  lifecycle-transition route.
+- Add focused authenticated API integration coverage for status in read and write
+  responses, name-only payload acceptance, duplicate-name and non-Draft-delete 409
+  responses, unauthorized requests, and foreign-owned IDs returning the existing not-found
+  behavior.
+risks_and_assumptions:
+- 'Assumption: item 01 supplies the Gym create, rename, delete, and lifecycle-aware
+  read services before this item is implemented.'
+- 'Risk: OpenAPI output is compiled into Rust through generated includes; regenerate
+  both clients and update only repository-owned adapter wiring when contract shapes
+  change.'
+- 'Risk: a route-level ownership error could disclose another user''s Gym; use the
+  session user ID for every call and preserve the user-scoped service not-found mapping.'
+- 'Risk: status could accidentally become writable through a generated request model;
+  define request schemas with name as their sole property and test that status-bearing
+  payloads are rejected.'
+validation_plan:
+- make check
+- make check-backend
+out_of_scope:
+- Gym lifecycle transition or status-update APIs, Equipment Station endpoints, and
+  public maintenance access.
+- Database migrations, seed changes, initialization changes, and live-instance operations.
+- Configurator views, navigation, and user-facing lifecycle labels.
+handoff_notes:
+- 'The transport enum remains `new`, `active`, and `inactive`; Draft is not an API
+  alias.'
+- Keep the backend internal-only and rely on the existing authenticated self-service
+  API path.
