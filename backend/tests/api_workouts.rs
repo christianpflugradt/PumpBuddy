@@ -827,6 +827,242 @@ async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
 }
 
 #[tokio::test]
+async fn configurator_station_routes_enforce_scope_validation_lifecycle_and_profile_eligibility() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let gym_name = format!("Station API Gym {}", uuid::Uuid::new_v4().simple());
+
+    let (status, gym) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(json!({ "name": gym_name }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let gym_id = gym["id"].as_str().expect("created gym id").to_owned();
+
+    let active_profile_id = "4f000000-0000-0000-0000-000000000701";
+    let alternate_profile_id = "4f000000-0000-0000-0000-000000000702";
+    let inactive_profile_id = "4f000000-0000-0000-0000-000000000703";
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
+         VALUES
+           ($1::uuid, $2::uuid, 'Station API Active', 'active', 'KG', $4::jsonb),
+           ($3::uuid, $2::uuid, 'Station API Alternate', 'new', 'KG', $4::jsonb),
+           ($5::uuid, $2::uuid, 'Station API Retired', 'inactive', 'KG', $4::jsonb)",
+    )
+    .bind(active_profile_id)
+    .bind(DEV_USER_ID)
+    .bind(alternate_profile_id)
+    .bind(r#"{"kind":"fixed_list","values":[5,10]}"#)
+    .bind(inactive_profile_id)
+    .execute(&pool)
+    .await
+    .expect("station profile fixtures should insert");
+
+    let station_base = format!("Station API {}", uuid::Uuid::new_v4().simple());
+    let (status, created) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/gyms/{gym_id}/configurator-stations"))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": format!("  {station_base}  "), "load_profile_id": active_profile_id }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(created["name"], json!(station_base));
+    assert_eq!(created["status"], json!("new"));
+    assert_eq!(created["load_profile"]["id"], json!(active_profile_id));
+    let draft_station_id = created["id"]
+        .as_str()
+        .expect("created station id")
+        .to_owned();
+
+    let (status, stations) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!("/api/gyms/{gym_id}/configurator-stations"))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(stations
+        .as_array()
+        .expect("station list should be an array")
+        .iter()
+        .any(|station| station["id"] == json!(draft_station_id)
+            && station["gym_id"] == json!(gym_id),));
+
+    for (payload, expected_status) in [
+        (
+            json!({ "name": " ", "load_profile_id": active_profile_id }),
+            StatusCode::BAD_REQUEST,
+        ),
+        (
+            json!({ "name": station_base, "load_profile_id": active_profile_id }),
+            StatusCode::CONFLICT,
+        ),
+        (
+            json!({ "name": "Retired Assignment", "load_profile_id": inactive_profile_id }),
+            StatusCode::NOT_FOUND,
+        ),
+    ] {
+        let (status, _) = json_response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/gyms/{gym_id}/configurator-stations"))
+                .header("cookie", cookie.clone())
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, expected_status);
+    }
+
+    let (status, updated) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{draft_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "Updated Draft Station", "load_profile_id": alternate_profile_id })
+                    .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(updated["load_profile"]["id"], json!(alternate_profile_id));
+
+    let active_station_id = "6f000000-0000-0000-0000-000000000701";
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id, status)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'Station API Historical', $4::uuid, 'active')",
+    )
+    .bind(active_station_id)
+    .bind(DEV_USER_ID)
+    .bind(&gym_id)
+    .bind(active_profile_id)
+    .execute(&pool)
+    .await
+    .expect("active station fixture should insert");
+
+    let (status, renamed) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{active_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "Renamed Historical Station" }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(renamed["status"], json!("active"));
+
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/gyms/{gym_id}/configurator-stations/{active_station_id}"))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(json!({ "name": "Blocked Historical Change", "load_profile_id": alternate_profile_id }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        body["message"],
+        json!("Only draft stations can change load profile")
+    );
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{active_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!("/api/gyms/50000000-0000-0000-0000-000000000001/configurator-stations/{draft_station_id}"))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!(
+                "/api/gyms/{USER_B_GYM_ID}/configurator-stations/{USER_B_STATION_ID}"
+            ))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let status = empty_response_status(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{draft_station_id}"
+            ))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
 async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
