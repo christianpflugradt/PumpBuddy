@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-05
   title: Cover Gym lifecycle regression matrix
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,5 +78,23 @@ handoff:
   - Verify every lifecycle permission is asserted at the backend boundary.
   - Verify tests preserve the explicit exclusion of database migration and Station
     behavior.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-09T14:27:39Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: renderer/src/pb-configurator-gym-editor-screen.test.ts\
+    \ asserts confirmation\n    for an inactive Gym rename, but the active Gym test\
+    \ only covers a case-only no-op\n    and never confirms a consequential active\
+    \ rename.\n  risk: A regression could remove the active-Gym confirmation while\
+    \ all current renderer\n    tests still pass, leaving historical-workout rename\
+    \ behavior unprotected.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: renderer/src/pb-configurator-gym-editor-screen.test.ts asserts confirmation
+      for an inactive Gym rename, but the active Gym test only covers a case-only
+      no-op and never confirms a consequential active rename.
+    risk: A regression could remove the active-Gym confirmation while all current
+      renderer tests still pass, leaving historical-workout rename behavior unprotected.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
