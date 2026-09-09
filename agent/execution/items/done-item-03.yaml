@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-03
   title: Add Configurator Gym list navigation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,4 +72,17 @@ handoff:
     rows.
   - Confirm status labels and visual language match the Load Profile precedent.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 and AC-02 are met: Configurator-only Gym rows show name plus
+      Draft, Active, or Inactive; inactive rows use subdued styling; create, visible-existing,
+      and back routes remain in Configurator.'
+    evidence: Reviewed renderer/src/pb-configurator-gyms-screen.ts and focused component,
+      side-menu, controller, and loader coverage. Existing detail navigation rejects
+      IDs absent from configuratorGymsScreen.
+    runtime_build_check: make check-renderer passed during implementation, including
+      lint, renderer coverage, and UI smoke checks.
+    residual_risk: Gym editor routes are intentional placeholders; lifecycle authorization
+      and writes remain backend-owned and out of scope.
+  findings: []
