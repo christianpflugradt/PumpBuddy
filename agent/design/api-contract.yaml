@@ -1699,6 +1699,7 @@ components:
             $ref: '#/components/schemas/GymExerciseGroup'
     GymCreateRequest:
       type: object
+      additionalProperties: false
       required:
         - name
       properties:
@@ -1706,6 +1707,7 @@ components:
           type: string
     GymUpdateRequest:
       type: object
+      additionalProperties: false
       required:
         - name
       properties:
