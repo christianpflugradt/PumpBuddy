@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-01
   title: Add lifecycle-aware Gym core
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -80,5 +80,23 @@ handoff:
   - Ensure every Gym read and write remains authenticated-user scoped.
   - Verify no code path changes a Gym status and no database-change instruction was
     introduced.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-09T08:56:39Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/src/application/gyms.rs\
+    \ tests exercise only creation; FakeGymRepository.update_gym_for_user\n    and\
+    \ delete_gym_for_user are unreachable, and no PostgreSQL-backed Gym lifecycle\n\
+    \    tests were added.\n  risk: The required rename-in-all-statuses, Draft-only\
+    \ deletion, and per-user isolation\n    behavior can regress without being detected\
+    \ by the required backend gate.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: backend/src/application/gyms.rs tests exercise only creation; FakeGymRepository.update_gym_for_user
+      and delete_gym_for_user are unreachable, and no PostgreSQL-backed Gym lifecycle
+      tests were added.
+    risk: The required rename-in-all-statuses, Draft-only deletion, and per-user isolation
+      behavior can regress without being detected by the required backend gate.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
