@@ -45,17 +45,19 @@ describe("pb-configurator-gym-editor-screen", () => {
     expect(el.querySelector('[data-field="name"]')).toBeTruthy();
   });
 
-  it("requires confirmation before renaming a historical Gym", () => {
-    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
-    document.body.append(el); el.state = createState("inactive");
-    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
-    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
-    input.value = "Renamed"; input.dispatchEvent(new Event("input", { bubbles: true }));
-    (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
-    expect(el.textContent).toContain("historical workouts");
-    expect(handler).not.toHaveBeenCalled();
-    (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed" });
+  it("requires confirmation before renaming active and inactive Gyms", () => {
+    for (const status of ["active", "inactive"] as const) {
+      const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+      document.body.append(el); el.state = createState(status);
+      const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+      const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+      input.value = "Renamed"; input.dispatchEvent(new Event("input", { bubbles: true }));
+      (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
+      expect(el.textContent).toContain("historical workouts");
+      expect(handler).not.toHaveBeenCalled();
+      (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
+      expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed" });
+    }
   });
 
   it("does not warn or save for a case-only historical name edit", () => {
