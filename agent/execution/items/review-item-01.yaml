@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-01
   title: Add Station lifecycle persistence foundation
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -14,19 +14,19 @@ intent:
     value before Station operations can be implemented.
 scope:
   in:
-  - 'Add `new`, `active`, and `inactive` Station status support to the bootstrap schema,
-    Rust domain/persistence representations, and relevant development seed records.'
+  - Add `new`, `active`, and `inactive` Station status support to the bootstrap schema,
+    Rust domain/persistence representations, and relevant development seed records.
   - Update authoritative domain and persistence design contracts to describe Station
     lifecycle semantics and the external manual upgrade prerequisite.
-  - 'Ensure Configurator-created Stations can be persisted as `new` while pre-existing
-    Station records are treated as `active` after the external deployment prerequisite.'
+  - Ensure Configurator-created Stations can be persisted as `new` while pre-existing
+    Station records are treated as `active` after the external deployment prerequisite.
   out:
   - Automated production migration, deployment tooling, or execution of the manual
     backfill.
   - Lifecycle transition operations or workout-facing Station projection changes.
 constraints:
-- 'Document that the production deployment must add the status column and backfill
-  existing Stations to `active` before this code is released.'
+- Document that the production deployment must add the status column and backfill
+  existing Stations to `active` before this code is released.
 - Preserve existing Gym/user-scoped raw Station-name uniqueness semantics.
 - Do not expose Station lifecycle state through existing workout-facing contracts
   in this item.
@@ -42,18 +42,18 @@ inputs:
   - backend/tests/persistence_integration/options_and_gyms.rs
 acceptance_criteria:
 - id: ac-01
-  statement: 'The target bootstrap schema and Rust persistence/domain representations
-    carry a Station status limited to `new`, `active`, or `inactive`.'
+  statement: The target bootstrap schema and Rust persistence/domain representations
+    carry a Station status limited to `new`, `active`, or `inactive`.
   verification:
     type: command
     command: make check-backend
     expected: Backend quality checks and persistence tests pass.
 - id: ac-02
-  statement: 'The design records the required manual upgrade/backfill to `active`,
-    and no migration automation is introduced.'
+  statement: The design records the required manual upgrade/backfill to `active`,
+    and no migration automation is introduced.
   verification:
     type: manual
-    command: 'Review the changed schema and design files against `agent/execution/plan.yaml`.'
+    command: Review the changed schema and design files against `agent/execution/plan.yaml`.
     expected: The operational prerequisite is explicit and no deployment or migration
       script was added.
 execution:
@@ -70,8 +70,8 @@ execution:
   - authoritative design contracts
 handoff:
   review_focus:
-  - 'Verify `new` is the only editable/deletable Station state and that existing Station
-    handling is explicitly delegated to the external backfill.'
+  - Verify `new` is the only editable/deletable Station state and that existing Station
+    handling is explicitly delegated to the external backfill.
   - Verify no workout-facing Station payload changes are introduced.
 review_feedback: []
 review_result: null

@@ -45,6 +45,32 @@ pub struct GymUpdate {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StationStatus {
+    New,
+    Active,
+    Inactive,
+}
+
+impl StationStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::New => "new",
+            Self::Active => "active",
+            Self::Inactive => "inactive",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EquipmentStation {
+    pub id: String,
+    pub gym_id: String,
+    pub name: String,
+    pub load_profile_id: String,
+    pub status: StationStatus,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadProfileSummary {
     pub id: String,

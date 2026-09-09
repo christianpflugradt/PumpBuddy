@@ -83,18 +83,19 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: EquipmentStation
-    description: Specific station within a gym.
+    description: Specific station within a gym with Configurator lifecycle status. Existing production Stations must be manually backfilled to active before this lifecycle-aware code is released.
     attributes:
       - id
       - gym_id
       - name
       - load_profile_id
+      - status
     relationships:
       - type: many_to_one
         target: Gym
       - type: many_to_one
         target: LoadProfile
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: HARD_DELETABLE
 
   - name: LoadProfile
     description: Station load contract with draft-to-historical lifecycle semantics and workout-aligned load expansion behavior.
@@ -592,6 +593,12 @@ invariants:
     rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist canonical total load values.
   - id: invariant.load_profile_status_values
     rule: LoadProfile.status permits only new, active, or inactive.
+  - id: invariant.equipment_station_status_values
+    rule: EquipmentStation.status permits only new, active, or inactive; new is a Draft in user-facing language.
+  - id: invariant.equipment_station_lifecycle_mutability
+    rule: EquipmentStation name and load_profile_id are editable and the row is physically deletable only while status is new. Active or inactive Stations may be renamed but retain their Gym, Load Profile, and status.
+  - id: invariant.equipment_station_upgrade_prerequisite
+    rule: Before lifecycle-aware Station code is released, the production deployment must add the status column and backfill every pre-existing EquipmentStation to active. This is an external operational prerequisite, not automated by the application.
   - id: invariant.load_profile_name_unique_within_user_scope
     rule: LoadProfile.name must be unique within one user's load-profile set so renames and creation cannot produce duplicate display names.
   - id: invariant.load_profile_definition_editability_depends_on_status

@@ -55,6 +55,73 @@ fn assert_load_profile_name_unique_violation(error: sqlx::Error) {
 }
 
 #[tokio::test]
+async fn equipment_station_lifecycle_status_is_constrained_and_defaults_to_active() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let gym_id = "50000000-0000-0000-0000-000000000001";
+    let load_profile_id = "40000000-0000-0000-0000-000000000001";
+
+    for (id, name, status) in [
+        ("5f000000-0000-0000-0000-0000000000e1", "New Lifecycle Station", "new"),
+        ("5f000000-0000-0000-0000-0000000000e2", "Active Lifecycle Station", "active"),
+        ("5f000000-0000-0000-0000-0000000000e3", "Inactive Lifecycle Station", "inactive"),
+    ] {
+        sqlx::query(
+            "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id, status)
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid, $6)",
+        )
+        .bind(id)
+        .bind(DEV_USER_ID)
+        .bind(gym_id)
+        .bind(name)
+        .bind(load_profile_id)
+        .bind(status)
+        .execute(pool)
+        .await
+        .expect("allowed station lifecycle status should insert");
+    }
+
+    let default_status: String = sqlx::query_scalar(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)
+         RETURNING status",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000e4")
+    .bind(DEV_USER_ID)
+    .bind(gym_id)
+    .bind("Default Lifecycle Station")
+    .bind(load_profile_id)
+    .fetch_one(pool)
+    .await
+    .expect("pre-existing station default should be active");
+    assert_eq!(default_status, "active");
+
+    let invalid_status_error = sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id, status)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid, 'retired')",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000e5")
+    .bind(DEV_USER_ID)
+    .bind(gym_id)
+    .bind("Invalid Lifecycle Station")
+    .bind(load_profile_id)
+    .execute(pool)
+    .await
+    .expect_err("unsupported station lifecycle status should be rejected");
+    match invalid_status_error {
+        sqlx::Error::Database(error) => {
+            assert_eq!(error.code().as_deref(), Some("23514"));
+            assert_eq!(
+                error.constraint(),
+                Some("equipment_stations_status_check")
+            );
+        }
+        other => panic!("unexpected invalid station lifecycle insert error: {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn gym_lifecycle_writes_preserve_status_and_user_scope() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

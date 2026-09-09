@@ -75,6 +75,15 @@ decisions:
   - id: gym_mutability_semantics
     decision: Allow Gym-name updates in every status, but allow physical deletion only while status is new. Do not expose status mutation in ordinary Gym writes.
     rationale: Lets users correct names while retaining established or retired historical Gym identities until lifecycle transitions have a separately defined trigger.
+  - id: equipment_station_status_storage
+    decision: Persist equipment_stations.status with values new|active|inactive. Configurator-created Stations explicitly write new, while pre-existing Stations must be manually backfilled to active before this code is released.
+    rationale: Establishes durable Station lifecycle state without exposing it through the existing workout-facing Station projections.
+  - id: equipment_station_mutability_semantics
+    decision: Permit Station name and Load Profile updates and physical deletion only while status is new; active and inactive Stations may be renamed but keep their Gym, Load Profile, and status.
+    rationale: Preserves historical station identity while allowing draft authoring before lifecycle triggers are defined.
+  - id: equipment_station_upgrade_prerequisite
+    decision: Treat the production schema upgrade and active backfill for pre-existing equipment_stations as an external deployment prerequisite.
+    rationale: The bootstrap schema documents the target state, while this application change deliberately introduces no migration automation or backfill execution.
   - id: load_profile_definition_variant_requirements
     decision: Require definition.kind plus variant-specific shape constraints (fixed_list requires values to be a non-empty array; formula requires numeric min and positive numeric step).
     rationale: Matches load-profile domain invariants at the durable write boundary so malformed immutable definitions cannot be persisted for later read-path expansion failures.
@@ -300,12 +309,13 @@ tables:
       - (definition->>'kind') <> 'formula' OR jsonb_typeof(definition->'min') = 'number' AND jsonb_typeof(definition->'step') = 'number' AND (definition->>'step')::numeric > 0
 
   - name: equipment_stations
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
       - { name: load_profile_id, type: uuid, nullable: false }
+      - { name: status, type: text, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
@@ -317,6 +327,8 @@ tables:
     unique_constraints:
       - { columns: [gym_id, user_id, name] }
       - { columns: [id, user_id] }
+    checks:
+      - status in ('new', 'active', 'inactive')
 
   - name: training_plan_exercises
     lifecycle_policy: ARCHIVABLE

@@ -159,11 +159,13 @@ CREATE TABLE IF NOT EXISTS equipment_stations (
     gym_id UUID NOT NULL,
     name TEXT NOT NULL,
     load_profile_id UUID NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT equipment_stations_gym_name_unique UNIQUE (gym_id, user_id, name),
     CONSTRAINT equipment_stations_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT equipment_stations_status_check CHECK (status IN ('new', 'active', 'inactive')),
     CONSTRAINT equipment_stations_gym_user_fk FOREIGN KEY (gym_id, user_id)
         REFERENCES gyms (id, user_id)
         ON DELETE CASCADE,
