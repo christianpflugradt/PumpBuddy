@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-04
   title: Build the lifecycle-aware Station editor
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -16,9 +16,9 @@ scope:
   in:
   - Create a shared Station editor reachable from Configurator Gym detail for draft
     creation and Station detail editing.
-  - 'Support name and Load Profile editing plus deletion for `new` Stations.'
-  - 'Render name-only editing for `active` and `inactive` Stations, with their immutable
-    Gym, Load Profile, and status displayed read-only.'
+  - Support name and Load Profile editing plus deletion for `new` Stations.
+  - Render name-only editing for `active` and `inactive` Stations, with their immutable
+    Gym, Load Profile, and status displayed read-only.
   - Surface client-side trimmed-name validation and backend validation failures using
     established Configurator form feedback.
   out:
@@ -40,8 +40,8 @@ inputs:
   - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
 acceptance_criteria:
 - id: ac-01
-  statement: 'Draft Station creation, name and Load Profile edits, and hard deletion
-    are available only while the Station is `new`.'
+  statement: Draft Station creation, name and Load Profile edits, and hard deletion
+    are available only while the Station is `new`.
   verification:
     type: command
     command: make check-renderer

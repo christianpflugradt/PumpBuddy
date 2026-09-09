@@ -756,14 +756,16 @@ export const createApp = (
         return;
       }
       case "save-configurator-station": {
-        const payload = (customEvent.detail as { payload?: { gymId?: string; stationId?: string | null; request?: object } }).payload;
-        const gymId = payload?.gymId; if (!gymId || !payload?.request || state.viewState.screen !== "configurator-station-detail") return;
-        void (async () => { try { const station = payload.stationId ? await updateConfiguratorStation(gymId, payload.stationId, payload.request as never) : await createConfiguratorStation(gymId, payload.request as never); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: payload.stationId ? state.configuratorGymDetailScreen.stations?.map((entry) => entry.id === station.id ? station : entry) : [...(state.configuratorGymDetailScreen.stations ?? []), station] } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); } catch { render(); } })(); return;
+        const detail = customEvent.detail as { payload?: { gymId?: string; stationId?: string | null; request?: object }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const payload = detail.payload; const gymId = payload?.gymId;
+        if (!detail.respond || !gymId || !payload?.request || state.viewState.screen !== "configurator-station-detail") return;
+        void (async () => { try { const station = payload.stationId ? await updateConfiguratorStation(gymId, payload.stationId, payload.request as never) : await createConfiguratorStation(gymId, payload.request as never); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: payload.stationId ? state.configuratorGymDetailScreen.stations?.map((entry) => entry.id === station.id ? station : entry) : [...(state.configuratorGymDetailScreen.stations ?? []), station] } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); detail.respond?.({ ok: true }); } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Station right now.") }); } })(); return;
       }
       case "delete-configurator-station": {
-        const payload = (customEvent.detail as { payload?: { gymId?: string; stationId?: string } }).payload;
-        const gymId = payload?.gymId; const stationId = payload?.stationId; if (!gymId || !stationId || state.viewState.screen !== "configurator-station-detail") return;
-        void (async () => { try { await deleteConfiguratorStation(gymId, stationId); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: state.configuratorGymDetailScreen.stations?.filter((entry) => entry.id !== stationId) } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); } catch { render(); } })(); return;
+        const detail = customEvent.detail as { payload?: { gymId?: string; stationId?: string }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const payload = detail.payload; const gymId = payload?.gymId; const stationId = payload?.stationId;
+        if (!detail.respond || !gymId || !stationId || state.viewState.screen !== "configurator-station-detail") return;
+        void (async () => { try { await deleteConfiguratorStation(gymId, stationId); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: state.configuratorGymDetailScreen.stations?.filter((entry) => entry.id !== stationId) } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); detail.respond?.({ ok: true }); } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to delete Station right now.") }); } })(); return;
       }
       case "start-workout":
         void orchestrator.startWorkout();

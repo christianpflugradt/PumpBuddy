@@ -182,7 +182,7 @@ class PbAppRootElement extends HTMLElement {
       const { gymId, stationId } = state.viewState;
       const station = stationId === null ? null : state.configuratorGymDetailScreen?.stations?.find((entry) => entry.id === stationId) ?? null;
       const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
-      el.state = { gymId, station, loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [] };
+      el.state = { gymId, gymName: state.configuratorGymDetailScreen?.detail?.name ?? null, station, loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [] };
       container.append(el);
       return;
     }
