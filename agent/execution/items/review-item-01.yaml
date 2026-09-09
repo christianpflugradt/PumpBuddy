@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-01
   title: Add lifecycle-aware Gym core
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

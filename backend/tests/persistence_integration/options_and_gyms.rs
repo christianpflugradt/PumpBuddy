@@ -120,6 +120,38 @@ async fn gym_lifecycle_writes_preserve_status_and_user_scope() {
         .await
         .expect("other users should not conflict on names"));
 
+    let duplicate_error = sqlx::query(
+        "INSERT INTO gyms (id, user_id, name, status)
+         VALUES ($1::uuid, $2::uuid, $3, 'active')",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000d4")
+    .bind(DEV_USER_ID)
+    .bind("  RENAMED ACTIVE GYM  ")
+    .execute(pool)
+    .await
+    .expect_err("normalized duplicate gym names should be rejected by the database");
+    match duplicate_error {
+        sqlx::Error::Database(error) => {
+            assert_eq!(error.code().as_deref(), Some("23505"));
+            assert_eq!(
+                error.constraint(),
+                Some("gyms_user_normalized_name_unique")
+            );
+        }
+        other => panic!("unexpected gym name duplicate error: {other:?}"),
+    }
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name, status)
+         VALUES ($1::uuid, $2::uuid, $3, 'active')",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000d5")
+    .bind(USER_B_ID)
+    .bind("renamed active gym")
+    .execute(pool)
+    .await
+    .expect("another user should be able to use the same normalized gym name");
+
     repository
         .delete_gym_for_user(&draft.id, DEV_USER_ID)
         .await
