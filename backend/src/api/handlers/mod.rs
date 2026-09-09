@@ -5,7 +5,9 @@ pub(crate) mod training_plans;
 pub(crate) mod workouts;
 
 pub(crate) use about::get_about_metadata;
-pub(crate) use gyms::{get_gym_detail, get_gym_station_detail, list_gyms};
+pub(crate) use gyms::{
+    create_gym, delete_gym, get_gym_detail, get_gym_station_detail, list_gyms, update_gym,
+};
 pub(crate) use load_profiles::{
     create_load_profile, delete_load_profile, get_load_profile, list_load_profiles,
     update_load_profile,

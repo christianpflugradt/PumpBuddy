@@ -6,9 +6,10 @@ use crate::application::workouts::{
 use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
-    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, LoadProfileDefinitionInput,
-    LoadProfileUpdate, NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
-    WorkoutDetail as DomainWorkoutDetail, WorkoutDetailExercise as DomainWorkoutDetailExercise,
+    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, GymUpdate,
+    LoadProfileDefinitionInput, LoadProfileUpdate, NewGym, NewLoadProfile, NewWorkout,
+    NewWorkoutExercise, NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
+    WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
     WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
@@ -53,6 +54,8 @@ pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
+#[allow(unused_imports)]
+pub use crate::models::gym_create_request::GymCreateRequest;
 pub use crate::models::gym_detail_response::GymDetailResponse;
 pub use crate::models::gym_exercise_group::GymExerciseGroup as GymExerciseGroupResponse;
 pub use crate::models::gym_exercise_variant_summary::GymExerciseVariantSummary as GymExerciseVariantSummaryResponse;
@@ -63,6 +66,8 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+#[allow(unused_imports)]
+pub use crate::models::gym_update_request::GymUpdateRequest;
 pub use crate::models::load_profile_create_request::LoadProfileCreateRequest;
 pub use crate::models::load_profile_definition::LoadProfileDefinition as LoadProfileDefinitionRequest;
 pub use crate::models::load_profile_detail_response::LoadProfileDetailResponse;
@@ -141,6 +146,22 @@ pub struct TrainingPlanExerciseVariantsQuery {
     pub gym_id: String,
     #[serde(rename = "activeWorkoutId")]
     pub active_workout_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GymWriteRequest {
+    pub name: String,
+}
+
+impl GymWriteRequest {
+    pub fn into_new_gym(self) -> NewGym {
+        NewGym { name: self.name }
+    }
+
+    pub fn into_gym_update(self) -> GymUpdate {
+        GymUpdate { name: self.name }
+    }
 }
 
 impl LoadProfileCreateRequest {

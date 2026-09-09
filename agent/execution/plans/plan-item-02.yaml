@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Expose authenticated Gym management API
 summary:
   goal: Extend the canonical OpenAPI contract and authenticated Axum routes with lifecycle-aware
@@ -25,11 +25,11 @@ context:
   - backend/tests/api_integration.rs
   - agent/design/domain-context.md
 implementation_approach:
-- 'Update the OpenAPI Gym list and detail schemas to require the `new|active|inactive`
-  status transport value, and add Gym create and name-only update request schemas.'
-- 'Declare POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
+- Update the OpenAPI Gym list and detail schemas to require the `new|active|inactive`
+  status transport value, and add Gym create and name-only update request schemas.
+- Declare POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
   with authenticated-session responses and explicit 400, 404, and 409 behavior alongside
-  the existing reads.'
+  the existing reads.
 - Regenerate backend and renderer OpenAPI client models through the Makefile, then
   add only the generated-model wiring and request-to-domain conversions required for
   Gym name payloads; never manually edit generated artifacts.
@@ -66,7 +66,7 @@ out_of_scope:
 - Database migrations, seed changes, initialization changes, and live-instance operations.
 - Configurator views, navigation, and user-facing lifecycle labels.
 handoff_notes:
-- 'The transport enum remains `new`, `active`, and `inactive`; Draft is not an API
-  alias.'
+- The transport enum remains `new`, `active`, and `inactive`; Draft is not an API
+  alias.
 - Keep the backend internal-only and rely on the existing authenticated self-service
   API path.

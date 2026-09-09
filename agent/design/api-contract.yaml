@@ -305,6 +305,38 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a draft gym
+      operationId: createGym
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymCreateRequest'
+      responses:
+        '201':
+          description: Draft gym created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymSummary'
+        '400':
+          description: Invalid gym create payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Duplicate normalized gym name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/load-profiles:
     get:
       summary: List available load profiles
@@ -481,6 +513,80 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           description: Gym not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Rename a gym
+      operationId: updateGym
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GymUpdateRequest'
+      responses:
+        '200':
+          description: Gym renamed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymSummary'
+        '400':
+          description: Invalid gym update payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Gym not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate normalized gym name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Delete a draft gym
+      operationId: deleteGym
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Draft gym deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Gym not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Gym cannot be deleted in its current state
           content:
             application/json:
               schema:
@@ -1520,12 +1626,16 @@ components:
       required:
         - id
         - name
+        - status
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
         station_count:
           type: integer
           format: int64
@@ -1553,6 +1663,7 @@ components:
       required:
         - id
         - name
+        - status
         - station_count
         - last_visited_at
         - stations
@@ -1563,6 +1674,9 @@ components:
           format: uuid
         name:
           type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
         station_count:
           type: integer
           format: int64
@@ -1583,6 +1697,20 @@ components:
           description: Exercise variants grouped by canonical exercise.
           items:
             $ref: '#/components/schemas/GymExerciseGroup'
+    GymCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    GymUpdateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
     GymStationSummary:
       type: object
       required:

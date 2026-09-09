@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, Path, Query, State},
+    extract::{rejection::JsonRejection, Extension, Path, Query, State},
     routing::{delete, get, post, put},
     Json, Router,
 };
@@ -8,19 +8,20 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
-    create_active_workout, create_load_profile, create_workout, delete_latest_active_workout_set,
-    delete_load_profile, get_about_metadata, get_active_workout, get_gym_detail,
-    get_gym_station_detail, get_load_profile, get_training_plan, get_workout_detail,
-    get_workout_exercises_performance, get_workout_progress, get_workout_summary, list_gyms,
-    list_load_profiles, list_training_plan_exercise_variants, list_training_plans, list_workouts,
-    reopen_active_workout_exercise, select_active_workout_exercise_option,
-    skip_active_workout_exercise, update_active_workout, update_load_profile,
+    create_active_workout, create_gym, create_load_profile, create_workout, delete_gym,
+    delete_latest_active_workout_set, delete_load_profile, get_about_metadata, get_active_workout,
+    get_gym_detail, get_gym_station_detail, get_load_profile, get_training_plan,
+    get_workout_detail, get_workout_exercises_performance, get_workout_progress,
+    get_workout_summary, list_gyms, list_load_profiles, list_training_plan_exercise_variants,
+    list_training_plans, list_workouts, reopen_active_workout_exercise,
+    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
+    update_gym, update_load_profile,
 };
 
 use super::middleware;
 use super::models::{
     CompleteActiveWorkoutRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, ReopenActiveWorkoutExerciseRequest,
+    CreateWorkoutRequest, GymWriteRequest, ReopenActiveWorkoutExerciseRequest,
     SelectActiveWorkoutExerciseOptionRequest, SkipActiveWorkoutExerciseRequest,
     TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
@@ -45,6 +46,13 @@ pub fn app_router(app_state: AppState) -> Router {
                  Extension(session): Extension<AuthenticatedSession>| async move {
                     list_gyms(State(state), Extension(session)).await
                 },
+            )
+            .post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 payload: Result<Json<GymWriteRequest>, JsonRejection>| async move {
+                    create_gym(State(state), Extension(session), payload).await
+                },
             ),
         )
         .route(
@@ -54,6 +62,21 @@ pub fn app_router(app_state: AppState) -> Router {
                  Extension(session): Extension<AuthenticatedSession>,
                  Path(gym_id): Path<String>| async move {
                     get_gym_detail(State(state), Extension(session), Path(gym_id)).await
+                },
+            )
+            .patch(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(gym_id): Path<String>,
+                 payload: Result<Json<GymWriteRequest>, JsonRejection>| async move {
+                    update_gym(State(state), Extension(session), Path(gym_id), payload).await
+                },
+            )
+            .delete(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(gym_id): Path<String>| async move {
+                    delete_gym(State(state), Extension(session), Path(gym_id)).await
                 },
             ),
         )

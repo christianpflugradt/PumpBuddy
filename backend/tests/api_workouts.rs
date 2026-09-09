@@ -611,6 +611,133 @@ async fn gym_routes_return_list_metadata_and_detail_projection() {
 }
 
 #[tokio::test]
+async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let name = format!("API Draft Gym {}", uuid::Uuid::new_v4().simple());
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/gyms")
+            .header("content-type", "application/json")
+            .body(Body::from(json!({ "name": &name }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let (status, created) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": format!("  {name}  ") }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(created["name"], json!(name));
+    assert_eq!(created["status"], json!("new"));
+    let gym_id = created["id"].as_str().expect("created gym id").to_owned();
+
+    let (status, _) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": name.to_uppercase() }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/gyms/{gym_id}"))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "No Status", "status": "active" }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let (status, updated) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/gyms/{gym_id}"))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "Updated API Draft Gym" }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(updated["name"], json!("Updated API Draft Gym"));
+    assert_eq!(updated["status"], json!("new"));
+
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
+    let (status, _) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!("/api/gyms/{USER_B_GYM_ID}"))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(json!({ "name": "Foreign Gym" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri("/api/gyms/50000000-0000-0000-0000-000000000001")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    let status = empty_response_status(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/gyms/{gym_id}"))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
 async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

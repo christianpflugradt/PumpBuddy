@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-02
   title: Expose authenticated Gym management API
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -16,12 +16,12 @@ scope:
   in:
   - Update the Gym OpenAPI schemas to include status in list/detail payloads and define
     create and name-only update requests.
-  - 'Add POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
-    beside the existing user-scoped Gym reads.'
+  - Add POST `/api/gyms`, PATCH `/api/gyms/{gymId}`, and DELETE `/api/gyms/{gymId}`
+    beside the existing user-scoped Gym reads.
   - Wire generated models, routes, handlers, request validation, response mapping,
     and error mapping together in the same change.
-  - 'Return `409` for duplicate normalized names and attempted deletion outside `new`;
-    never accept status in an ordinary update payload.'
+  - Return `409` for duplicate normalized names and attempted deletion outside `new`;
+    never accept status in an ordinary update payload.
   out:
   - Do not add a status-update endpoint, activation, deactivation, reactivation, Station
     endpoints, or public maintenance access.
@@ -74,6 +74,6 @@ execution:
 handoff:
   review_focus:
   - Check contract-to-handler parity and that no status field is accepted on write.
-  - 'Check `404`, `409`, and ownership behavior do not reveal another user''s Gym.'
+  - Check `404`, `409`, and ownership behavior do not reveal another user's Gym.
 review_feedback: []
 review_result: null

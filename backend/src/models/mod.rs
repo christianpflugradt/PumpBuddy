@@ -234,6 +234,22 @@ pub mod gym_summary {
 }
 pub use gym_summary::GymSummary;
 
+pub mod gym_create_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_create_request.rs"
+    ));
+}
+pub use gym_create_request::GymCreateRequest;
+
+pub mod gym_update_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_update_request.rs"
+    ));
+}
+pub use gym_update_request::GymUpdateRequest;
+
 pub mod gym_detail_response {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

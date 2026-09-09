@@ -1,5 +1,6 @@
 use axum::{
-    extract::{Path, State},
+    extract::{rejection::JsonRejection, Path, State},
+    http::StatusCode,
     Extension, Json,
 };
 
@@ -11,15 +12,16 @@ use crate::api::models::{
     GymDetailResponse, GymExerciseGroupResponse, GymExerciseVariantSummaryResponse,
     GymLoadProfileSummaryResponse, GymStationDetailResponse, GymStationExerciseGroupResponse,
     GymStationExerciseVariantSummaryResponse, GymStationOptionResponse, GymStationSummaryResponse,
-    GymSummaryResponse,
+    GymSummaryResponse, GymWriteRequest,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
 use crate::application::gyms::{
+    create_gym as create_gym_service, delete_gym as delete_gym_service,
     get_gym_detail as get_gym_detail_service,
     get_gym_station_detail as get_gym_station_detail_service, list_gyms as list_gyms_service,
-    GymServiceError,
+    update_gym as update_gym_service, GymServiceError,
 };
 use crate::domain::{
     GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
@@ -155,13 +157,42 @@ fn station_availability_response(
     }
 }
 
-fn gym_summary_response(gym: GymSummary) -> GymSummaryResponse {
-    GymSummaryResponse {
+fn gym_status_response(
+    status: &str,
+) -> Result<crate::models::gym_summary::Status, EnumTranslationError> {
+    match status {
+        "new" => Ok(crate::models::gym_summary::Status::New),
+        "active" => Ok(crate::models::gym_summary::Status::Active),
+        "inactive" => Ok(crate::models::gym_summary::Status::Inactive),
+        invalid => Err(EnumTranslationError {
+            field: "gym.status",
+            value: invalid.to_owned(),
+        }),
+    }
+}
+
+fn gym_detail_status_response(
+    status: &str,
+) -> Result<crate::models::gym_detail_response::Status, EnumTranslationError> {
+    match status {
+        "new" => Ok(crate::models::gym_detail_response::Status::New),
+        "active" => Ok(crate::models::gym_detail_response::Status::Active),
+        "inactive" => Ok(crate::models::gym_detail_response::Status::Inactive),
+        invalid => Err(EnumTranslationError {
+            field: "gym.status",
+            value: invalid.to_owned(),
+        }),
+    }
+}
+
+fn gym_summary_response(gym: GymSummary) -> Result<GymSummaryResponse, EnumTranslationError> {
+    Ok(GymSummaryResponse {
         id: gym.id,
         name: gym.name,
+        status: gym_status_response(&gym.status)?,
         station_count: Some(Some(gym.station_count)),
         last_visited_at: Some(gym.last_visited_at),
-    }
+    })
 }
 
 fn gym_exercise_variant_response(
@@ -268,6 +299,7 @@ fn gym_detail_response(gym: GymDetail) -> Result<GymDetailResponse, EnumTranslat
     Ok(GymDetailResponse {
         id: gym.id,
         name: gym.name,
+        status: gym_detail_status_response(&gym.status)?,
         station_count: gym.station_count,
         last_visited_at: gym.last_visited_at,
         stations: gym
@@ -298,7 +330,62 @@ pub(crate) async fn list_gyms(
         .await
         .map_err(map_gym_service_error)?;
 
-    Ok(Json(gyms.into_iter().map(gym_summary_response).collect()))
+    Ok(Json(
+        gyms.into_iter()
+            .map(gym_summary_response)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn create_gym(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    payload: Result<Json<GymWriteRequest>, JsonRejection>,
+) -> Result<(StatusCode, Json<GymSummaryResponse>), ApiError> {
+    let payload = payload
+        .map_err(|_| ApiError::Validation("Invalid gym create payload".to_owned()))?
+        .0;
+    let gym = create_gym_service(&state.repository, &session.user_id, payload.into_new_gym())
+        .await
+        .map_err(map_gym_service_error)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(gym_summary_response(gym).map_err(map_enum_translation_error)?),
+    ))
+}
+
+pub(crate) async fn update_gym(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(gym_id): Path<String>,
+    payload: Result<Json<GymWriteRequest>, JsonRejection>,
+) -> Result<Json<GymSummaryResponse>, ApiError> {
+    let payload = payload
+        .map_err(|_| ApiError::Validation("Invalid gym update payload".to_owned()))?
+        .0;
+    let gym = update_gym_service(
+        &state.repository,
+        &gym_id,
+        &session.user_id,
+        payload.into_gym_update(),
+    )
+    .await
+    .map_err(map_gym_service_error)?;
+    Ok(Json(
+        gym_summary_response(gym).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn delete_gym(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(gym_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    delete_gym_service(&state.repository, &gym_id, &session.user_id)
+        .await
+        .map_err(map_gym_service_error)?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub(crate) async fn get_gym_detail(
