@@ -70,16 +70,17 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: Gym
-    description: Real-world gym location.
+    description: Real-world gym location with Configurator lifecycle status. The persisted `new` status is a Draft in user-facing language.
     attributes:
       - id
       - name
+      - status
     relationships:
       - type: one_to_many
         target: EquipmentStation
       - type: one_to_many
         target: Workout
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: EquipmentStation
     description: Specific station within a gym.
@@ -149,10 +150,11 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: GymSummary
-    description: List-facing read-only projection of a gym for Gyms screen transparency.
+    description: List-facing projection of a Gym for Configurator and transparency screens.
     attributes:
       - id
       - name
+      - status
       - station_count
       - last_visited_at
     relationships:
@@ -161,10 +163,11 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: GymDetail
-    description: Read-only gym transparency projection for Gym Detail browsing.
+    description: Gym detail projection. Configurator may rename it in any lifecycle state and delete it only while status is `new`.
     attributes:
       - id
       - name
+      - status
       - station_count
       - last_visited_at
       - stations

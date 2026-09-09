@@ -66,6 +66,15 @@ decisions:
   - id: load_profile_name_uniqueness_strategy
     decision: Enforce case-safe per-user load-profile name uniqueness in both application validation and a database-backed normalized unique constraint or index.
     rationale: Prevents crashes and ambiguous rename/create outcomes while honoring the stakeholder requirement that two load profiles must never share the same name for one user.
+  - id: gym_status_storage
+    decision: Persist gyms.status with values new|active|inactive. `new` is a Draft in user-facing language; creation explicitly writes new, while pre-existing Gyms are active.
+    rationale: Establishes Gym lifecycle semantics before station management and preserves historical Gym identity.
+  - id: gym_name_uniqueness_strategy
+    decision: Enforce case-safe per-user Gym-name uniqueness in application validation and a database-backed normalized unique constraint or index.
+    rationale: A user must be able to identify one Gym unambiguously, while different users may use the same name.
+  - id: gym_mutability_semantics
+    decision: Allow Gym-name updates in every status, but allow physical deletion only while status is new. Do not expose status mutation in ordinary Gym writes.
+    rationale: Lets users correct names while retaining established or retired historical Gym identities until lifecycle transitions have a separately defined trigger.
   - id: load_profile_definition_variant_requirements
     decision: Require definition.kind plus variant-specific shape constraints (fixed_list requires values to be a non-empty array; formula requires numeric min and positive numeric step).
     rationale: Matches load-profile domain invariants at the durable write boundary so malformed immutable definitions cannot be persisted for later read-path expansion failures.
@@ -247,10 +256,11 @@ tables:
       - { columns: [id, user_id] }
 
   - name: gyms
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: status, type: text, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
@@ -258,7 +268,11 @@ tables:
     foreign_keys:
       - { columns: [user_id], references: users(id) }
     unique_constraints:
+      - { columns: [user_id, lower(btrim(name))] }
       - { columns: [id, user_id] }
+    checks:
+      - length(trim(name)) > 0
+      - status in ('new', 'active', 'inactive')
 
   - name: load_profiles
     lifecycle_policy: ARCHIVABLE

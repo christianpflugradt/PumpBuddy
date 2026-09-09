@@ -1,23 +1,50 @@
 version: 1
 kind: plan
 id: pb-063
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: First Gym Configurator Slice
+goal: "Deliver a deliberately small, lifecycle-aware Gym management flow in the Configurator: list, create Drafts, open, rename, and delete only Draft Gyms."
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Extend the existing Gym read model, application service, persistence boundary, and authenticated API with the `new|active|inactive` lifecycle status and minimal Gym create, rename, and Draft-only delete operations.
+  - Explicitly create Configurator Gyms with persisted status `new`; present `new` as Draft in all product-facing copy.
+  - Enforce non-blank, trimmed, case-normalized Gym-name uniqueness within a user scope, while permitting the same name for different users.
+  - Preserve user ownership/scoping and reject deletion of active or inactive Gyms on the server.
+  - Add a compact Configurator Gyms list and create/edit detail flow that reuses the established Load Profile visual language, including Draft and inactive presentation and consequential rename behavior.
+  - Update generated-contract integration, focused backend/API tests, and renderer tests for the lifecycle and permitted-write behavior.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Any database schema, seed-data, migration, upgrade, or live-instance operation. The stakeholder will prepare and apply database changes manually.
+  - Equipment Station browsing, counts, creation, editing, deletion, assignment, or navigation in Configurator.
+  - Gym lifecycle transitions, their triggers, status-update APIs, Gym eligibility for future workouts, and bulk operations.
+  - Invented Gym metadata such as addresses, descriptions, workout counts, training-plan counts, or equipment summaries.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - The Configurator lists authenticated-user Gyms with lifecycle status, labels persisted `new` as Draft, and keeps inactive rows visually subdued using existing Load Profile conventions.
+  - A create request explicitly persists a user-scoped Gym as `new`; ordinary Gym updates accept only a name and cannot change status.
+  - Names are trimmed, non-blank, and unique after case normalization per user; duplicate names are rejected without preventing another user from using the same name.
+  - Draft, active, and inactive Gyms can be renamed; only Draft Gyms can be deleted, with active/inactive deletion rejected by the backend.
+  - Focused tests cover existing lifecycle-aware data, creation, read status, allowed renames, prohibited deletes/status changes, duplicate-name behavior, and ownership isolation.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Treat the existing Load Profile Configurator as the source of truth for lifecycle vocabulary, explicit creation status, rename warning behavior, API error conventions, and component styling.
+  - Use `new` solely as persisted/API terminology and Draft in user-facing or domain-facing prose.
+  - The application work assumes the manually prepared database supplies lifecycle-aware Gym rows: pre-existing Gyms are active and newly created Configurator Gyms can persist `new`.
+  - Keep the eventual refinement to approximately 5–7 cohesive implementation items and within one focused workday.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-context.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/configurator-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/application/load_profiles.rs
+  - backend/src/persistence/load_profiles.rs
+  - backend/src/api/handlers/load_profiles.rs
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Current-state findings: Gym support is presently authenticated, user-scoped, and read-only, with list/detail projections that include Stations and workout transparency. Load Profiles provide the established lifecycle implementation and UI pattern: API status `new` is rendered as Draft, creation writes `new` explicitly, and historical renames use a warning.
+
+  Refinement should derive approximately 5–7 implementation items in this order: contract/generated-model alignment; Gym domain/application/persistence lifecycle writes and validation; authenticated handlers/routes with server-side authorization; Configurator state/navigation and list screen; compact Gym editor/create/delete interactions; focused backend and renderer coverage. Preserve the existing read-only workout transparency behavior where it remains a consumer of Gym data.
+
+  Database schema/data migration, initialization, seed changes, and deployment instructions are intentionally excluded. Treat the stakeholder's manually prepared database state as an external prerequisite; do not add migration work or instructions to execution items. If the application cannot safely operate against that prerequisite, report the exact required database contract as a blocker without prescribing how to apply it.
+
+  Do not add Station behavior or lifecycle transitions. If refinement finds a need to change a status through ordinary Gym APIs, report it as a scope violation rather than adding it.
