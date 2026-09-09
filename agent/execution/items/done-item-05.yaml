@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-05
   title: Cover Gym lifecycle regression matrix
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -87,7 +87,7 @@ review_feedback:
     \ rename.\n  risk: A regression could remove the active-Gym confirmation while\
     \ all current renderer\n    tests still pass, leaving historical-workout rename\
     \ behavior unprotected.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: renderer/src/pb-configurator-gym-editor-screen.test.ts asserts confirmation
       for an inactive Gym rename, but the active Gym test only covers a case-only
@@ -95,6 +95,19 @@ review_feedback:
     risk: A regression could remove the active-Gym confirmation while all current
       renderer tests still pass, leaving historical-workout rename behavior unprotected.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 through ac-03 are met: backend lifecycle boundary coverage
+      is present, renderer coverage now confirms both active and inactive rename warnings,
+      and the requested focused regression matrix remains within scope.'
+    evidence: Persistence and API suites assert new, active, and inactive status reads,
+      normalized ownership-scoped writes, deletion permissions, and status immutability.
+      Renderer suites cover Draft wording, inactive presentation, navigation, validation,
+      failure feedback, Draft-only delete controls, and confirmed active/inactive
+      renames.
+    runtime_build_check: 'make check-renderer passed after the correction: 37 test
+      files, 475 tests, and all three UI smoke browsers passed.'
+    residual_risk: PostgreSQL schema preparation remains an external prerequisite
+      by plan design; no migration, Station, lifecycle-transition, or bulk-action
+      behavior was added.
+  findings: []
