@@ -1700,6 +1700,7 @@ components:
     GymCreateRequest:
       type: object
       additionalProperties: false
+      description: Name-only payload. Lifecycle status is server-owned and must not be supplied.
       required:
         - name
       properties:
@@ -1708,6 +1709,7 @@ components:
     GymUpdateRequest:
       type: object
       additionalProperties: false
+      description: Name-only payload. Lifecycle status is server-owned and must not be supplied.
       required:
         - name
       properties:

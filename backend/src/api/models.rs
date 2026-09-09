@@ -54,7 +54,6 @@ pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
-#[allow(unused_imports)]
 pub use crate::models::gym_create_request::GymCreateRequest;
 pub use crate::models::gym_detail_response::GymDetailResponse;
 pub use crate::models::gym_exercise_group::GymExerciseGroup as GymExerciseGroupResponse;
@@ -66,7 +65,6 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
-#[allow(unused_imports)]
 pub use crate::models::gym_update_request::GymUpdateRequest;
 pub use crate::models::load_profile_create_request::LoadProfileCreateRequest;
 pub use crate::models::load_profile_definition::LoadProfileDefinition as LoadProfileDefinitionRequest;
@@ -161,6 +159,18 @@ impl GymWriteRequest {
 
     pub fn into_gym_update(self) -> GymUpdate {
         GymUpdate { name: self.name }
+    }
+}
+
+impl From<GymCreateRequest> for GymWriteRequest {
+    fn from(request: GymCreateRequest) -> Self {
+        Self { name: request.name }
+    }
+}
+
+impl From<GymUpdateRequest> for GymWriteRequest {
+    fn from(request: GymUpdateRequest) -> Self {
+        Self { name: request.name }
     }
 }
 

@@ -633,6 +633,21 @@ async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
     .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": &name, "status": "active" }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
     let (status, created) = json_response(
         app.clone(),
         Request::builder()
