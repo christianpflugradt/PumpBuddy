@@ -1,0 +1,75 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Add Configurator Gym list navigation
+summary:
+  goal: Add a compact, lifecycle-aware Gym list and Configurator-local routes for
+    creating or opening a Gym.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/configurator-use-cases.yaml
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/workout-contract.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/workout-types.ts
+  optional:
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-gyms-screen.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/openapi-contract.ts
+implementation_approach:
+- Extend the renderer Gym summary contract with the lifecycle status emitted by the
+  generated OpenAPI model, while retaining the existing workout-facing summary compatibility.
+- Add Configurator-specific Gym list state, a list loader with stale-request protection,
+  and a view-state route for a Gym create destination or an existing Gym destination;
+  keep this state independent from the workout-facing Gyms screen.
+- 'Extend controller navigation so the Configurator side menu opens the Gym list,
+  list entry loads authenticated `/api/gyms` data, row actions validate a visible
+  Gym ID before opening it, and back returns to the Configurator Gym list without
+  leaving Configurator mode.'
+- Replace the Configurator side-menu Gyms placeholder with a navigable entry, preserving
+  the Load Profiles entry, return-to-workout control, menu action conventions, and
+  route-restoration behavior.
+- Create a compact Configurator Gym list Web Component using the Load Profile header,
+  spacing, card, badge, loading, error, and empty-state language; display only the
+  Gym name and a mapped Draft, Active, or Inactive badge.
+- 'Render persisted `new` as Draft, apply the established inactive visual treatment,
+  expose a `+ New Gym` action, and provide Configurator-local create and existing-Gym
+  destination placeholders with back navigation for the later editor item.'
+- Do not adapt the existing workout-facing Gym list or transparency detail components
+  because their station and workout metadata are excluded from this Configurator slice.
+- Add focused component, side-menu, app-root, screen-data, and controller navigation
+  tests covering status labels, inactive presentation, loading/error/empty states,
+  create and existing destinations, back behavior, authenticated list loading, and
+  Configurator-mode preservation.
+risks_and_assumptions:
+- 'Assumption: item 02 delivers Gym summaries with status through the generated contract
+  before this item is implemented.'
+- 'Risk: reusing the workout Gym screen would expose station counts and visit history;
+  use a Configurator-only component and state path instead.'
+- 'Risk: navigation can accept stale or forged row payloads; only open an existing
+  destination when its ID is present in the currently loaded Configurator Gym list.'
+- 'Risk: lifecycle rules may drift into the renderer; map values only for display
+  and leave creation, deletion, and authorization decisions to later UI work and the
+  backend.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Gym editor fields, create, rename, delete controls, confirmation dialogs, and lifecycle-transition
+  controls.
+- Station, equipment, workout, plan, visit, count, address, description, search, or
+  summary metadata in Configurator Gym rows.
+- Backend API, persistence, database, generated-contract source, and public-topology
+  changes.
+handoff_notes:
+- 'Use Draft, Active, and Inactive as UI labels; do not render `new` in user-facing
+  copy.'
+- The create and existing-Gym routes are navigation destinations only until the dedicated
+  Gym editor item supplies write interactions.
