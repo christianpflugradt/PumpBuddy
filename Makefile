@@ -25,8 +25,7 @@ OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/loc
 
 check:
 	$(MAKE) check-bootstrap-secret-handoff
-	$(MAKE) check-backend
-	$(MAKE) check-renderer
+	$(MAKE) -j 2 check-backend check-renderer
 
 check-bootstrap-secret-handoff:
 	agent/scripts/check/check-bootstrap-secret-handoff.sh
