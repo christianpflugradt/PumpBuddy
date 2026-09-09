@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-03
   title: Add Configurator Gym list navigation
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -17,10 +17,10 @@ scope:
   - Add Gym Configurator route/state, authenticated list loading, side-menu navigation,
     back behavior, loading/error/empty states, and route restoration consistent with
     Load Profiles.
-  - 'Render minimal tappable Gym rows with name and lifecycle badge, mapping `new`
-    to Draft and presenting inactive rows with the existing subdued convention.'
-  - 'Provide a compact `+ New Gym` action and routes to create or open an existing
-    Gym.'
+  - Render minimal tappable Gym rows with name and lifecycle badge, mapping `new`
+    to Draft and presenting inactive rows with the existing subdued convention.
+  - Provide a compact `+ New Gym` action and routes to create or open an existing
+    Gym.
   out:
   - Do not show Station counts, Station lists, equipment summaries, workouts, plans,
     addresses, descriptions, search-only metadata, or other invented details.
@@ -29,8 +29,8 @@ scope:
 constraints:
 - Reuse existing Configurator headers, spacing, density, status badges, colors, design
   tokens, and components from Load Profiles.
-- 'Use Draft, Active, and Inactive as UI labels; never render `new` as a user-facing
-  status.'
+- Use Draft, Active, and Inactive as UI labels; never render `new` as a user-facing
+  status.
 - Keep the renderer a thin API consumer with no authority for lifecycle permissions.
 inputs:
   required:
@@ -45,9 +45,8 @@ inputs:
   - renderer/src/pb-gyms-screen.ts
 acceptance_criteria:
 - id: ac-01
-  statement: 'The Configurator opens a Gym list that displays only a Gym name and
-    mapped lifecycle state, with inactive presentation subdued and `new` labelled
-    Draft.'
+  statement: The Configurator opens a Gym list that displays only a Gym name and mapped
+    lifecycle state, with inactive presentation subdued and `new` labelled Draft.
   verification:
     type: command
     command: make check-renderer

@@ -75,6 +75,8 @@ export type ViewState =
   | { screen: "start" }
   | { screen: "configurator-load-profiles" }
   | { screen: "configurator-load-profile-detail"; loadProfileId: string | null }
+  | { screen: "configurator-gyms" }
+  | { screen: "configurator-gym-detail"; gymId: string | null }
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }
@@ -176,6 +178,12 @@ export type AppState = {
     detail: LoadProfileDetailResponse | null;
     isLoading: boolean;
     errorMessage: string | null;
+  };
+  configuratorGymsScreen?: {
+    gyms: GymSummary[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
   };
   aboutScreen?: {
     metadata: AboutMetadata | null;

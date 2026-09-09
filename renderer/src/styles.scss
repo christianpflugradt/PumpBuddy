@@ -203,6 +203,64 @@ pb-app-root,
   text-align: left;
 }
 
+.configurator-gyms-screen {
+  justify-items: stretch;
+  text-align: left;
+  max-width: 42rem;
+}
+
+.configurator-gyms-screen .configurator-gym-create-button {
+  margin: 0 0 1rem;
+}
+
+.configurator-gym-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.configurator-gym-card {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+
+.configurator-gym-card:hover { border-color: var(--border-input); }
+.configurator-gym-card:focus-visible { outline: 2px solid var(--brand-strong); outline-offset: 2px; }
+
+.configurator-gym-card--inactive {
+  opacity: 0.62;
+}
+
+.configurator-gym-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.configurator-gym-name {
+  font-weight: 750;
+}
+
+.configurator-gym-status {
+  border-radius: 999px;
+  padding: 0.16rem 0.42rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.configurator-gym-status--new { background: rgba(249, 115, 22, 0.18); color: #fdba74; }
+.configurator-gym-status--active { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+.configurator-gym-status--inactive { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+
 .configurator-load-profile-editor-screen {
   justify-items: stretch;
   text-align: left;

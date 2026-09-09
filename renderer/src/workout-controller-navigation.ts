@@ -9,6 +9,7 @@ type Dependencies = {
   render: () => void;
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
+  loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -60,6 +61,8 @@ const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "start" ||
   state.viewState.screen === "configurator-load-profiles" ||
   state.viewState.screen === "configurator-load-profile-detail" ||
+  state.viewState.screen === "configurator-gyms" ||
+  state.viewState.screen === "configurator-gym-detail" ||
   state.viewState.screen === "about" ||
   state.viewState.screen === "settings" ||
   state.viewState.screen === "history" ||
@@ -150,6 +153,7 @@ export const handleScreenNavigationAction = (
     render,
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
+    loadConfiguratorGymsScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
@@ -196,6 +200,50 @@ export const handleScreenNavigationAction = (
       });
       render();
       void loadConfiguratorLoadProfilesScreenData();
+      return true;
+    }
+    case "navigate-configurator-gyms": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) {
+        return true;
+      }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
+      setState({ ...nextState, viewState: { screen: "configurator-gyms" } });
+      render();
+      void loadConfiguratorGymsScreenData();
+      return true;
+    }
+    case "start-configurator-gym-create": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-gyms") {
+        return true;
+      }
+      setState({ ...state, viewState: { screen: "configurator-gym-detail", gymId: null } });
+      render();
+      return true;
+    }
+    case "open-configurator-gym-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-gyms") {
+        return true;
+      }
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { gymId?: unknown } | undefined;
+      const gymId = typeof payload?.gymId === "string" ? payload.gymId.trim() : "";
+      if (!gymId || !state.configuratorGymsScreen?.gyms.some((gym) => gym.id === gymId)) {
+        return true;
+      }
+      setState({ ...state, viewState: { screen: "configurator-gym-detail", gymId } });
+      render();
+      return true;
+    }
+    case "navigate-back-from-configurator-gym-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-gym-detail") {
+        return true;
+      }
+      setState({ ...state, viewState: { screen: "configurator-gyms" } });
+      render();
       return true;
     }
     case "start-configurator-load-profile-create": {

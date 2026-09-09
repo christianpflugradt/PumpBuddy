@@ -28,6 +28,7 @@ type Dependencies = {
 export const createScreenDataController = (deps: Dependencies): {
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
+  loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -48,6 +49,7 @@ export const createScreenDataController = (deps: Dependencies): {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
   let configuratorLoadProfilesToken = 0;
+  let configuratorGymsToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
@@ -186,6 +188,53 @@ export const createScreenDataController = (deps: Dependencies): {
           loadProfiles: nextState.configuratorLoadProfilesScreen?.loadProfiles ?? [],
           isLoading: false,
           errorMessage: "Unable to load load profiles right now.",
+          hasLoaded: false,
+        },
+      });
+      render();
+    }
+  };
+
+  const loadConfiguratorGymsScreenData = async (): Promise<void> => {
+    const requestToken = ++configuratorGymsToken;
+    const state = getState();
+    const current = state.configuratorGymsScreen;
+    if (current?.isLoading) {
+      return;
+    }
+
+    setState({
+      ...state,
+      configuratorGymsScreen: {
+        gyms: current?.gyms ?? [],
+        isLoading: true,
+        errorMessage: null,
+        hasLoaded: current?.hasLoaded ?? false,
+      },
+    });
+    render();
+
+    try {
+      const gyms = await loadGymSummaries(fetchJson);
+      if (requestToken !== configuratorGymsToken) {
+        return;
+      }
+      setState({
+        ...getState(),
+        configuratorGymsScreen: { gyms, isLoading: false, errorMessage: null, hasLoaded: true },
+      });
+      render();
+    } catch {
+      if (requestToken !== configuratorGymsToken) {
+        return;
+      }
+      const nextState = getState();
+      setState({
+        ...nextState,
+        configuratorGymsScreen: {
+          gyms: nextState.configuratorGymsScreen?.gyms ?? [],
+          isLoading: false,
+          errorMessage: "Unable to load gyms right now.",
           hasLoaded: false,
         },
       });
@@ -681,6 +730,7 @@ export const createScreenDataController = (deps: Dependencies): {
   return {
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
+    loadConfiguratorGymsScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,

@@ -55,6 +55,11 @@ import {
   registerPbConfiguratorLoadProfileEditorScreen,
   type ConfiguratorLoadProfileEditorScreenState,
 } from "./pb-configurator-load-profile-editor-screen";
+import {
+  pbConfiguratorGymsScreenTag,
+  registerPbConfiguratorGymsScreen,
+  type ConfiguratorGymsScreenState,
+} from "./pb-configurator-gyms-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -82,6 +87,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbWorkoutDetailScreen();
     registerPbConfiguratorLoadProfilesScreen();
     registerPbConfiguratorLoadProfileEditorScreen();
+    registerPbConfiguratorGymsScreen();
     this.#render();
   }
 
@@ -149,6 +155,23 @@ class PbAppRootElement extends HTMLElement {
         detail: loadProfileId === null ? null : detailState?.detail ?? null,
         isLoading: detailState?.isLoading ?? false,
         errorMessage: detailState?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-gyms" || state.viewState.screen === "configurator-gym-detail") {
+      const gymId = state.viewState.screen === "configurator-gym-detail" ? state.viewState.gymId : null;
+      const gyms = state.configuratorGymsScreen?.gyms ?? [];
+      const el = document.createElement(pbConfiguratorGymsScreenTag) as HTMLElement & {
+        state: ConfiguratorGymsScreenState;
+      };
+      el.state = {
+        mode: state.viewState.screen === "configurator-gyms" ? "list" : gymId === null ? "create" : "detail",
+        gyms,
+        selectedGym: gymId === null ? null : gyms.find((gym) => gym.id === gymId) ?? null,
+        isLoading: state.configuratorGymsScreen?.isLoading ?? false,
+        errorMessage: state.configuratorGymsScreen?.errorMessage ?? null,
       };
       container.append(el);
       return;

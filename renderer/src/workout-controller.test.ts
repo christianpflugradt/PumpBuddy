@@ -725,6 +725,27 @@ describe("workout-controller (createApp)", () => {
     expect(loadLoadProfileDetailMock).toHaveBeenCalledWith(expect.any(Function), "profile-1");
   });
 
+  it("navigates through the configurator Gym list and only opens visible Gym routes", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    loadGymSummariesMock.mockResolvedValue([{ id: "gym-1", name: "Downtown", status: "new" }]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-gyms");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
+    expect(loadGymSummariesMock).toHaveBeenCalled();
+
+    dispatchAction(app, "start-configurator-gym-create");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: null });
+    dispatchAction(app, "navigate-back-from-configurator-gym-detail");
+    dispatchActionWithDetail(app, { action: "open-configurator-gym-detail", payload: { gymId: "unknown" } });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
+    dispatchActionWithDetail(app, { action: "open-configurator-gym-detail", payload: { gymId: "gym-1" } });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+  });
+
   it("saves a draft load profile and returns to the configurator list", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & {
       state?: any;

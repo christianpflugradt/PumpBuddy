@@ -168,7 +168,7 @@ describe("pb-side-menu", () => {
     ]);
   });
 
-  it("renders configurator mode with a neutral return action, separators, and placeholders", () => {
+  it("renders configurator mode with a neutral return action, separators, and Gym navigation", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("mode", "configurator");
     el.setAttribute("active-screen", "configurator-load-profiles");
@@ -178,7 +178,7 @@ describe("pb-side-menu", () => {
     const workoutEntry = buttonByText(el, "Back to Workout");
     const loadProfilesEntry = buttonByText(el, "Load Profiles");
     const exercisePlaceholder = buttonByText(el, "Exercises (Soon)");
-    const gymPlaceholder = buttonByText(el, "Gyms (Soon)");
+    const gymsEntry = buttonByText(el, "Gyms");
 
     expect(entries[0]?.textContent?.trim()).toBe("Back to Workout");
     expect(entries[1]?.textContent?.trim()).toBe("Load Profiles");
@@ -192,11 +192,11 @@ describe("pb-side-menu", () => {
     ).toBe(false);
     expect(el.querySelectorAll(".side-menu-divider")).toHaveLength(2);
     expect(exercisePlaceholder?.disabled).toBe(true);
-    expect(gymPlaceholder?.disabled).toBe(true);
+    expect(gymsEntry?.dataset.uiAction).toBe("navigate-configurator-gyms");
     expect(middleEntryLabels(el)).toEqual([
       "Load Profiles",
       "Exercises (Soon)",
-      "Gyms (Soon)",
+      "Gyms",
     ]);
   });
 });

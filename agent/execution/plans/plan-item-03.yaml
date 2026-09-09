@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Add Configurator Gym list navigation
 summary:
   goal: Add a compact, lifecycle-aware Gym list and Configurator-local routes for
@@ -30,19 +30,19 @@ implementation_approach:
 - Add Configurator-specific Gym list state, a list loader with stale-request protection,
   and a view-state route for a Gym create destination or an existing Gym destination;
   keep this state independent from the workout-facing Gyms screen.
-- 'Extend controller navigation so the Configurator side menu opens the Gym list,
-  list entry loads authenticated `/api/gyms` data, row actions validate a visible
-  Gym ID before opening it, and back returns to the Configurator Gym list without
-  leaving Configurator mode.'
+- Extend controller navigation so the Configurator side menu opens the Gym list, list
+  entry loads authenticated `/api/gyms` data, row actions validate a visible Gym ID
+  before opening it, and back returns to the Configurator Gym list without leaving
+  Configurator mode.
 - Replace the Configurator side-menu Gyms placeholder with a navigable entry, preserving
   the Load Profiles entry, return-to-workout control, menu action conventions, and
   route-restoration behavior.
 - Create a compact Configurator Gym list Web Component using the Load Profile header,
   spacing, card, badge, loading, error, and empty-state language; display only the
   Gym name and a mapped Draft, Active, or Inactive badge.
-- 'Render persisted `new` as Draft, apply the established inactive visual treatment,
+- Render persisted `new` as Draft, apply the established inactive visual treatment,
   expose a `+ New Gym` action, and provide Configurator-local create and existing-Gym
-  destination placeholders with back navigation for the later editor item.'
+  destination placeholders with back navigation for the later editor item.
 - Do not adapt the existing workout-facing Gym list or transparency detail components
   because their station and workout metadata are excluded from this Configurator slice.
 - Add focused component, side-menu, app-root, screen-data, and controller navigation
@@ -69,7 +69,7 @@ out_of_scope:
 - Backend API, persistence, database, generated-contract source, and public-topology
   changes.
 handoff_notes:
-- 'Use Draft, Active, and Inactive as UI labels; do not render `new` in user-facing
-  copy.'
+- Use Draft, Active, and Inactive as UI labels; do not render `new` in user-facing
+  copy.
 - The create and existing-Gym routes are navigation destinations only until the dedicated
   Gym editor item supplies write interactions.

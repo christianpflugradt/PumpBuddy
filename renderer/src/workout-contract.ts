@@ -16,6 +16,8 @@ export type TrainingPlanSummary = {
 export type GymSummary = {
   id: string;
   name: string;
+  // Optional while workout-facing consumers complete their staged migration.
+  status?: "new" | "active" | "inactive";
   station_count?: number | null;
   last_visited_at?: string | null;
 };
