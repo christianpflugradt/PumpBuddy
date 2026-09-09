@@ -9,6 +9,17 @@
   ],
   "packageRules": [
     {
+      "description": "Update the semantic-release changelog stack together so its preset and writer remain compatible.",
+      "groupName": "semantic-release toolchain",
+      "matchPackageNames": [
+        "semantic-release",
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/github",
+        "@semantic-release/release-notes-generator",
+        "conventional-changelog-conventionalcommits"
+      ]
+    },
+    {
       "description": "Wait seven days before routine dependency update PRs to reduce fresh-release supply-chain risk.",
       "matchUpdateTypes": [
         "minor",

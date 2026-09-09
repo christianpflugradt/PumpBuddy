@@ -25,6 +25,7 @@ OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/loc
 
 check:
 	$(MAKE) check-bootstrap-secret-handoff
+	$(MAKE) check-release-toolchain
 	$(MAKE) -j 2 check-backend check-renderer
 
 check-bootstrap-secret-handoff:
@@ -38,6 +39,9 @@ check-renderer:
 
 check-release-artifacts:
 	agent/scripts/run-quality.sh release-artifacts
+
+check-release-toolchain:
+	node agent/scripts/check/check-release-notes-toolchain.mjs
 
 run-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d
