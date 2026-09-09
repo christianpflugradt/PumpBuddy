@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Build Configurator Gym editor
 summary:
   goal: Deliver a compact Configurator Gym create and rename editor with Draft-only
@@ -31,22 +31,22 @@ implementation_approach:
 - Complete the Configurator Gym destination state from item 03 with existing-Gym detail
   loading and separate editor state, preserving stale-request protection and returning
   a not-found or API failure as an actionable screen error.
-- 'Build a dedicated compact Gym editor component with static `Gym` detail title,
-  one accessible Name input, back navigation, and create versus edit modes; do not
-  render the Gym name as an additional page heading.'
-- 'In create mode, validate a trimmed non-blank name and normalized duplicate against
+- Build a dedicated compact Gym editor component with static `Gym` detail title, one
+  accessible Name input, back navigation, and create versus edit modes; do not render
+  the Gym name as an additional page heading.
+- In create mode, validate a trimmed non-blank name and normalized duplicate against
   the loaded Configurator Gym list, then issue the create request and present the
-  resulting `new` record as Draft through existing status mapping.'
+  resulting `new` record as Draft through existing status mapping.
 - In edit mode, fetch the selected Gym detail, retain status only as display state,
   permit a name-only save for Draft, Active, and Inactive records, and disable redundant
   saves while an asynchronous request is pending.
 - Before an Active or Inactive rename leaves the editor, show the established consequential
   historical-meaning warning with confirm and continue-editing actions; require confirmation
   only when the normalized name has changed.
-- 'Render `Delete Draft` only for a persisted Draft Gym, send deletion through the
+- Render `Delete Draft` only for a persisted Draft Gym, send deletion through the
   API client, remove the row from Configurator Gym list state after success, and return
   to that list; surface server 400, 404, and 409 responses without treating client
-  visibility as authorization.'
+  visibility as authorization.
 - On successful create or rename, update the local Configurator Gym list deterministically,
   return to the list, and refresh it from the server; retain editor input and show
   a request error when a write fails.
@@ -77,7 +77,7 @@ out_of_scope:
   counts, or additional Gym properties.
 - Database, backend authorization, API contract, or public-topology changes.
 handoff_notes:
-- 'Use Draft in every user-facing label, including `Delete Draft`; `new` remains a
-  transport and persisted value.'
+- Use Draft in every user-facing label, including `Delete Draft`; `new` remains a
+  transport and persisted value.
 - The backend remains the authority for duplicate names, ownership, and Draft-only
   deletion; the editor only improves feedback and flow.

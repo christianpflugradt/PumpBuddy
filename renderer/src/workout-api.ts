@@ -10,6 +10,8 @@ import type {
   ErrorResponse,
   CreateWorkoutRequest,
   GymDetailResponse,
+  GymCreateRequest,
+  GymUpdateRequest,
   GymStationDetailResponse,
   GymSummary,
   LoadProfileSummary,
@@ -31,6 +33,7 @@ import {
   parseActiveWorkoutResponse,
   parseErrorResponsePayload,
   parseGymDetailResponse,
+  parseGymSummary,
   parseGymStationDetailResponse,
   parseGymSummaries,
   parseLoadProfileDetailResponse,
@@ -50,6 +53,8 @@ import {
   serializeLoadProfileCreateRequest,
   serializeLoadProfileUpdateRequest,
   serializeCreateWorkoutRequest,
+  serializeGymCreateRequest,
+  serializeGymUpdateRequest,
   serializeReopenActiveWorkoutExerciseRequest,
   serializeSelectActiveWorkoutExerciseOptionRequest,
   serializeSkipActiveWorkoutExerciseRequest,
@@ -474,6 +479,45 @@ export const deleteLoadProfile = async (
     if (response.status === 401) {
       dispatchUnauthorized();
     }
+    throw new RequestError(response.status, await parseErrorResponse(response));
+  }
+};
+
+export const createGym = async (
+  payload: GymCreateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<GymSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    "/api/gyms",
+    "POST",
+    serializeGymCreateRequest(payload),
+    parseGymSummary,
+  );
+
+export const updateGym = async (
+  gymId: string,
+  payload: GymUpdateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<GymSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/gyms/${encodeURIComponent(gymId)}`,
+    "PATCH",
+    serializeGymUpdateRequest(payload),
+    parseGymSummary,
+  );
+
+export const deleteGym = async (
+  gymId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> => {
+  const response = await fetchImpl(`/api/gyms/${encodeURIComponent(gymId)}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    if (response.status === 401) dispatchUnauthorized();
     throw new RequestError(response.status, await parseErrorResponse(response));
   }
 };

@@ -15,8 +15,10 @@ import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescrip
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
 import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
+import { GymCreateRequestToJSON } from "../generated/openapi/typescript/models/GymCreateRequest";
 import { GymStationDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymStationDetailResponse";
 import { GymSummaryFromJSON } from "../generated/openapi/typescript/models/GymSummary";
+import { GymUpdateRequestToJSON } from "../generated/openapi/typescript/models/GymUpdateRequest";
 import { LoadProfileCreateRequestToJSON } from "../generated/openapi/typescript/models/LoadProfileCreateRequest";
 import { LoadProfileDetailResponseFromJSON } from "../generated/openapi/typescript/models/LoadProfileDetailResponse";
 import { LoadProfileDefinitionToJSON } from "../generated/openapi/typescript/models/LoadProfileDefinition";
@@ -45,8 +47,10 @@ import type {
   CreateWorkoutRequest,
   ErrorResponse,
   GymDetailResponse,
+  GymCreateRequest,
   GymStationDetailResponse,
   GymSummary,
+  GymUpdateRequest,
   LoadProfileCreateRequest,
   LoadProfileDefinition,
   LoadProfileDetailResponse,
@@ -157,6 +161,9 @@ export const parseGymSummaries = (json: unknown): GymSummary[] =>
     toRendererModel<GymSummary>(GymSummaryFromJSON(entry)),
   );
 
+export const parseGymSummary = (json: unknown): GymSummary =>
+  toRendererModel<GymSummary>(GymSummaryFromJSON(json));
+
 export const parseLoadProfileSummaries = (json: unknown): LoadProfileSummary[] =>
   requireJsonArray(json).map((entry) =>
     toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(entry)),
@@ -174,6 +181,12 @@ export const parseLoadProfileDetailResponse = (
 
 export const parseGymDetailResponse = (json: unknown): GymDetailResponse =>
   toRendererModel<GymDetailResponse>(GymDetailResponseFromJSON(json));
+
+export const serializeGymCreateRequest = (request: GymCreateRequest): unknown =>
+  GymCreateRequestToJSON(request);
+
+export const serializeGymUpdateRequest = (request: GymUpdateRequest): unknown =>
+  GymUpdateRequestToJSON(request);
 
 export const parseGymStationDetailResponse = (
   json: unknown,

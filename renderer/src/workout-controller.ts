@@ -1,13 +1,16 @@
 import type { AppState, SessionUser } from "./workout-types";
 import {
   createLoadProfile,
+  createGym,
   createActiveWorkoutApi,
   createFetchJson,
   deleteLoadProfile,
+  deleteGym,
   type ActiveWorkoutApi,
   type FetchJson,
   RequestError,
   updateLoadProfile,
+  updateGym,
 } from "./workout-api";
 import {
   canReopenFallbackOptionSelection,
@@ -118,6 +121,7 @@ export const createApp = (
       errorMessage: null,
       hasLoaded: false,
     },
+    configuratorGymDetailScreen: { gymId: null, detail: null, isLoading: false, errorMessage: null },
     aboutScreen: {
       metadata: null,
       errorMessage: null,
@@ -282,6 +286,7 @@ export const createApp = (
   const loadConfiguratorLoadProfilesScreenData =
     screenDataController.loadConfiguratorLoadProfilesScreenData;
   const loadConfiguratorGymsScreenData = screenDataController.loadConfiguratorGymsScreenData;
+  const loadConfiguratorGymDetailScreenData = screenDataController.loadConfiguratorGymDetailScreenData;
   const loadConfiguratorLoadProfileDetailScreenData =
     screenDataController.loadConfiguratorLoadProfileDetailScreenData;
   const loadWorkoutDetailScreenData =
@@ -551,6 +556,7 @@ export const createApp = (
         loadAboutScreenMetadata,
         loadConfiguratorLoadProfilesScreenData,
         loadConfiguratorGymsScreenData,
+        loadConfiguratorGymDetailScreenData,
         loadConfiguratorLoadProfileDetailScreenData,
         loadHistoryScreenData,
         loadProgressScreenData,
@@ -708,6 +714,41 @@ export const createApp = (
               ),
             });
           }
+        })();
+        return;
+      }
+      case "save-configurator-gym": {
+        if (state.viewState.screen !== "configurator-gym-detail") return;
+        const detail = customEvent.detail as { payload?: { mode?: unknown; gymId?: unknown; request?: unknown }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const payload = detail.payload;
+        if (!detail.respond || !payload || (payload.mode !== "create" && payload.mode !== "edit") || !payload.request || typeof payload.request !== "object") return;
+        void (async () => {
+          try {
+            const summary = payload.mode === "create" ? await createGym(payload.request as never) : await updateGym(String(payload.gymId ?? ""), payload.request as never);
+            state = {
+              ...state,
+              configuratorGymsScreen: {
+                ...(state.configuratorGymsScreen ?? { gyms: [], isLoading: false, errorMessage: null, hasLoaded: false }),
+                gyms: payload.mode === "create" ? [...(state.configuratorGymsScreen?.gyms ?? []), summary] : (state.configuratorGymsScreen?.gyms ?? []).map((gym) => gym.id === summary.id ? summary : gym),
+              },
+              viewState: { screen: "configurator-gyms" },
+            };
+            render(); detail.respond?.({ ok: true }); void loadConfiguratorGymsScreenData();
+          } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Gym right now.") }); }
+        })();
+        return;
+      }
+      case "delete-configurator-gym": {
+        if (state.viewState.screen !== "configurator-gym-detail") return;
+        const detail = customEvent.detail as { payload?: { gymId?: unknown }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const gymId = typeof detail.payload?.gymId === "string" ? detail.payload.gymId : "";
+        if (!detail.respond || !gymId.trim()) return;
+        void (async () => {
+          try {
+            await deleteGym(gymId);
+            state = { ...state, configuratorGymsScreen: { ...(state.configuratorGymsScreen ?? { gyms: [], isLoading: false, errorMessage: null, hasLoaded: false }), gyms: (state.configuratorGymsScreen?.gyms ?? []).filter((gym) => gym.id !== gymId) }, viewState: { screen: "configurator-gyms" } };
+            render(); detail.respond?.({ ok: true }); void loadConfiguratorGymsScreenData();
+          } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to delete Gym right now.") }); }
         })();
         return;
       }

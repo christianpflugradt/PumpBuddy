@@ -60,6 +60,11 @@ import {
   registerPbConfiguratorGymsScreen,
   type ConfiguratorGymsScreenState,
 } from "./pb-configurator-gyms-screen";
+import {
+  pbConfiguratorGymEditorScreenTag,
+  registerPbConfiguratorGymEditorScreen,
+  type ConfiguratorGymEditorScreenState,
+} from "./pb-configurator-gym-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -88,6 +93,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorLoadProfilesScreen();
     registerPbConfiguratorLoadProfileEditorScreen();
     registerPbConfiguratorGymsScreen();
+    registerPbConfiguratorGymEditorScreen();
     this.#render();
   }
 
@@ -160,16 +166,25 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
-    if (state.viewState.screen === "configurator-gyms" || state.viewState.screen === "configurator-gym-detail") {
-      const gymId = state.viewState.screen === "configurator-gym-detail" ? state.viewState.gymId : null;
+    if (state.viewState.screen === "configurator-gym-detail") {
+      const gymId = state.viewState.gymId;
+      const detailState = gymId === null || state.configuratorGymDetailScreen?.gymId === gymId
+        ? state.configuratorGymDetailScreen : null;
+      const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+      el.state = { mode: gymId === null ? "create" : "edit", gyms: state.configuratorGymsScreen?.gyms ?? [], detail: gymId === null ? null : detailState?.detail ?? null, isLoading: detailState?.isLoading ?? false, errorMessage: detailState?.errorMessage ?? null };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-gyms") {
       const gyms = state.configuratorGymsScreen?.gyms ?? [];
       const el = document.createElement(pbConfiguratorGymsScreenTag) as HTMLElement & {
         state: ConfiguratorGymsScreenState;
       };
       el.state = {
-        mode: state.viewState.screen === "configurator-gyms" ? "list" : gymId === null ? "create" : "detail",
+        mode: "list",
         gyms,
-        selectedGym: gymId === null ? null : gyms.find((gym) => gym.id === gymId) ?? null,
+        selectedGym: null,
         isLoading: state.configuratorGymsScreen?.isLoading ?? false,
         errorMessage: state.configuratorGymsScreen?.errorMessage ?? null,
       };

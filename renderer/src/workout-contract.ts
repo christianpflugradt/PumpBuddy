@@ -93,10 +93,19 @@ export type GymStationSummary = {
 export type GymDetailResponse = {
   id: string;
   name: string;
+  status: "new" | "active" | "inactive";
   station_count: number;
   last_visited_at: string | null;
   stations: GymStationSummary[];
   exercise_groups: GymExerciseGroup[];
+};
+
+export type GymCreateRequest = {
+  name: string;
+};
+
+export type GymUpdateRequest = {
+  name: string;
 };
 
 export type GymLoadProfileSummary = {

@@ -185,6 +185,12 @@ export type AppState = {
     errorMessage: string | null;
     hasLoaded: boolean;
   };
+  configuratorGymDetailScreen?: {
+    gymId: string | null;
+    detail: GymDetailResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
+  };
   aboutScreen?: {
     metadata: AboutMetadata | null;
     errorMessage: string | null;

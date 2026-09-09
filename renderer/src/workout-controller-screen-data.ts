@@ -29,6 +29,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
+  loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -50,6 +51,7 @@ export const createScreenDataController = (deps: Dependencies): {
   let workoutDetailLoadToken = 0;
   let configuratorLoadProfilesToken = 0;
   let configuratorGymsToken = 0;
+  let configuratorGymDetailToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
@@ -240,6 +242,22 @@ export const createScreenDataController = (deps: Dependencies): {
       });
       render();
     }
+  };
+
+  const loadConfiguratorGymDetailScreenData = async (gymId: string): Promise<void> => {
+    if (!gymId.trim()) return;
+    const requestToken = ++configuratorGymDetailToken;
+    setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, isLoading: true, errorMessage: null } });
+    render();
+    try {
+      const detail = await loadGymDetail(fetchJson, gymId);
+      if (requestToken !== configuratorGymDetailToken) return;
+      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail, isLoading: false, errorMessage: null } });
+    } catch {
+      if (requestToken !== configuratorGymDetailToken) return;
+      setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, isLoading: false, errorMessage: "Unable to load Gym right now." } });
+    }
+    render();
   };
 
   const loadConfiguratorLoadProfileDetailScreenData = async (
@@ -731,6 +749,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
+    loadConfiguratorGymDetailScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,

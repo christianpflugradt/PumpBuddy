@@ -124,6 +124,7 @@ pb-gym-detail-screen,
 pb-station-detail-screen,
 pb-exercise-variant-detail-screen,
 pb-configurator-load-profile-editor-screen,
+pb-configurator-gym-editor-screen,
 pb-login,
 pb-workout-detail-screen {
   display: block;
@@ -265,6 +266,23 @@ pb-app-root,
   justify-items: stretch;
   text-align: left;
 }
+
+.configurator-gym-editor-screen { justify-items: stretch; text-align: left; }
+
+.configurator-gym-editor-card,
+.configurator-gym-field,
+.configurator-gym-editor-actions { display: grid; gap: var(--space-md); }
+
+.configurator-gym-field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 700; }
+.configurator-gym-input { width: 100%; min-height: var(--action-target-min-height); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); }
+.configurator-gym-field-error { color: var(--status-danger-text); font-size: var(--font-size-label); }
+.configurator-gym-editor-actions { grid-template-columns: 1fr; margin-top: var(--space-sm); }
+.configurator-gym-save-button,
+.configurator-gym-delete-button { min-height: var(--action-target-min-height); border-radius: var(--radius-md); cursor: pointer; font-weight: 700; }
+.configurator-gym-save-button { border: 0; background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end)); color: var(--button-primary-text); }
+.configurator-gym-delete-button { border: 1px solid var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--button-secondary-text); }
+.configurator-gym-save-button:disabled,
+.configurator-gym-delete-button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .configurator-load-profiles-screen .configurator-load-profile-create-button {
   width: fit-content;

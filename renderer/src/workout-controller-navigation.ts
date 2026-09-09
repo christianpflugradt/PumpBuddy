@@ -10,6 +10,7 @@ type Dependencies = {
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
+  loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -154,6 +155,7 @@ export const handleScreenNavigationAction = (
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
+    loadConfiguratorGymDetailScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
@@ -233,8 +235,9 @@ export const handleScreenNavigationAction = (
       if (!gymId || !state.configuratorGymsScreen?.gyms.some((gym) => gym.id === gymId)) {
         return true;
       }
-      setState({ ...state, viewState: { screen: "configurator-gym-detail", gymId } });
+      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, isLoading: true, errorMessage: null }, viewState: { screen: "configurator-gym-detail", gymId } });
       render();
+      void loadConfiguratorGymDetailScreenData(gymId);
       return true;
     }
     case "navigate-back-from-configurator-gym-detail": {

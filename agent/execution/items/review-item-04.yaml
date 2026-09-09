@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-04
   title: Build Configurator Gym editor
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -14,12 +14,12 @@ intent:
     on the server and avoiding future Station work.
 scope:
   in:
-  - 'Create a dedicated compact screen with back navigation, static `Gym` detail title,
-    a single Name field, and `Create Gym` for create mode.'
-  - 'Use the Gym API to create with `new`, fetch/open existing details, save trimmed
-    names, and refresh list/detail state after writes.'
-  - 'Show `Delete Draft` only for a persisted `new` Gym and surface server validation/conflict
-    errors.'
+  - Create a dedicated compact screen with back navigation, static `Gym` detail title,
+    a single Name field, and `Create Gym` for create mode.
+  - Use the Gym API to create with `new`, fetch/open existing details, save trimmed
+    names, and refresh list/detail state after writes.
+  - Show `Delete Draft` only for a persisted `new` Gym and surface server validation/conflict
+    errors.
   - Apply the established consequential-rename warning pattern to active and inactive
     Gym name changes.
   - Provide client-side non-blank and normalized duplicate feedback as a usability
@@ -30,10 +30,10 @@ scope:
   - Do not permit delete UI for active/inactive Gyms or rely on UI visibility as the
     deletion safeguard.
 constraints:
-- 'Use Draft in all screen copy, including `Delete Draft`; never expose `new` as a
-  label.'
-- 'Do not duplicate a Gym name as both the page heading and Name field; existing detail
-  pages use the static title `Gym`.'
+- Use Draft in all screen copy, including `Delete Draft`; never expose `new` as a
+  label.
+- Do not duplicate a Gym name as both the page heading and Name field; existing detail
+  pages use the static title `Gym`.
 - Preserve the Load Profile editor's accessibility, error, confirmation, and optimistic-state
   conventions where applicable.
 inputs:
@@ -56,9 +56,9 @@ acceptance_criteria:
     command: make check-renderer
     expected: Renderer editor behavior tests pass.
 - id: ac-02
-  statement: 'Only Draft detail exposes `Delete Draft`; active and inactive rename
+  statement: Only Draft detail exposes `Delete Draft`; active and inactive rename
     flows use the established consequential-warning behavior and no screen offers
-    a status change.'
+    a status change.
   verification:
     type: command
     command: make check-renderer
