@@ -6,6 +6,7 @@ intent:
   principles:
     - deterministic_steps_should_be_scripted
     - conversational_steps_should_be_explicitly_scoped
+    - implementation_judgment_should_be_evidence_based_and_scope_disciplined
     - quality_gates_should_fail_fast
     - stakeholder_acceptance_is_required_before_finalize
   planning_size_guideline:
@@ -57,16 +58,16 @@ item_workflow:
     - review
     - done
   mandatory_steps:
-    - plan_item
     - implement_item
+  optional_steps:
+    - plan_item
     - review_item
-  optional_steps: []
 
 quality_gates:
   fail_on:
     - validation_error
     - validation_warning
-    - missing_required_review
+    - missing_required_independent_review
     - unmet_acceptance_criteria
 
 clarification_policy:
@@ -88,8 +89,26 @@ clarification_policy:
     - ask_stakeholder_to_restate_the_flow_or_scope_instead_of_spamming_many_micro_questions
     - continue_with_targeted_follow_up_questions_after_restatement
   assumption_rule:
-    - if_not_blocking_choose_a_reasonable_assumption_and_continue
-    - record_assumption_explicitly_in_the_response
+    - proceed_with_low_impact_repository_consistent_judgment
+    - document_material_assumptions_or_unresolved_concerns_in_the_item_handoff
+  implementation_judgment:
+    autonomous_when:
+      - choice_is_low_impact_reversible_and_repository_precedent_is_clear
+      - alternatives_do_not_materially_change_product_behavior_or_domain_semantics
+      - better_solution_stays_within_scope_and_preserves_acceptance_criteria
+    consult_stakeholder_when:
+      - material_product_domain_or_ux_decision_is_unspecified
+      - multiple_interpretations_produce_materially_different_behavior
+      - literal_solution_conflicts_with_repository_precedent_or_creates_obvious_product_quality_issue
+      - new_evidence_materially_undermines_an_earlier_plan_assumption
+      - implementation_would_invent_a_business_rule_or_materially_change_contract_or_lifecycle
+    block_when:
+      - acceptance_criteria_are_mutually_inconsistent
+      - required_domain_semantics_or_dependency_contract_is_unavailable
+      - implementation_would_violate_a_known_invariant
+    scope_discipline:
+      - discovering_a_better_solution_does_not_authorize_scope_expansion
+      - consult_before_changing_product_behavior_domain_semantics_api_persistence_or_lifecycle_rules
 
 extended_reviews:
   allowed_only_when:

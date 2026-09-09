@@ -105,6 +105,7 @@ fi
 
 OPEN_ITEM="${ITEMS_DIR}/open-item-${ITEM_ID}.yaml"
 REVIEW_ITEM="${ITEMS_DIR}/review-item-${ITEM_ID}.yaml"
+DONE_ITEM="${ITEMS_DIR}/done-item-${ITEM_ID}.yaml"
 PLAN_ITEM="${ROOT_DIR}/agent/execution/plans/plan-item-${ITEM_ID}.yaml"
 ITEM_CONTEXT_PATH=""
 
@@ -138,7 +139,23 @@ fi
 
 "${COMMIT_MSG_CHECK_SCRIPT}" "${MSG_FILE}"
 
-TARGET="${REVIEW_ITEM}"
+INDEPENDENT_REVIEW_REQUIRED="$(python3 - "${OPEN_ITEM}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+data = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
+execution = data.get("execution") or {}
+print("true" if execution.get("independent_review_required", False) is True else "false")
+PY
+)"
+TARGET="${DONE_ITEM}"
+TARGET_STATUS="done"
+if [ "${INDEPENDENT_REVIEW_REQUIRED}" = "true" ]; then
+  TARGET="${REVIEW_ITEM}"
+  TARGET_STATUS="review"
+fi
 if [ ! -f "${OPEN_ITEM}" ] && [ ! -f "${TARGET}" ]; then
   echo "Item file not found for id ${ITEM_ID}: expected ${OPEN_ITEM} or ${TARGET}" >&2
   exit 3
@@ -253,7 +270,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   if [ -f "${OPEN_ITEM}" ]; then
     echo "DRY_RUN=would_move ${OPEN_ITEM} -> ${TARGET}"
-    echo "DRY_RUN=would_update_status_hint review in ${TARGET}"
+    echo "DRY_RUN=would_update_status_hint ${TARGET_STATUS} in ${TARGET}"
     echo "DRY_RUN=would_set_workflow_state phase=execute_items"
   fi
   echo "DRY_RUN=would_stage_paths all_changed_files"
@@ -282,7 +299,7 @@ MOVED_FROM_OPEN="false"
 if [ -f "${OPEN_ITEM}" ]; then
   mv "${OPEN_ITEM}" "${TARGET}"
   MOVED_FROM_OPEN="true"
-  python3 - "${TARGET}" <<'PY'
+  python3 - "${TARGET}" "${TARGET_STATUS}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -292,7 +309,7 @@ path = Path(sys.argv[1])
 data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 item = data.get("item")
 if isinstance(item, dict):
-    item["status_hint"] = "review"
+    item["status_hint"] = sys.argv[2]
 path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
 fi
@@ -306,7 +323,7 @@ if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
   echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
   exit 28
 fi
-reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "item_moved_open_to_review" "agent/execution/plan.yaml"
+reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "item_implemented_${TARGET_STATUS}" "agent/execution/plan.yaml"
 
 if [ "${MOVED_FROM_OPEN}" = "true" ]; then
   run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
@@ -317,7 +334,7 @@ if [ "${MOVED_FROM_OPEN}" = "true" ]; then
     --event-type "implement_transition" \
     --item-id "${ITEM_ID}" \
     --from-status "open" \
-    --to-status "review"
+    --to-status "${TARGET_STATUS}"
 fi
 
 record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE}" "implement-item" "${ITEM_ID}"

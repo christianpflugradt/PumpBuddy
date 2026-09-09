@@ -3,7 +3,7 @@ task: finalize-plan
 source_of_truth: task_spec
 
 intent:
-  outcome: close_or_reopen_the_active_plan_after_stakeholder_decision
+  outcome: holistically_review_then_close_or_reopen_the_active_plan
 
 pre_conditions:
   - at_least_one_done_item_exists
@@ -15,7 +15,9 @@ flow:
   - resolve_task_alias_to_finalize_plan
   - load_required_context_from_task_context_config
   - load_all_done_items_for_summary
-  - ask_stakeholder_for_accept_or_return
+  - perform_fresh_context_holistic_plan_review
+  - if_review_findings_create_return_items_before_stakeholder_acceptance
+  - ask_stakeholder_for_accept_or_return_only_when_review_is_clean
   - if_return_collect_blocking_findings_from_stakeholder
   - emit_finalize_script_reference
   - emit_instruction_contract

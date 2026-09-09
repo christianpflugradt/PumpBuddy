@@ -57,10 +57,10 @@ item_workflow:
     - review
     - done
   mandatory_steps:
-    - plan_item
     - implement_item
+  optional_steps:
+    - plan_item
     - review_item
-  optional_steps: []
 
 quality_gates:
   fail_on:

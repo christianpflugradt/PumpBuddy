@@ -48,8 +48,19 @@ PY
 )"
 
 PLAN_PATH="agent/execution/plans/plan-item-${ITEM_ID}.yaml"
-if [ "${PLAN_REQUIRED}" = "true" ] && [ ! -f "${PLAN_PATH}" ]; then
-  echo "Missing mandatory item plan for ${ITEM_BASE}: ${PLAN_PATH}" >&2
+INDEPENDENT_REVIEW_REQUIRED="$(python3 - "${ITEM}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+data = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
+execution = data.get("execution") or {}
+print("true" if execution.get("independent_review_required", False) is True else "false")
+PY
+)"
+if [ "${INDEPENDENT_REVIEW_REQUIRED}" != "true" ]; then
+  echo "Review item is not marked for independent review: ${ITEM_BASE}" >&2
   exit 12
 fi
 PLAN_AVAILABLE="false"
@@ -64,6 +75,7 @@ OUT
 echo "ITEM=${ITEM}"
 echo "ITEM_ID=${ITEM_ID}"
 echo "PLAN_ITEM_REQUIRED=${PLAN_REQUIRED}"
+echo "INDEPENDENT_REVIEW_REQUIRED=${INDEPENDENT_REVIEW_REQUIRED}"
 echo "PLAN_ITEM_AVAILABLE=${PLAN_AVAILABLE}"
 if [ "${PLAN_AVAILABLE}" = "true" ]; then
   echo "PLAN_PATH=${PLAN_PATH}"

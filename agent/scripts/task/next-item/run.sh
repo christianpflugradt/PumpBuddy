@@ -30,10 +30,7 @@ try_delegate() {
     review-item:10)
       return 0
       ;;
-    plan-item:10|plan-item:13)
-      return 0
-      ;;
-    implement-item:10|implement-item:12)
+    implement-item:10)
       ;;
     *)
       echo "Delegated task failed: ${task_name} (exit ${status})" >&2
@@ -41,14 +38,13 @@ try_delegate() {
       ;;
   esac
 
-  if [ "${task_name}" = "plan-item" ]; then
-    echo "No next item available (priority order: review-item -> implement-item -> plan-item)." >&2
+  if [ "${task_name}" = "review-item" ]; then
+    echo "No next item available (priority order: implement-item -> required review-item)." >&2
     exit 10
   fi
 
   return 0
 }
 
-try_delegate "review-item"
 try_delegate "implement-item"
-try_delegate "plan-item"
+try_delegate "review-item"

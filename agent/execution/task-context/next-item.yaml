@@ -19,4 +19,4 @@ finalize_track_paths:
   - .
 
 instruction: |
-  Route deterministically to the next actionable item task using fixed priority: review-item first (see), then plan-item (plan), then implement-item (do). Do not duplicate selection logic; delegate to existing task run scripts and preserve their emitted output contract. If no delegated task can select work, report that no next item is available. When delegated work completes, use the delegated FINALIZE_SCRIPT from task output, not the next-item finalize script.
+  Route deterministically to the next actionable item task using fixed priority: implement-item first (do), then review-item (see) only for items that were explicitly marked for independent review. Optional plan-item is never selected automatically. Do not duplicate selection logic; delegate to existing task run scripts and preserve their emitted output contract. If no delegated task can select work, report that no next item is available. When delegated work completes, use the delegated FINALIZE_SCRIPT from task output, not the next-item finalize script.

@@ -25,10 +25,14 @@ Active execution state:
 - `agent/execution/plan.yaml`
 - `agent/execution/workflow-policy.yaml`
 - `agent/execution/workflow-state.yaml`
-- `agent/execution/open-item-XX.yaml`
-- `agent/execution/review-item-XX.yaml`
-- `agent/execution/done-item-XX.yaml`
+- `agent/execution/items/open-item-XX.yaml`
+- `agent/execution/items/review-item-XX.yaml`
+- `agent/execution/items/done-item-XX.yaml`
 - `agent/execution/plans/plan-item-XX.yaml`
+
+Normal refined items move directly from `open` to `done`. `review` is reserved
+for items explicitly marked `execution.independent_review_required=true`.
+Persisted `plan-item` files are optional implementation aids, not a routing gate.
 
 Transient artifacts:
 
@@ -77,3 +81,4 @@ This separation keeps deployability status independent from framework drift stat
 ## Change Notes
 
 - 2026-03-21: Reduced to setup focus (how), aligned with current YAML-first framework and CI split.
+- 2026-09-09: Documented optional item planning, focused-review state use, and canonical item paths.

@@ -7,13 +7,13 @@ intent:
 
 pre_conditions:
   - at_least_one_review_item_exists
-  - matching_item_plan_exists_for_selected_item
+  - selected_item_requires_independent_review
   - execution_config_available
 
 flow:
   - resolve_task_alias_to_review_item
   - select_next_review_item_deterministically
-  - resolve_matching_item_plan_path
+  - load_matching_optional_item_plan_when_present
   - load_required_context_from_task_context_config
   - load_additional_context_from_item_inputs_and_plan_context
   - avoid_manual_full_suite_quality_runs_during_review_when_finalize_will_run_deterministic_gates

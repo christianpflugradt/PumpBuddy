@@ -116,6 +116,11 @@ Current task aliases:
 - `freestyle`: `freestyle`, `free`, `12`
 - `next-item`: `next`, `13`
 
+The default execution lifecycle is `refine-plan → implement-item → holistic
+finalize-plan review → stakeholder acceptance`. `plan-item` is optional for
+complex work, and `review-item` is reserved for explicitly required focused
+reviews.
+
 ## Validation and CI
 
 There are two intentionally separate CI signals:

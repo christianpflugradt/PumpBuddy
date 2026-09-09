@@ -58,6 +58,7 @@ class ClarificationPolicy(StrictModel):
     question_format: List[str] = Field(min_length=1)
     overload_guidance: List[str] = Field(min_length=1)
     assumption_rule: List[str] = Field(min_length=1)
+    implementation_judgment: Optional[Dict[str, List[str]]] = None
 
 
 class WorkflowPolicyDoc(StrictModel):

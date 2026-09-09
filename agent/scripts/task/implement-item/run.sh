@@ -44,10 +44,6 @@ PY
 )"
 
 PLAN_PATH="agent/execution/plans/plan-item-${ITEM_ID}.yaml"
-if [ "${PLAN_REQUIRED}" = "true" ] && [ ! -f "${PLAN_PATH}" ]; then
-  echo "Missing mandatory item plan for ${ITEM_BASE}: ${PLAN_PATH}" >&2
-  exit 12
-fi
 PLAN_AVAILABLE="false"
 if [ -f "${PLAN_PATH}" ]; then
   PLAN_AVAILABLE="true"

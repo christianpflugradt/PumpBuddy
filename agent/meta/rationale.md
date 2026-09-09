@@ -33,6 +33,21 @@ This means:
 
 Agents should focus on non-deterministic work (reasoning, implementation choices, review judgment), while deterministic mechanics are automated.
 
+### Implementation Judgment and Escalation
+
+Implementation is not blind ticket transcription. Before changing code, an agent
+uses repository evidence to understand the intended outcome, closest precedent,
+and product, UX, domain, and architecture fit. It acts autonomously for
+low-impact, reversible, repository-consistent choices that preserve scope and
+semantics. It consults the stakeholder for materially different behavior,
+unspecified business rules, conflicts with established patterns, or evidence
+that undermines a prior decision. It blocks when safe implementation requires
+missing semantics, an unavailable contract, or would violate a known invariant.
+
+Finding a better approach does not authorize scope expansion. Changes to product
+behavior, domain semantics, API, persistence, or lifecycle rules remain
+stakeholder decisions.
+
 ## Principle 2: Token Efficiency as End-to-End Metric
 
 Token efficiency is not “minimum context per prompt.”
@@ -143,6 +158,15 @@ This allows independent status signals for:
 
 - software deployability (backend/renderer quality)
 - framework integrity (contracts, scripts, task definitions)
+
+## Experimental Delivery Lifecycle
+
+Plan-level discussion and refinement remain deliberate. After refinement,
+ordinary items are implemented directly; persisted item plans are optional for
+complex work. Focused independent review is opt-in for high-risk work, while a
+fresh-context holistic review checks cross-item coherence before the explicit
+stakeholder acceptance gate. Finalization, commit, push, and quality mechanics
+remain deterministic and scripted.
 
 ## What Should Change vs Stay Stable
 

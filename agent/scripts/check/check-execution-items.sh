@@ -92,6 +92,12 @@ for p in files:
             f"status mismatch in {p.as_posix()}: filename status '{status}' != item.status_hint '{doc.item.status_hint}'"
         )
 
+    if status == "done" and doc.execution.independent_review_required:
+        if doc.review_result is None or doc.review_result.outcome != "accept":
+            errors.append(
+                f"independent review required before done state: {p.as_posix()} must contain review_result.outcome=accept"
+            )
+
 for numeric, statuses in sorted(seen_numeric.items()):
     if len(statuses) > 1:
         errors.append(f"conflicting item states for item id {numeric}: {sorted(statuses)}")

@@ -80,7 +80,7 @@ Boundaries:
 ### `plan-item`
 
 Intent:
-- prepare implementation plan for selected open item
+- optionally prepare a persisted implementation plan for a selected complex open item
 
 Boundaries:
 - does not change item scope/acceptance criteria
@@ -89,15 +89,19 @@ Boundaries:
 ### `implement-item`
 
 Intent:
-- implement selected open item and prepare review transition
+- implement selected open item with repository-informed judgment
+- complete directly unless focused independent review is explicitly required
 
 Boundaries:
-- item remains source of truth for scope
+- item remains source of truth for outcome, scope, acceptance, and explicit stakeholder decisions
+- inspect repository precedent and consult or block for material decisions rather than blindly transcribing incidental details
+- discovering a better approach does not authorize a product, domain, contract, persistence, or lifecycle change without consultation
 - no implicit framework/strategy rewrites
 
 ### `review-item`
 
 Intent:
+- perform an independent focused review only when explicitly required or requested
 - decide accept (`review -> done`) or return (`review -> open`) with findings
 
 Boundaries:
@@ -107,7 +111,7 @@ Boundaries:
 ### `finalize-plan`
 
 Intent:
-- run stakeholder acceptance gate at plan level
+- perform a fresh-context holistic plan review, then run the stakeholder acceptance gate only when clean
 - either archive accepted cycle or generate return items
 
 Boundaries:
@@ -147,8 +151,8 @@ Intent:
 - reuse existing core task selection logic without duplicating it
 
 Boundaries:
-- priority is fixed: `review-item` (`see`) -> `implement-item` (`do`) -> `plan-item` (`plan`)
-- `next-item` falls back to `plan-item` when `implement-item` is blocked by missing mandatory item-plan context
+- priority is fixed: `implement-item` (`do`) -> required `review-item` (`see`)
+- `plan-item` is an explicit optional tool and is never routed automatically
 - does not define its own item-selection or finalize semantics
 - delegates to selected core task contract/output unchanged
 
@@ -161,6 +165,8 @@ Boundaries:
 - minimal overlap with existing tasks
 
 ## Change Notes
+
+- 2026-09-09: Experimental lifecycle simplification: item plans and independent item reviews are optional; implementation owns discovery and judgment; finalize-plan begins with a holistic fresh-context review.
 
 - 2026-03-21: Reduced to task catalog focus (what), aligned with current YAML/script runtime model.
 - 2026-04-20: Added `freestyle` task for stakeholder-directed work outside the core plan-item cycle.

@@ -96,7 +96,20 @@ Checks:
 - script contract paths exist (dispatcher, task script, finalize script, context config)
 - task name in task-spec and task-context matches
 
-### 6) Commit Message Policy
+### 6) Experimental Execution Lifecycle
+
+Validate with the task run scripts on a disposable framework fixture whenever routing or transition code changes:
+
+- a refined normal item selects `implement-item` without an item plan and finalizes `open -> done`
+- an optional `plan-item` can be created and is loaded by implementation when present
+- an item marked `execution.independent_review_required=true` finalizes `open -> review` and can return through `review-item`
+- execution-item invariants reject a `done` item marked for independent review without an accepted review result
+- `next-item` selects open implementation work before required focused reviews and never auto-routes to `plan-item`
+- a completed plan enters `finalize-plan`, where a fresh-context holistic review can create return work before stakeholder acceptance
+
+Implementation judgment and stakeholder consultation are instruction contracts reviewed through `implement-item` context/spec validation: low-impact repository-consistent choices proceed; material behavior/domain/UX decisions consult; contradictory or unsafe requirements block.
+
+### 7) Commit Message Policy
 
 Entrypoint:
 

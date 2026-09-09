@@ -12,9 +12,9 @@ pre_conditions:
 
 flow:
   - resolve_task_alias_to_next-item
-  - attempt_review-item_selection_first
-  - if_no_review_item_attempt_plan-item_selection_second
-  - if_no_plan_item_attempt_implement-item_selection_third
+  - attempt_implement-item_selection_first
+  - if_no_open_item_attempt_required_review-item_selection
+  - never_auto_route_to_optional_plan-item
   - emit_delegated_task_output_contract_without_modification
 
 post_conditions:

@@ -3,20 +3,20 @@ task: implement-item
 source_of_truth: task_spec
 
 intent:
-  outcome: implement_selected_open_item_and_transition_it_to_review
+  outcome: implement_selected_open_item_with_evidence_based_judgment
 
 pre_conditions:
   - at_least_one_open_item_exists
-  - matching_item_plan_exists_for_selected_item
   - execution_config_available
   - commit_message_file_can_be_written
 
 flow:
   - resolve_task_alias_to_implement_item
   - select_next_open_item_deterministically
-  - resolve_matching_item_plan_path
+  - load_matching_optional_item_plan_when_present
   - load_required_context_from_task_context_config
-  - load_item_and_item_plan
+  - perform_pre_implementation_discovery_and_sanity_check
+  - load_item_and_optional_item_plan
   - load_additional_context_from_item_inputs_and_plan_context
   - emit_finalize_script_reference
   - emit_instruction_contract
@@ -29,7 +29,7 @@ post_conditions:
 
 clarification_policy:
   required_when:
-    - item_and_plan_conflict_on_scope_or_acceptance
+    - material_decision_is_unspecified_or_new_evidence_undermines_an_earlier_assumption
     - required_inputs_are_missing_for_safe_implementation
     - implementation_choice_has_multiple_high_impact_interpretations
   should_not_ask_when:
@@ -39,7 +39,7 @@ clarification_policy:
     - ask_only_blocking_questions_with_why_risk_default_decision_structure
   overload_guidance:
     - if_many_blockers_exist_stop_and_request_item_or_plan_clarification_before_coding
-  default_if_not_blocking: proceed_with_explicit_assumptions
+  default_if_not_blocking: proceed_with_low_impact_repository_consistent_judgment
 
 finalize_behavior:
   config_path: agent/execution/execution-config.yaml
@@ -52,7 +52,7 @@ finalize_behavior:
     - emit_would_do_messages
   non_dry_run:
     - validate_commit_message_file
-    - move_open_item_to_review_item
+    - move_open_item_to_done_unless_independent_review_is_required
     - stage_changes
     - commit_when_commit_enabled
     - push_when_push_enabled
