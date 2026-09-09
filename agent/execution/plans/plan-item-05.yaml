@@ -1,0 +1,82 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Cover Gym lifecycle regression matrix
+summary:
+  goal: Add focused boundary regression coverage for the complete lifecycle-aware
+    Gym Configurator slice.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-05.yaml
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/tests/api_workouts.rs
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/src/test_support/postgres.rs
+  - backend/tests/api_auth.rs
+  - backend/tests/api_integration.rs
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-controller.test.ts
+implementation_approach:
+- 'Add PostgreSQL-backed Gym persistence coverage using the existing Testcontainers
+  fixture and serialization lock: list and detail reads retain status, creation explicitly
+  stores `new`, and existing lifecycle-aware fixtures are asserted as `active` where
+  applicable.'
+- Exercise trimmed, case-normalized name uniqueness for create and rename, including
+  a duplicate conflict for one user and acceptance of the same normalized name for
+  another user; assert database conflict translation without adding schema or migration
+  setup.
+- 'Cover every allowed name-only rename across `new`, `active`, and `inactive`, and
+  assert ordinary update paths cannot carry or alter status.'
+- Cover Draft deletion success and active or inactive deletion conflict at persistence
+  and authenticated API boundaries, so server rejection remains proven even when a
+  renderer control is hidden.
+- 'Add authenticated route tests that verify POST, PATCH, DELETE, list, and detail
+  responses use `new`, `active`, and `inactive` transport values; assert 400 validation,
+  409 duplicate or forbidden-delete handling, 404 foreign-owned IDs, and 401 unauthenticated
+  requests.'
+- Keep fixture inserts scoped to the existing test database reset contract and use
+  them only to establish rows required by a test; do not add migration, seed, upgrade,
+  or live-database behavior coverage.
+- 'Add Configurator Gym list tests for name-plus-status-only rows, `new` rendered
+  as Draft, inactive styling, empty/loading/error states, and create or existing-destination
+  navigation without Station or workout metadata.'
+- Add Gym editor tests for trimmed names, immediate non-blank and normalized duplicate
+  feedback, create and rename request payloads, request failure feedback, Draft-only
+  delete affordance, and active or inactive rename confirmation before submission.
+- Add controller and app-root workflow tests for authenticated list loading, opening
+  visible Gym IDs, create or edit success updating and refreshing the Configurator
+  list, deletion returning to the list, and Configurator-mode back behavior.
+- Keep assertions behavioral and deterministic, extending existing focused component
+  and route suites instead of adding broad browser simulation.
+risks_and_assumptions:
+- 'Assumption: items 01 through 04 are implemented before this regression item, exposing
+  the lifecycle-aware Gym persistence, API, navigation, and editor behavior under
+  test.'
+- 'Risk: transport and UI vocabulary can be mixed; assert `new` only in database and
+  API tests, and Draft only in renderer-facing assertions.'
+- 'Risk: UI-only deletion tests could mask a server authorization regression; retain
+  direct authenticated API coverage for active and inactive deletion rejection and
+  foreign ownership.'
+- 'Risk: broad fixture changes can make unrelated test failures opaque; use isolated
+  IDs and the existing per-test Testcontainers reset rather than modifying shared
+  seed data.'
+validation_plan:
+- make check-backend
+- make check-renderer
+- make check
+out_of_scope:
+- Lifecycle transitions, status mutation, Station management, workout eligibility,
+  bulk actions, and database migration behavior.
+- New end-to-end infrastructure or broad brittle browser simulations.
+- Database schema, seed, initialization, upgrade, and live-instance changes.
+handoff_notes:
+- Prioritize backend boundary assertions for authorization and lifecycle permissions;
+  renderer tests complement but do not replace them.
+- Keep the external stakeholder-managed database prerequisite outside test setup and
+  documentation work.
