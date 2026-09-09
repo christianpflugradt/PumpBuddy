@@ -43,4 +43,14 @@ describe("pb-configurator-gym-editor-screen", () => {
     (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed" });
   });
+
+  it("does not warn or save for a case-only historical name edit", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState("active");
+    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.value = "ALPHA"; input.dispatchEvent(new Event("input", { bubbles: true }));
+    const saveButton = el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(true);
+    expect(el.textContent).not.toContain("historical workouts");
+  });
 });

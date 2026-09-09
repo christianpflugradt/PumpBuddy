@@ -23,6 +23,7 @@ type DeleteDetail = {
 };
 
 const escapeHtml = (value: string): string => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+const normalizeName = (value: string): string => value.trim().toLocaleLowerCase("en-US");
 
 class PbConfiguratorGymEditorScreenElement extends HTMLElement {
   #state: ConfiguratorGymEditorScreenState = { mode: "create", gyms: [], detail: null, isLoading: false, errorMessage: null };
@@ -50,10 +51,10 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     const name = this.#nameDraft.trim();
     if (!name) return "Name is required.";
     const currentId = this.#state.detail?.id;
-    return this.#state.gyms.some((gym) => gym.id !== currentId && gym.name.trim().toLocaleLowerCase("en-US") === name.toLocaleLowerCase("en-US")) ? "Name must be unique." : null;
+    return this.#state.gyms.some((gym) => gym.id !== currentId && normalizeName(gym.name) === normalizeName(name)) ? "Name must be unique." : null;
   }
   #isHistorical(): boolean { return this.#state.detail?.status === "active" || this.#state.detail?.status === "inactive"; }
-  #hasChanges(): boolean { return this.#state.mode === "create" || this.#nameDraft.trim() !== this.#state.detail?.name.trim(); }
+  #hasChanges(): boolean { return this.#state.mode === "create" || normalizeName(this.#nameDraft) !== normalizeName(this.#state.detail?.name ?? ""); }
   #emit(action: string): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action } })); }
   #onInput = (event: Event): void => {
     const input = event.target;
