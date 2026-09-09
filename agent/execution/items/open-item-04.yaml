@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-064-item-04
+  title: Build the lifecycle-aware Station editor
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A shared Configurator Station create/detail editor enforces the allowed
+    lifecycle-specific actions.
+  rationale: Users need a dedicated, consistent surface to author a draft Station
+    and safely correct established Station names.
+scope:
+  in:
+  - Create a shared Station editor reachable from Configurator Gym detail for draft
+    creation and Station detail editing.
+  - 'Support name and Load Profile editing plus deletion for `new` Stations.'
+  - 'Render name-only editing for `active` and `inactive` Stations, with their immutable
+    Gym, Load Profile, and status displayed read-only.'
+  - Surface client-side trimmed-name validation and backend validation failures using
+    established Configurator form feedback.
+  out:
+  - A Gym selector, lifecycle transition controls, Station moves, or exercise compatibility
+    editing.
+  - Replacement of the existing workout-facing Station detail screen.
+constraints:
+- Reuse Configurator form styling, headers, navigation, confirmation, and destructive-action
+  patterns.
+- Hard delete must be unavailable for active and inactive Stations.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/openapi-contract.ts
+  optional:
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: 'Draft Station creation, name and Load Profile edits, and hard deletion
+    are available only while the Station is `new`.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior checks pass.
+- id: ac-02
+  statement: Active and inactive Station views permit only rename and present all
+    prohibited changes as read-only or unavailable.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The active plan fully specifies editability by lifecycle
+    state.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator Station renderer editor
+  - renderer form and navigation behavior
+handoff:
+  review_focus:
+  - Verify UI affordances cannot imply an unsupported immutable-field change.
+  - Verify delete confirmation and errors follow existing Configurator conventions.
+review_feedback: []
+review_result: null

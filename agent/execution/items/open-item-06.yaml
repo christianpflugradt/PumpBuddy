@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-064-item-06
+  title: Add Station management regression coverage
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Focused backend and renderer regression coverage protects the completed
+    Configurator Station-management workflow.
+  rationale: The lifecycle, ownership, validation, and picker rules cross several
+    boundaries and need durable behavioral evidence.
+scope:
+  in:
+  - Add focused persistence/API coverage for ownership, Gym context, trimmed names,
+    uniqueness, lifecycle locks, deletion, and Load Profile eligibility.
+  - Add focused renderer coverage for the nested Station section, editor action availability,
+    and searchable picker behavior.
+  - Exercise the critical Configurator Station workflow with repository-convention
+    UI smoke coverage where it materially increases confidence.
+  out:
+  - Broad end-to-end suite expansion or unrelated workout regression rewrites.
+  - Additional product behavior beyond the active Station-management plan.
+constraints:
+- Prefer focused, behavior-oriented tests over brittle implementation-detail assertions.
+- Preserve testcontainers-backed persistence confidence for backend database behavior.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/tests/api_workouts.rs
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  optional:
+  - renderer/e2e
+acceptance_criteria:
+- id: ac-01
+  statement: Focused backend tests demonstrate user isolation, Gym context enforcement,
+    trimmed-name validation, lifecycle mutation locks, and inactive-profile rules.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality and integration checks pass.
+- id: ac-02
+  statement: Focused renderer tests demonstrate nested Station management, lifecycle-specific
+    editor actions, and picker search and eligibility behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality and UI smoke checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The planned implementation items already define the target
+    behavior and repository test conventions.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend regression tests
+  - renderer regression tests
+handoff:
+  review_focus:
+  - Ensure failures would distinguish lifecycle, ownership, validation, and picker
+    regressions.
+  - Avoid duplicating assertions already covered by narrower implementation-item tests
+    without added boundary confidence.
+review_feedback: []
+review_result: null

@@ -1,0 +1,82 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-064-item-02
+  title: Expose Configurator Station management API
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Gym route family provides user-scoped Configurator Station reads and
+    lifecycle-constrained create, update, and delete operations.
+  rationale: The Configurator needs a minimal management boundary without altering
+    established workout Station routes.
+scope:
+  in:
+  - Define Configurator-specific Station request and response schemas in the canonical
+    OpenAPI contract and regenerate client models.
+  - Implement authenticated Gym-context Station management handlers, application rules,
+    and repository operations.
+  - Trim names before validation, reject blank names, preserve raw within-Gym/user
+    uniqueness behavior, and enforce owner and Gym context on every read and write.
+  - 'Allow name and Load Profile edits plus hard deletion only for `new` Stations;
+    allow name-only edits for `active` and `inactive` Stations.'
+  out:
+  - Changes to existing workout-facing Gym or Station detail endpoints and payloads.
+  - Station moves between Gyms, status transitions, bulk operations, or compatibility
+    configuration.
+constraints:
+- Keep the OpenAPI contract and API surface synchronized and use Configurator-specific
+  projections.
+- Reject inactive Load Profiles for new Station assignment while allowing a historical
+  inactive assignment to be returned.
+- Keep backend business rules in application code and SQL access in the persistence
+  layer.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/mod.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/api/router.rs
+  optional:
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Authenticated management endpoints are owner- and Gym-scoped and return
+    only Configurator Station data needed for name, Load Profile, and lifecycle display.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend API and integration checks pass.
+- id: ac-02
+  statement: Create, update, delete, validation, lifecycle lock, and inactive Load
+    Profile rules are covered by focused backend tests.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Focused behavior tests pass with the backend quality suite.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan specifies the operations, ownership boundary, and
+    lifecycle behavior.
+  independent_review_required: true
+  independent_review_reason: The item adds authenticated write endpoints and lifecycle-dependent
+    destructive behavior.
+  risk_level: high
+  boundary_impact:
+  - OpenAPI contract
+  - authenticated backend API
+  - application and persistence layers
+handoff:
+  review_focus:
+  - Check every query binds both authenticated user and Gym identifiers.
+  - Check active or inactive Stations cannot change Gym, Load Profile, or status and
+    cannot be hard-deleted.
+  - Check existing workout-facing Station contracts remain untouched.
+review_feedback: []
+review_result: null

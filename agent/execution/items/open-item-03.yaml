@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-064-item-03
+  title: Show Stations in Configurator Gym detail
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator Gym detail presents a compact nested Station section with
+    create and detail navigation.
+  rationale: Station management should be contextual to its Gym and should not create
+    a top-level Configurator destination.
+scope:
+  in:
+  - Extend the Configurator Gym detail screen with a compact Station list showing
+    Station name, assigned Load Profile, and lifecycle badge.
+  - Add actions that open the shared Station create and detail editor flows in the
+    current Gym context.
+  - Use the existing Configurator headers, navigation, actions, lifecycle badges,
+    and responsive layout conventions.
+  out:
+  - A top-level Configurator Station section or a Gym selector.
+  - Station exercise lists, compatibility data, ordering controls, or workout UI changes.
+constraints:
+- Load only the minimal Configurator Station projection rather than workout transparency
+  data.
+- Keep the nested section usable on mobile widths.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/openapi-contract.ts
+  optional:
+  - renderer/src/pb-gym-detail-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: A Configurator Gym detail view renders compact Station rows with name,
+    Load Profile, lifecycle information, and navigation to create or edit a contextual
+    Station.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer type, unit, and UI smoke checks pass.
+- id: ac-02
+  statement: The view omits compatibility and workout information and does not offer
+    a Gym selector or top-level Station navigation.
+  verification:
+    type: manual
+    command: 'Review the Configurator Gym detail screen against `agent/execution/plan.yaml`.'
+    expected: Only the scoped nested management flow is present.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan defines the contextual entry point and display fields.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator Gym renderer screen
+  - renderer navigation
+handoff:
+  review_focus:
+  - Verify the Station section remains compact and mobile-friendly.
+  - Verify navigation preserves the Gym context without leaking workout-facing fields.
+review_feedback: []
+review_result: null

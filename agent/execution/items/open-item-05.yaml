@@ -1,0 +1,67 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-064-item-05
+  title: Add the Station Load Profile picker
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Station editor has a searchable, scrollable Load Profile picker that
+    applies lifecycle eligibility correctly.
+  rationale: A compact selector is insufficient as users accumulate Load Profiles,
+    and profile lifecycle must not permit new inactive assignments.
+scope:
+  in:
+  - Implement a mobile-friendly searchable and scrollable overlay picker using established
+    sheet or overlay mechanics.
+  - 'Offer only `new` and `active` Load Profiles for a new Station assignment or draft
+    reassignment.'
+  - Continue displaying an inactive Load Profile retained by a historical Station
+    without allowing it as a new selection.
+  out:
+  - Load Profile lifecycle management or definition editing.
+  - Changes to workout load selection behavior.
+constraints:
+- Reuse existing overlay interaction, accessibility, and mobile layout conventions.
+- The picker must remain responsive and usable with a long profile list.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/openapi-contract.ts
+  optional:
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The picker supports search and scrolling and selects only new or active
+    profiles for a draft Station.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior checks pass.
+- id: ac-02
+  statement: An inactive profile assigned to an established Station remains visible
+    in Station detail but is absent from choices for a new assignment.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan specifies the eligible statuses and required interaction
+    behavior.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator Station renderer editor
+  - renderer overlay interactions
+handoff:
+  review_focus:
+  - Test filtered and empty search states on a narrow viewport.
+  - Verify inactive-profile retention is display-only, never a selectable new assignment.
+review_feedback: []
+review_result: null
