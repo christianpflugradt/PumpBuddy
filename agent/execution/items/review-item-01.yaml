@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-01
   title: Add lifecycle-aware Gym core
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -15,11 +15,11 @@ intent:
     rules.
 scope:
   in:
-  - 'Add `new`, `active`, and `inactive` status to Gym domain/list/detail projections
-    and persistence queries.'
-  - 'Add user-scoped persistence and application operations to create a Gym explicitly
+  - Add `new`, `active`, and `inactive` status to Gym domain/list/detail projections
+    and persistence queries.
+  - Add user-scoped persistence and application operations to create a Gym explicitly
     as `new`, retrieve it, rename it in every status, and delete it only while stored
-    status is `new`.'
+    status is `new`.
   - Validate Gym names server-side as trimmed, non-blank, and case-normalized unique
     within one user; map duplicate and forbidden-delete outcomes to existing persistence/application
     error conventions.
@@ -34,8 +34,8 @@ constraints:
 - 'Database state is an external stakeholder-managed prerequisite: it already provides
   Gym status, treats pre-existing Gyms as `active`, and permits explicitly persisted
   `new` values for Configurator-created Gyms.'
-- 'Use `new` only as the persisted/API status; use Draft only in user-facing or domain-facing
-  wording.'
+- Use `new` only as the persisted/API status; use Draft only in user-facing or domain-facing
+  wording.
 - Keep business rules in the application/persistence boundary and retain SQLx with
   explicit user scoping.
 inputs:
@@ -53,8 +53,8 @@ inputs:
   - backend/src/persistence/load_profiles.rs
 acceptance_criteria:
 - id: ac-01
-  statement: 'Gym reads return one of `new`, `active`, or `inactive`, and Configurator
-    creation explicitly writes `new` rather than relying on a database default.'
+  statement: Gym reads return one of `new`, `active`, or `inactive`, and Configurator
+    creation explicitly writes `new` rather than relying on a database default.
   verification:
     type: command
     command: make check-backend

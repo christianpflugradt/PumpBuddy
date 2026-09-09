@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '01'
-  item_path: agent/execution/items/open-item-01.yaml
+  item_path: agent/execution/items/review-item-01.yaml
   title: Add lifecycle-aware Gym core
 summary:
   goal: Extend the Gym domain, application service, and SQLx repository with user-scoped
@@ -22,14 +22,14 @@ context:
   - backend/src/application/load_profiles.rs
   - backend/src/persistence/load_profiles.rs
 implementation_approach:
-- 'Add Gym status to the domain list and detail projections, plus create and name-only
-  update command types; keep `new`, `active`, and `inactive` as stored/API values.'
+- Add Gym status to the domain list and detail projections, plus create and name-only
+  update command types; keep `new`, `active`, and `inactive` as stored/API values.
 - Extend GymRepository and DomainRepository delegation with user-scoped create, normalized-name
   existence, rename, and delete operations, preserving favorite-first list ordering
   and existing workout transparency reads.
-- 'Update Gym SQLx queries to select status; insert created Gyms with status `new`
+- Update Gym SQLx queries to select status; insert created Gyms with status `new`
   explicitly; scope every lookup and mutation by user ID; and map duplicate-key persistence
-  failures to the existing conflict convention.'
+  failures to the existing conflict convention.
 - Implement application-level trim and non-blank validation, case-normalized per-user
   duplicate checks for create and rename, explicit conflict/not-found mapping, and
   name-only updates that never accept or change status.
@@ -54,7 +54,7 @@ out_of_scope:
 - Gym lifecycle transitions, status mutation, Equipment Station behavior, and API
   or Configurator work assigned to later items.
 handoff_notes:
-- 'Use Draft only in domain-facing or product-facing wording; reserve `new` for persisted
-  and API values.'
+- Use Draft only in domain-facing or product-facing wording; reserve `new` for persisted
+  and API values.
 - Do not add a status field to the ordinary Gym update command or any path that transitions
   lifecycle status.

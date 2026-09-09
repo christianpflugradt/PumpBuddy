@@ -30,8 +30,19 @@ pub struct TrainingPlanSummary {
 pub struct GymSummary {
     pub id: String,
     pub name: String,
+    pub status: String,
     pub station_count: i64,
     pub last_visited_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewGym {
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymUpdate {
+    pub name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,6 +92,7 @@ pub struct LoadProfileUpdate {
 pub struct GymDetail {
     pub id: String,
     pub name: String,
+    pub status: String,
     pub station_count: i64,
     pub last_visited_at: Option<String>,
     pub stations: Vec<GymStationSummary>,

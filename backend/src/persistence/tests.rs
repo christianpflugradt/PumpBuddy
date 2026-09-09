@@ -106,6 +106,7 @@ impl FakeRepository {
         Ok(vec![GymSummary {
             id: "00000000-0000-0000-0000-000000000101".to_owned(),
             name: "Countryside".to_owned(),
+            status: "active".to_owned(),
             station_count: 2,
             last_visited_at: None,
         }])

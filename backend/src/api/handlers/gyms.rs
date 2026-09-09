@@ -34,8 +34,10 @@ fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
 
 fn map_gym_service_error(error: GymServiceError) -> ApiError {
     match error {
+        GymServiceError::Conflict(message) => ApiError::Conflict(message),
         GymServiceError::NotFound(message) => ApiError::NotFound(message),
         GymServiceError::Persistence(_) => ApiError::Internal,
+        GymServiceError::Validation(message) => ApiError::Validation(message),
     }
 }
 

@@ -1,8 +1,8 @@
 use crate::domain::{
     CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
-    GymStationDetail, GymSummary, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate,
-    NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
-    WorkoutHistorySummary,
+    GymStationDetail, GymSummary, GymUpdate, LoadProfileDetail, LoadProfileSummary,
+    LoadProfileUpdate, NewGym, NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary,
+    Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -356,6 +356,7 @@ pub(crate) trait TrainingPlanRepository {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) trait GymRepository {
     async fn fetch_gym_summaries_for_user_with_favorite(
         &self,
@@ -368,6 +369,32 @@ pub(crate) trait GymRepository {
         gym_id: &str,
         user_id: &str,
     ) -> Result<Option<GymDetail>, PersistenceError>;
+
+    async fn gym_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError>;
+
+    async fn create_gym_for_user(
+        &self,
+        user_id: &str,
+        new_gym: &NewGym,
+    ) -> Result<GymSummary, PersistenceError>;
+
+    async fn update_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        update: &GymUpdate,
+    ) -> Result<GymSummary, PersistenceError>;
+
+    async fn delete_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
 
     async fn fetch_gym_station_detail_for_user(
         &self,
@@ -815,6 +842,40 @@ impl GymRepository for DomainRepository {
         DomainRepository::fetch_gym_detail_for_user(self, gym_id, user_id).await
     }
 
+    async fn gym_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        DomainRepository::gym_name_exists_for_user(self, user_id, name, excluding_id).await
+    }
+
+    async fn create_gym_for_user(
+        &self,
+        user_id: &str,
+        new_gym: &NewGym,
+    ) -> Result<GymSummary, PersistenceError> {
+        DomainRepository::create_gym_for_user(self, user_id, new_gym).await
+    }
+
+    async fn update_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        update: &GymUpdate,
+    ) -> Result<GymSummary, PersistenceError> {
+        DomainRepository::update_gym_for_user(self, gym_id, user_id, update).await
+    }
+
+    async fn delete_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::delete_gym_for_user(self, gym_id, user_id).await
+    }
+
     async fn fetch_gym_station_detail_for_user(
         &self,
         gym_id: &str,
@@ -1111,6 +1172,40 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<GymDetail>, PersistenceError> {
         gyms::fetch_gym_detail_for_user(self, gym_id, user_id).await
+    }
+
+    pub async fn gym_name_exists_for_user(
+        &self,
+        user_id: &str,
+        name: &str,
+        excluding_id: Option<&str>,
+    ) -> Result<bool, PersistenceError> {
+        gyms::gym_name_exists_for_user(self, user_id, name, excluding_id).await
+    }
+
+    pub async fn create_gym_for_user(
+        &self,
+        user_id: &str,
+        new_gym: &NewGym,
+    ) -> Result<GymSummary, PersistenceError> {
+        gyms::create_gym_for_user(self, user_id, new_gym).await
+    }
+
+    pub async fn update_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+        update: &GymUpdate,
+    ) -> Result<GymSummary, PersistenceError> {
+        gyms::update_gym_for_user(self, gym_id, user_id, update).await
+    }
+
+    pub async fn delete_gym_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        gyms::delete_gym_for_user(self, gym_id, user_id).await
     }
 
     pub async fn fetch_gym_station_detail_for_user(
