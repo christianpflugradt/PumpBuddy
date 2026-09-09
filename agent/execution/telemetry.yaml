@@ -3,11 +3,11 @@ source_of_truth: execution_telemetry
 plan_id: pb-063
 summary:
   started_at: '2026-09-08T19:03:10Z'
-  last_updated_at: '2026-09-09T12:56:32Z'
+  last_updated_at: '2026-09-09T13:02:50Z'
   duration_seconds: 1631
   task_runs_total: 14
   items_total: 5
-  items_done: 1
+  items_done: 2
   items_returned_at_least_once: 2
   rework_cycles_total: 3
   rework_cycles_avg_per_item: 0.6
@@ -272,3 +272,9 @@ details:
     task: implement-item
     event_type: task_run_finished
     item_id: '02'
+  - at: '2026-09-09T13:02:50Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '02'
+    outcome: accept
+    findings_count: 0
