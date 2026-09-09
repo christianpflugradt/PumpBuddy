@@ -31,6 +31,20 @@ describe("pb-configurator-gym-editor-screen", () => {
     expect(el.querySelector('[data-ui-action="delete-gym"]')).toBeNull();
   });
 
+  it("keeps the editor open and presents request failures", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState();
+    el.addEventListener("pb-ui-action", (event) => {
+      const detail = (event as CustomEvent<{ action: string; respond?: (result: { ok: boolean; errorMessage?: string }) => void }>).detail;
+      if (detail.action === "save-configurator-gym") detail.respond?.({ ok: false, errorMessage: "Name must be unique." });
+    });
+    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.value = "Changed"; input.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Name must be unique.");
+    expect(el.querySelector('[data-field="name"]')).toBeTruthy();
+  });
+
   it("requires confirmation before renaming a historical Gym", () => {
     const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
     document.body.append(el); el.state = createState("inactive");

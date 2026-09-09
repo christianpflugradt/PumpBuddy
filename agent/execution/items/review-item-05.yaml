@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-063-item-05
   title: Cover Gym lifecycle regression matrix
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -27,7 +27,7 @@ scope:
     actions, or database migration behavior.
   - Do not replace focused boundary coverage with broad brittle end-to-end simulation.
 constraints:
-- 'Use `new` in persisted/API assertions and Draft only in UI assertions.'
+- Use `new` in persisted/API assertions and Draft only in UI assertions.
 - Backend tests must validate server rejection independently of renderer controls.
 - The external manually prepared database prerequisite is not test setup to implement
   or document as a migration.

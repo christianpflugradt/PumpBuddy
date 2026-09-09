@@ -93,6 +93,29 @@ async fn gym_lifecycle_writes_preserve_status_and_user_scope() {
         .expect("lifecycle fixture should insert");
     }
 
+    let summaries = repository
+        .fetch_gym_summaries_for_user(DEV_USER_ID)
+        .await
+        .expect("lifecycle summaries should load");
+    assert!(summaries
+        .iter()
+        .any(|gym| gym.id == draft.id && gym.status == "new"));
+    assert!(summaries
+        .iter()
+        .any(|gym| gym.id == active_id && gym.status == "active"));
+    assert!(summaries
+        .iter()
+        .any(|gym| gym.id == inactive_id && gym.status == "inactive"));
+    assert_eq!(
+        repository
+            .fetch_gym_detail_for_user(active_id, DEV_USER_ID)
+            .await
+            .expect("active gym detail should load")
+            .expect("active gym should remain visible")
+            .status,
+        "active"
+    );
+
     for (gym_id, expected_status) in [
         (draft.id.as_str(), "new"),
         (active_id, "active"),

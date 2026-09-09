@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
+  createGym,
   createLoadProfile,
+  deleteGym,
   deleteLoadProfile,
   loadActiveWorkout,
   loadGymDetail,
@@ -17,6 +19,7 @@ import {
   loadWorkoutHistory,
   loadWorkoutProgress,
   updateLoadProfile,
+  updateGym,
 } from "./workout-api";
 import type {
   ActiveWorkoutResponse,
@@ -67,9 +70,11 @@ vi.mock("./workout-api", async () => {
     await vi.importActual<typeof import("./workout-api")>("./workout-api");
   return {
     ...actual,
+    createGym: vi.fn(),
     loadActiveWorkout: vi.fn(),
     createLoadProfile: vi.fn(),
     deleteLoadProfile: vi.fn(),
+    deleteGym: vi.fn(),
     loadGymDetail: vi.fn(),
     loadGymSummaries: vi.fn(),
     loadLoadProfileDetail: vi.fn(),
@@ -83,11 +88,14 @@ vi.mock("./workout-api", async () => {
     loadWorkoutHistory: vi.fn(),
     loadWorkoutProgress: vi.fn(),
     updateLoadProfile: vi.fn(),
+    updateGym: vi.fn(),
   };
 });
 
 const createLoadProfileMock = vi.mocked(createLoadProfile);
+const createGymMock = vi.mocked(createGym);
 const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
+const deleteGymMock = vi.mocked(deleteGym);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
@@ -104,6 +112,7 @@ const loadWorkoutExercisesPerformanceMock = vi.mocked(
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 const updateLoadProfileMock = vi.mocked(updateLoadProfile);
+const updateGymMock = vi.mocked(updateGym);
 let fetchMock: ReturnType<typeof vi.fn>;
 
 const flush = async (): Promise<void> => {
@@ -446,6 +455,8 @@ describe("workout-controller (createApp)", () => {
       station_count: 0,
     });
     deleteLoadProfileMock.mockResolvedValue();
+    createGymMock.mockResolvedValue({ id: "created-gym", name: "Created Gym", status: "new" });
+    deleteGymMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
     loadLoadProfileDetailMock.mockResolvedValue({
       id: "profile-1",
@@ -473,6 +484,7 @@ describe("workout-controller (createApp)", () => {
       weight_unit: "LBS",
       station_count: 0,
     });
+    updateGymMock.mockResolvedValue({ id: "gym-1", name: "Downtown Renamed", status: "active" });
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -744,6 +756,76 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
     dispatchActionWithDetail(app, { action: "open-configurator-gym-detail", payload: { gymId: "gym-1" } });
     expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+  });
+
+  it("saves, refreshes, and deletes Draft Gyms from the configurator", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+    loadGymSummariesMock.mockResolvedValue([
+      { id: "gym-1", name: "Downtown", status: "new" },
+    ]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-gyms");
+    await flush();
+    dispatchAction(app, "start-configurator-gym-create");
+    const createRespond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-gym",
+      payload: {
+        mode: "create",
+        gymId: null,
+        request: { name: "Created Gym" },
+      },
+      respond: createRespond,
+    });
+    await flush();
+
+    expect(createGymMock).toHaveBeenCalledWith({ name: "Created Gym" });
+    expect(createRespond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
+
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+    const updateRespond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-gym",
+      payload: {
+        mode: "edit",
+        gymId: "gym-1",
+        request: { name: "Downtown Renamed" },
+      },
+      respond: updateRespond,
+    });
+    await flush();
+
+    expect(updateGymMock).toHaveBeenCalledWith("gym-1", {
+      name: "Downtown Renamed",
+    });
+    expect(updateRespond).toHaveBeenCalledWith({ ok: true });
+
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+    const deleteRespond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "delete-configurator-gym",
+      payload: { gymId: "gym-1" },
+      respond: deleteRespond,
+    });
+    await flush();
+
+    expect(deleteGymMock).toHaveBeenCalledWith("gym-1");
+    expect(deleteRespond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
   });
 
   it("saves a draft load profile and returns to the configurator list", async () => {

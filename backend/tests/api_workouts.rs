@@ -666,6 +666,56 @@ async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
     assert_eq!(created["status"], json!("new"));
     let gym_id = created["id"].as_str().expect("created gym id").to_owned();
 
+    let inactive_id = "5f000000-0000-0000-0000-0000000000d6";
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name, status)
+         VALUES ($1::uuid, $2::uuid, $3, 'inactive')",
+    )
+    .bind(inactive_id)
+    .bind(DEV_USER_ID)
+    .bind("API Inactive Gym")
+    .execute(&pool)
+    .await
+    .expect("inactive gym fixture should insert");
+
+    let (status, gyms) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(gyms
+        .as_array()
+        .expect("gym list should be an array")
+        .iter()
+        .any(|gym| { gym["id"] == json!(gym_id) && gym["status"] == json!("new") }));
+    assert!(gyms
+        .as_array()
+        .expect("gym list should be an array")
+        .iter()
+        .any(|gym| {
+            gym["id"] == json!("50000000-0000-0000-0000-000000000001")
+                && gym["status"] == json!("active")
+        }));
+
+    let (status, inactive) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!("/api/gyms/{inactive_id}"))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(inactive["status"], json!("inactive"));
+
     let (status, _) = json_response(
         app.clone(),
         Request::builder()
@@ -676,6 +726,18 @@ async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
             .body(Body::from(
                 json!({ "name": name.to_uppercase() }).to_string(),
             ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/gyms/{inactive_id}"))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
             .expect("request should build"),
     )
     .await;
@@ -722,6 +784,18 @@ async fn gym_write_routes_enforce_authenticated_draft_lifecycle() {
             .header("cookie", cookie.clone())
             .header("content-type", "application/json")
             .body(Body::from(json!({ "name": "Foreign Gym" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/gyms/{USER_B_GYM_ID}"))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
             .expect("request should build"),
     )
     .await;

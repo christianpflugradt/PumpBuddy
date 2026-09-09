@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Cover Gym lifecycle regression matrix
 summary:
   goal: Add focused boundary regression coverage for the complete lifecycle-aware
@@ -31,21 +31,21 @@ implementation_approach:
   a duplicate conflict for one user and acceptance of the same normalized name for
   another user; assert database conflict translation without adding schema or migration
   setup.
-- 'Cover every allowed name-only rename across `new`, `active`, and `inactive`, and
-  assert ordinary update paths cannot carry or alter status.'
+- Cover every allowed name-only rename across `new`, `active`, and `inactive`, and
+  assert ordinary update paths cannot carry or alter status.
 - Cover Draft deletion success and active or inactive deletion conflict at persistence
   and authenticated API boundaries, so server rejection remains proven even when a
   renderer control is hidden.
-- 'Add authenticated route tests that verify POST, PATCH, DELETE, list, and detail
+- Add authenticated route tests that verify POST, PATCH, DELETE, list, and detail
   responses use `new`, `active`, and `inactive` transport values; assert 400 validation,
   409 duplicate or forbidden-delete handling, 404 foreign-owned IDs, and 401 unauthenticated
-  requests.'
+  requests.
 - Keep fixture inserts scoped to the existing test database reset contract and use
   them only to establish rows required by a test; do not add migration, seed, upgrade,
   or live-database behavior coverage.
-- 'Add Configurator Gym list tests for name-plus-status-only rows, `new` rendered
-  as Draft, inactive styling, empty/loading/error states, and create or existing-destination
-  navigation without Station or workout metadata.'
+- Add Configurator Gym list tests for name-plus-status-only rows, `new` rendered as
+  Draft, inactive styling, empty/loading/error states, and create or existing-destination
+  navigation without Station or workout metadata.
 - Add Gym editor tests for trimmed names, immediate non-blank and normalized duplicate
   feedback, create and rename request payloads, request failure feedback, Draft-only
   delete affordance, and active or inactive rename confirmation before submission.
