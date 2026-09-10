@@ -16,7 +16,7 @@ out_of_scope:
 success_criteria:
   - A Station detail shows all enabled compatible variants in compact rows, with an accurate count, edit affordance, and compact zero-mapping state.
   - The picker offers only user-owned Exercise Variants where requires_station is true, supports search and local multi-selection, and includes concise Exercise context when useful.
-  - Save atomically reconciles the selected set: selected mappings are enabled or created and unselected mappings are disabled; Cancel issues no persistence request.
+  - "Save atomically reconciles the selected set: selected mappings are enabled or created and unselected mappings are disabled; Cancel issues no persistence request."
   - The existing exercise_variant_equipment_compatibilities relation remains the source of truth, duplicate or cross-user mappings are rejected, and existing workout consumers continue to see only enabled mappings.
   - The Configurator interaction remains compact and usable at the 390 x 800 primary viewport, with focused backend and renderer test coverage.
 constraints:
