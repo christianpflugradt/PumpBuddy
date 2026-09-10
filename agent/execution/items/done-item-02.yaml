@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-02
   title: Expose Configurator Station management API
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -89,7 +89,7 @@ review_feedback:
     \ from profile changes/deletion.\n  risk: A regression could break inactive lifecycle\
     \ handling or historical inactive\n    Load Profile display while the current\
     \ backend check remains green.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: The only focused Configurator Station test (backend/tests/api_workouts.rs:830)
       covers draft creation/update/delete, inactive-profile rejection on create, and
@@ -99,6 +99,20 @@ review_feedback:
     risk: A regression could break inactive lifecycle handling or historical inactive
       Load Profile display while the current backend check remains green.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01: Configurator-only responses and Gym/user scoping are implemented
+      across handlers, application services, and repository queries. ac-02: Focused
+      API coverage exercises create, update, delete, validation, lifecycle locks,
+      inactive profile rejection, and historical inactive-profile display.'
+    evidence: Reviewed agent/design/api-contract.yaml, backend/src/api/handlers/gyms.rs,
+      backend/src/application/gyms.rs, backend/src/persistence/gyms.rs, backend/src/api/router.rs,
+      and backend/tests/api_workouts.rs. The focused API test covers inactive Station
+      retrieval with its inactive Load Profile, rename, profile-change rejection,
+      and deletion rejection.
+    runtime_build_check: User confirmed the full repository check passed after this
+      review. The local backend check had already shown the focused Configurator Station
+      API test passing before PostgreSQL connectivity was lost.
+    residual_risk: No remaining item-scoped concern. The database interruption observed
+      locally was environmental and independently cleared by the successful full check.
+  findings: []
