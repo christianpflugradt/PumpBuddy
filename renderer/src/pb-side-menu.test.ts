@@ -168,7 +168,7 @@ describe("pb-side-menu", () => {
     ]);
   });
 
-  it("renders configurator mode with a neutral return action, separators, and Exercise navigation", () => {
+  it("renders configurator mode with a neutral return action and no utility exit paths", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("mode", "configurator");
     el.setAttribute("active-screen", "configurator-overview");
@@ -190,9 +190,12 @@ describe("pb-side-menu", () => {
     expect(
       loadProfilesEntry?.classList.contains("side-menu-entry--main-workout"),
     ).toBe(false);
-    expect(el.querySelectorAll(".side-menu-divider")).toHaveLength(2);
+    expect(el.querySelectorAll(".side-menu-divider")).toHaveLength(1);
     expect(exercisesEntry?.dataset.uiAction).toBe("navigate-configurator-exercises");
     expect(gymsEntry?.dataset.uiAction).toBe("navigate-configurator-gyms");
+    expect(buttonByText(el, "Settings")).toBeNull();
+    expect(buttonByText(el, "About")).toBeNull();
+    expect(buttonByText(el, "Log out")).toBeNull();
     expect(middleEntryLabels(el)).toEqual([
       "Load Profiles",
       "Exercises",

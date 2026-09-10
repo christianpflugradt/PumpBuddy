@@ -188,8 +188,6 @@ const renderSideMenuList = (
           renderEntries([configuratorReturnEntry], activeScreen, "primary"),
           renderDivider(),
           renderEntries(configuratorNavigationEntries, activeScreen, "middle"),
-          renderDivider(),
-          renderEntries(utilityEntries, activeScreen, "utility"),
         ]
       : [
           renderEntries([workoutEntry], activeScreen, "primary"),
