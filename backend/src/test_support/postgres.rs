@@ -13,8 +13,8 @@ use testcontainers::{
 };
 use tokio::time::{sleep, timeout, Duration};
 
-const TEST_DB_CONNECT_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(2);
-const TEST_DB_CONNECT_TOTAL_TIMEOUT: Duration = Duration::from_secs(10);
+const TEST_DB_CONNECT_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(5);
+const TEST_DB_CONNECT_TOTAL_TIMEOUT: Duration = Duration::from_secs(30);
 const TEST_DB_CONNECT_RETRY_DELAY: Duration = Duration::from_millis(250);
 
 struct ManagedTestContainer {
@@ -25,6 +25,11 @@ struct ManagedTestContainer {
 fn testcontainer_state() -> &'static tokio::sync::Mutex<Option<ManagedTestContainer>> {
     static STATE: OnceLock<tokio::sync::Mutex<Option<ManagedTestContainer>>> = OnceLock::new();
     STATE.get_or_init(|| tokio::sync::Mutex::new(None))
+}
+
+fn test_schema_initialized() -> &'static tokio::sync::Mutex<bool> {
+    static INITIALIZED: OnceLock<tokio::sync::Mutex<bool>> = OnceLock::new();
+    INITIALIZED.get_or_init(|| tokio::sync::Mutex::new(false))
 }
 
 #[derive(Debug)]
@@ -198,9 +203,38 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
 }
 
 pub async fn reset_test_database(pool: &PgPool) {
-    // Drop tables to ensure schema changes in runtime SQL are applied cleanly when tests run.
-    sqlx::raw_sql(
-        "DROP TABLE IF EXISTS \
+    let mut initialized = test_schema_initialized().lock().await;
+
+    if *initialized {
+        sqlx::raw_sql(
+            "TRUNCATE TABLE \
+            workout_sets, \
+            workout_exercises, \
+            workouts, \
+            training_plan_exercise_variants, \
+            exercise_variant_equipment_compatibilities, \
+            exercise_variants, \
+            training_plan_exercises, \
+            training_plan_versions, \
+            equipment_stations, \
+            load_profiles, \
+            gyms, \
+            exercises, \
+            training_plans, \
+            user_preferences, \
+            auth_login_attempts, \
+            sessions, \
+            user_secrets, \
+            users \
+            RESTART IDENTITY CASCADE",
+        )
+        .execute(pool)
+        .await
+        .expect("test database reset should succeed");
+    } else {
+        // Rebuild once per test process so the runtime schema remains canonical.
+        sqlx::raw_sql(
+            "DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
         workouts, \
@@ -220,12 +254,15 @@ pub async fn reset_test_database(pool: &PgPool) {
         user_secrets, \
         users \
         CASCADE",
-    )
-    .execute(pool)
-    .await
-    .expect("test database reset should succeed");
+        )
+        .execute(pool)
+        .await
+        .expect("test database reset should succeed");
 
-    initialize_test_schema(pool).await;
+        initialize_test_schema(pool).await;
+        *initialized = true;
+    }
+
     initialize_test_seed(pool).await;
 }
 

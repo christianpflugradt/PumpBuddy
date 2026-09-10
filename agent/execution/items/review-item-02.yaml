@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-065-item-02
   title: Deliver exercise and variant configurator API
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

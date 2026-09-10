@@ -84,6 +84,10 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 }
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
+    make_auth_cookie_for_login(pool, "integration").await
+}
+
+async fn make_auth_cookie_for_login(pool: &PgPool, login: &str) -> String {
     // create a user and an access key secret, then login to obtain a session cookie
     let password = test_password();
 
@@ -93,7 +97,7 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
          RETURNING id::text AS id",
     )
     .bind("Integration Test User")
-    .bind("integration")
+    .bind(login)
     .fetch_one(pool)
     .await
     .expect("user should insert")
@@ -113,23 +117,35 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     )
     .bind(&user_id)
     .bind(secret_hash)
-    .bind("integration")
+    .bind(login)
     .fetch_one(pool)
     .await
     .expect("secret should insert")
     .get("id");
 
     let repository = DomainRepository::new(pool.clone());
-    let session = login_with_credentials(
-        &repository,
-        "integration",
-        &password,
-        Some("PumpBuddy Test"),
-    )
-    .await
-    .expect("login should succeed");
+    let session = login_with_credentials(&repository, login, &password, Some("PumpBuddy Test"))
+        .await
+        .expect("login should succeed");
 
     format!("__Host-pb_session={}", session.session_token)
+}
+
+async fn status_response(app: axum::Router, request: Request<Body>) -> StatusCode {
+    app.oneshot(request)
+        .await
+        .expect("request should succeed")
+        .status()
+}
+
+fn json_request(method: &str, uri: &str, cookie: &str, payload: Value) -> Request<Body> {
+    Request::builder()
+        .method(method)
+        .uri(uri)
+        .header("cookie", cookie)
+        .header("content-type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .expect("request should build")
 }
 
 async fn make_seed_auth_cookie(pool: &PgPool) -> String {
@@ -207,6 +223,218 @@ async fn about_metadata_returns_build_and_legal_metadata_fields() {
         .expect("build_timestamp_utc should be present");
     assert!(build_timestamp.ends_with(" UTC"));
     assert_eq!(build_timestamp.len(), "1970-01-01 00:00 UTC".len());
+}
+
+#[tokio::test]
+async fn exercise_configurator_routes_enforce_user_parent_and_lifecycle_rules() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let user_a_cookie = make_auth_cookie_for_login(&pool, "exercise-owner").await;
+    let user_b_cookie = make_auth_cookie_for_login(&pool, "exercise-foreign").await;
+
+    let (create_status, exercise) = json_response(
+        app.clone(),
+        json_request(
+            "POST",
+            "/api/exercises",
+            &user_a_cookie,
+            json!({ "name": "  Owner Exercise  " }),
+        ),
+    )
+    .await;
+    assert_eq!(create_status, StatusCode::CREATED);
+    assert_eq!(exercise["name"], json!("Owner Exercise"));
+    assert_eq!(exercise["status"], json!("new"));
+    let exercise_id = exercise["id"].as_str().expect("exercise id").to_owned();
+
+    let (variant_status, variant) = json_response(
+        app.clone(),
+        json_request(
+            "POST",
+            &format!("/api/exercises/{exercise_id}/variants"),
+            &user_a_cookie,
+            json!({
+                "name": "Draft Variant",
+                "requires_station": false,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "repetition_kind": "REPS"
+            }),
+        ),
+    )
+    .await;
+    assert_eq!(variant_status, StatusCode::CREATED);
+    let variant_id = variant["id"].as_str().expect("variant id").to_owned();
+
+    let invalid_enum_status = status_response(
+        app.clone(),
+        json_request(
+            "POST",
+            &format!("/api/exercises/{exercise_id}/variants"),
+            &user_a_cookie,
+            json!({
+                "name": "Invalid Enum",
+                "requires_station": false,
+                "load_input_mode": "INVALID",
+                "set_tracking_mode": "BILATERAL",
+                "repetition_kind": "REPS"
+            }),
+        ),
+    )
+    .await;
+    assert!(invalid_enum_status.is_client_error());
+
+    let foreign_read_status = status_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!("/api/exercises/{exercise_id}"))
+            .header("cookie", &user_b_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(foreign_read_status, StatusCode::NOT_FOUND);
+
+    let (second_exercise_status, second_exercise) = json_response(
+        app.clone(),
+        json_request(
+            "POST",
+            "/api/exercises",
+            &user_a_cookie,
+            json!({ "name": "Second Owner Exercise" }),
+        ),
+    )
+    .await;
+    assert_eq!(second_exercise_status, StatusCode::CREATED);
+    let second_exercise_id = second_exercise["id"].as_str().expect("second exercise id");
+    let cross_parent_status = status_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!(
+                "/api/exercises/{second_exercise_id}/variants/{variant_id}"
+            ))
+            .header("cookie", &user_a_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(cross_parent_status, StatusCode::NOT_FOUND);
+
+    let owner_id: String =
+        sqlx::query_scalar("SELECT user_id::text FROM exercises WHERE id = $1::uuid")
+            .bind(&exercise_id)
+            .fetch_one(&pool)
+            .await
+            .expect("exercise owner should be available");
+    let plan_id: String = sqlx::query_scalar(
+        "INSERT INTO training_plans (name, user_id)
+         VALUES ('Referenced draft exercise plan', $1::uuid)
+         RETURNING id::text",
+    )
+    .bind(&owner_id)
+    .fetch_one(&pool)
+    .await
+    .expect("training plan should insert");
+    let version_id: String = sqlx::query_scalar(
+        "INSERT INTO training_plan_versions (training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, 1, $2::uuid)
+         RETURNING id::text",
+    )
+    .bind(&plan_id)
+    .bind(&owner_id)
+    .fetch_one(&pool)
+    .await
+    .expect("training plan version should insert");
+    sqlx::query(
+        "INSERT INTO training_plan_exercises (
+             training_plan_version_id, exercise_id, user_id, position
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, 1)",
+    )
+    .bind(&version_id)
+    .bind(second_exercise_id)
+    .bind(&owner_id)
+    .execute(&pool)
+    .await
+    .expect("draft exercise reference should insert");
+    let referenced_draft_delete_status = status_response(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/exercises/{second_exercise_id}"))
+            .header("cookie", &user_a_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(referenced_draft_delete_status, StatusCode::CONFLICT);
+
+    sqlx::query("UPDATE exercise_variants SET status = 'active' WHERE id = $1::uuid")
+        .bind(&variant_id)
+        .execute(&pool)
+        .await
+        .expect("variant should become active for lifecycle coverage");
+
+    let (rename_status, renamed_variant) = json_response(
+        app.clone(),
+        json_request(
+            "PATCH",
+            &format!("/api/exercises/{exercise_id}/variants/{variant_id}"),
+            &user_a_cookie,
+            json!({ "name": "Active Variant Rename" }),
+        ),
+    )
+    .await;
+    assert_eq!(rename_status, StatusCode::OK);
+    assert_eq!(renamed_variant["name"], json!("Active Variant Rename"));
+
+    let structural_update_status = status_response(
+        app.clone(),
+        json_request(
+            "PATCH",
+            &format!("/api/exercises/{exercise_id}/variants/{variant_id}"),
+            &user_a_cookie,
+            json!({ "name": "Active Variant Rename", "requires_station": true }),
+        ),
+    )
+    .await;
+    assert_eq!(structural_update_status, StatusCode::CONFLICT);
+
+    let active_variant_delete_status = status_response(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/exercises/{exercise_id}/variants/{variant_id}"
+            ))
+            .header("cookie", &user_a_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(active_variant_delete_status, StatusCode::CONFLICT);
+
+    sqlx::query("UPDATE exercises SET status = 'active' WHERE id = $1::uuid")
+        .bind(&exercise_id)
+        .execute(&pool)
+        .await
+        .expect("exercise should become active for lifecycle coverage");
+    let active_exercise_delete_status = status_response(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/exercises/{exercise_id}"))
+            .header("cookie", &user_a_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(active_exercise_delete_status, StatusCode::CONFLICT);
 }
 
 #[tokio::test]
