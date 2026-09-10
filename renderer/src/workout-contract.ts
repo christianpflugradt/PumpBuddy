@@ -136,6 +136,27 @@ export type ConfiguratorStation = {
 export type ConfiguratorStationCreateRequest = { name: string; load_profile_id: string };
 export type ConfiguratorStationUpdateRequest = { name: string; load_profile_id?: string };
 
+export type ConfiguratorStationCompatibilityVariant = {
+  exercise_id: string;
+  exercise_name: string;
+  variant_id: string;
+  variant_name: string;
+  repetition_kind: RepetitionKind;
+  load_input_mode: LoadInputMode;
+  set_tracking_mode: SetTrackingMode;
+};
+
+export type ConfiguratorStationCompatibilityResponse = {
+  gym_id: string;
+  station_id: string;
+  enabled_variants: ConfiguratorStationCompatibilityVariant[];
+  eligible_variants: ConfiguratorStationCompatibilityVariant[];
+};
+
+export type ConfiguratorStationCompatibilitySelectionRequest = {
+  exercise_variant_ids: string[];
+};
+
 export type GymDetailResponse = {
   id: string;
   name: string;

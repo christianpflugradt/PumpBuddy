@@ -923,6 +923,82 @@ paths:
         '404': { description: Station not found }
         '409': { description: Active or inactive Station cannot be deleted }
         '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/gyms/{gymId}/configurator-stations/{stationId}/compatibilities:
+    get:
+      summary: Retrieve a Configurator Station's compatible Exercise Variant selection
+      description: |
+        Retrieves the authenticated user's enabled compatibility mappings for one
+        Station together with the complete eligible set of that user's
+        station-required Exercise Variants. Both lists include compact Exercise
+        context so the renderer can display and stage one completed selection.
+      operationId: getConfiguratorStationCompatibilities
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Station compatibility selection retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorStationCompatibilityResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Gym or Station not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    put:
+      summary: Reconcile a Configurator Station's complete compatible Exercise Variant selection
+      description: |
+        Replaces the Station's enabled compatibility selection atomically. Submitted
+        identifiers are the complete final selection: omitted existing mappings are
+        disabled, while selected mappings are enabled or created. An empty array
+        clears every enabled mapping for the Station.
+      operationId: reconcileConfiguratorStationCompatibilities
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfiguratorStationCompatibilitySelectionRequest' }
+      responses:
+        '200':
+          description: Station compatibility selection reconciled successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorStationCompatibilityResponse' }
+        '400':
+          description: Malformed request or duplicate Exercise Variant identifier
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Gym or Station not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: One or more submitted Exercise Variants are not eligible for this user's Station selection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/training-plans:
     get:
       summary: List available training plans
@@ -2187,6 +2263,52 @@ components:
         name: { type: string }
         load_profile: { $ref: '#/components/schemas/ConfiguratorStationLoadProfile' }
         status: { type: string, enum: [new, active, inactive] }
+    ConfiguratorStationCompatibilityVariant:
+      type: object
+      description: Compact station-required Exercise Variant context for compatibility selection.
+      required:
+        - exercise_id
+        - exercise_name
+        - variant_id
+        - variant_name
+        - repetition_kind
+        - load_input_mode
+        - set_tracking_mode
+      properties:
+        exercise_id: { type: string, format: uuid }
+        exercise_name: { type: string }
+        variant_id: { type: string, format: uuid }
+        variant_name: { type: string }
+        repetition_kind: { type: string, enum: [REPS, SECS] }
+        load_input_mode: { type: string, enum: [TOTAL, PER_SIDE] }
+        set_tracking_mode: { type: string, enum: [UNILATERAL, BILATERAL] }
+    ConfiguratorStationCompatibilityResponse:
+      type: object
+      description: |
+        One authenticated user's compatibility-selection state for one Station.
+        enabled_variants contains only enabled mappings; eligible_variants contains
+        every user-owned station-required Variant that may be selected.
+      required: [gym_id, station_id, enabled_variants, eligible_variants]
+      properties:
+        gym_id: { type: string, format: uuid }
+        station_id: { type: string, format: uuid }
+        enabled_variants:
+          type: array
+          items: { $ref: '#/components/schemas/ConfiguratorStationCompatibilityVariant' }
+        eligible_variants:
+          type: array
+          items: { $ref: '#/components/schemas/ConfiguratorStationCompatibilityVariant' }
+    ConfiguratorStationCompatibilitySelectionRequest:
+      type: object
+      additionalProperties: false
+      description: Complete final selection for one Station; individual picker toggles are never persisted.
+      required: [exercise_variant_ids]
+      properties:
+        exercise_variant_ids:
+          type: array
+          uniqueItems: true
+          description: Complete selected set of eligible station-required Exercise Variant identifiers. An empty array clears the selection.
+          items: { type: string, format: uuid }
     GymExerciseGroup:
       type: object
       required:

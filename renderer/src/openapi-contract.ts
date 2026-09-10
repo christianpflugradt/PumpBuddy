@@ -11,6 +11,8 @@ import { AuthUpdatePasswordRequestToJSON } from "../generated/openapi/typescript
 import { CompleteActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CompleteActiveWorkoutRequest";
 import { ConfirmActiveWorkoutSetRequestToJSON } from "../generated/openapi/typescript/models/ConfirmActiveWorkoutSetRequest";
 import { ConfiguratorStationResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorStationResponse";
+import { ConfiguratorStationCompatibilityResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCompatibilityResponse";
+import { ConfiguratorStationCompatibilitySelectionRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCompatibilitySelectionRequest";
 import { ConfiguratorStationCreateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCreateRequest";
 import { ConfiguratorStationUpdateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationUpdateRequest";
 import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } from "../generated/openapi/typescript/models/CreateWorkoutExerciseInput";
@@ -52,6 +54,8 @@ import type {
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
   ConfiguratorStation,
+  ConfiguratorStationCompatibilityResponse,
+  ConfiguratorStationCompatibilitySelectionRequest,
   ConfiguratorStationCreateRequest,
   ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
@@ -188,6 +192,15 @@ export const parseConfiguratorStations = (json: unknown): ConfiguratorStation[] 
   );
 export const parseConfiguratorStation = (json: unknown): ConfiguratorStation =>
   toRendererModel<ConfiguratorStation>(ConfiguratorStationResponseFromJSON(json));
+export const parseConfiguratorStationCompatibilityResponse = (
+  json: unknown,
+): ConfiguratorStationCompatibilityResponse =>
+  toRendererModel<ConfiguratorStationCompatibilityResponse>(
+    ConfiguratorStationCompatibilityResponseFromJSON(json),
+  );
+export const serializeConfiguratorStationCompatibilitySelectionRequest = (
+  request: ConfiguratorStationCompatibilitySelectionRequest,
+): unknown => ConfiguratorStationCompatibilitySelectionRequestToJSON(request);
 export const serializeConfiguratorStationCreateRequest = (request: ConfiguratorStationCreateRequest): unknown => ConfiguratorStationCreateRequestToJSON(request);
 export const serializeConfiguratorStationUpdateRequest = (request: ConfiguratorStationUpdateRequest): unknown => ConfiguratorStationUpdateRequestToJSON(request);
 

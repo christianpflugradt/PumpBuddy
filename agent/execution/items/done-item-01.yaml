@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-066-item-01
   title: Define Station compatibility management contract
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
