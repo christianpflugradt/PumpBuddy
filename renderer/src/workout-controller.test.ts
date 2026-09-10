@@ -6,6 +6,7 @@ import {
   deleteGym,
   deleteLoadProfile,
   loadConfiguratorStations,
+  loadConfiguratorStationCompatibilities,
   loadExerciseSummaries,
   loadActiveWorkout,
   loadGymDetail,
@@ -79,6 +80,7 @@ vi.mock("./workout-api", async () => {
     deleteGym: vi.fn(),
     loadGymDetail: vi.fn(),
     loadConfiguratorStations: vi.fn(),
+    loadConfiguratorStationCompatibilities: vi.fn(),
     loadExerciseSummaries: vi.fn(),
     loadGymSummaries: vi.fn(),
     loadLoadProfileDetail: vi.fn(),
@@ -103,6 +105,7 @@ const deleteGymMock = vi.mocked(deleteGym);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadConfiguratorStationsMock = vi.mocked(loadConfiguratorStations);
+const loadConfiguratorStationCompatibilitiesMock = vi.mocked(loadConfiguratorStationCompatibilities);
 const loadExerciseSummariesMock = vi.mocked(loadExerciseSummaries);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadLoadProfileDetailMock = vi.mocked(loadLoadProfileDetail);
@@ -465,6 +468,7 @@ describe("workout-controller (createApp)", () => {
     deleteGymMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
     loadConfiguratorStationsMock.mockResolvedValue([]);
+    loadConfiguratorStationCompatibilitiesMock.mockResolvedValue({ gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [] });
     loadExerciseSummariesMock.mockResolvedValue([]);
     loadLoadProfileDetailMock.mockResolvedValue({
       id: "profile-1",

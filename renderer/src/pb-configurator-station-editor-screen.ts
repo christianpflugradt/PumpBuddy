@@ -1,8 +1,16 @@
-import type { ConfiguratorStation, ConfiguratorStationCreateRequest, ConfiguratorStationUpdateRequest, LoadProfileSummary } from "./workout-contract";
+import type { ConfiguratorStation, ConfiguratorStationCompatibilityResponse, ConfiguratorStationCreateRequest, ConfiguratorStationUpdateRequest, LoadProfileSummary } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorStationEditorScreenTag = "pb-configurator-station-editor-screen";
-export type ConfiguratorStationEditorScreenState = { gymId: string; gymName: string | null; station: ConfiguratorStation | null; loadProfiles: LoadProfileSummary[] };
+export type ConfiguratorStationEditorScreenState = {
+  gymId: string;
+  gymName: string | null;
+  station: ConfiguratorStation | null;
+  loadProfiles: LoadProfileSummary[];
+  compatibility?: ConfiguratorStationCompatibilityResponse | null;
+  isCompatibilityLoading?: boolean;
+  compatibilityError?: string | null;
+};
 type SaveResult = { ok: boolean; errorMessage?: string };
 type SaveDetail = { action: "save-configurator-station"; payload: { gymId: string; stationId: string | null; request: ConfiguratorStationCreateRequest | ConfiguratorStationUpdateRequest }; respond: (result: SaveResult) => void };
 type DeleteDetail = { action: "delete-configurator-station"; payload: { gymId: string; stationId: string }; respond: (result: SaveResult) => void };
@@ -10,7 +18,7 @@ const escapeHtml = (value: string): string => value.replaceAll("&", "&amp;").rep
 const normalizeName = (value: string): string => value.trim().toLocaleLowerCase("en-US");
 
 class PbConfiguratorStationEditorScreenElement extends HTMLElement {
-  #state: ConfiguratorStationEditorScreenState = { gymId: "", gymName: null, station: null, loadProfiles: [] };
+  #state: ConfiguratorStationEditorScreenState = { gymId: "", gymName: null, station: null, loadProfiles: [], compatibility: null, isCompatibilityLoading: false, compatibilityError: null };
   #loadedKey: string | null = null;
   #nameDraft = "";
   #loadProfileIdDraft = "";
@@ -50,6 +58,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return; const action = target.closest<HTMLElement>("[data-ui-action]")?.dataset.uiAction; if (!action) return;
     if (action === "navigate-back-from-configurator-station-detail") { this.#emit(action); return; }
+    if (action === "open-configurator-station-compatibility-picker") { this.#emit(action); return; }
     if (action === "dismiss-historical-rename-warning") { this.#renameWarningOpen = false; this.#render(); return; }
     if (action === "open-load-profile-picker") { this.#loadProfilePickerOpen = true; this.#loadProfileSearch = ""; this.#render(); return; }
     if (action === "dismiss-load-profile-picker") { this.#loadProfilePickerOpen = false; this.#render(); return; }
@@ -75,6 +84,18 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     const matches = profiles.filter((profile) => profile.name.toLocaleLowerCase("en-US").includes(query));
     return `<div class="secs-picker-layer" role="presentation"><button type="button" class="secs-picker-backdrop" data-ui-action="dismiss-load-profile-picker" aria-label="Close Load Profile picker"></button><section class="secs-picker-sheet configurator-load-profile-picker" role="dialog" aria-modal="true" aria-labelledby="configurator-load-profile-picker-title"><header class="configurator-load-profile-picker-header"><h2 id="configurator-load-profile-picker-title" class="secs-picker-title">Choose Load Profile</h2><input class="configurator-gym-input" data-field="load-profile-search" type="search" value="${escapeHtml(this.#loadProfileSearch)}" placeholder="Search Load Profiles" aria-label="Search Load Profiles" autocomplete="off" /></header><div class="configurator-load-profile-picker-options" role="listbox" aria-label="Available Load Profiles">${matches.length === 0 ? '<p class="start-copy">No matching Load Profiles.</p>' : matches.map((profile) => `<button type="button" class="configurator-load-profile-picker-option${profile.id === this.#loadProfileIdDraft ? " configurator-load-profile-picker-option--selected" : ""}" data-ui-action="choose-load-profile" data-profile-id="${escapeHtml(profile.id)}" role="option" aria-selected="${profile.id === this.#loadProfileIdDraft ? "true" : "false"}"><span>${escapeHtml(profile.name)}</span><small>${profile.status === "new" ? "Draft" : "Active"}</small></button>`).join("")}</div></section></div>`;
   }
+  #renderCompatibilitySummary(): string {
+    const station = this.#state.station;
+    if (!station) return "";
+    if (this.#state.isCompatibilityLoading) return `<section class="configurator-station-compatibility" aria-labelledby="compatible-exercise-variants-title"><div class="configurator-station-compatibility-header"><h2 id="compatible-exercise-variants-title">Compatible Exercise Variants</h2></div><p class="start-copy" role="status">Loading compatible Exercise Variants…</p></section>`;
+    if (this.#state.compatibilityError) return `<section class="configurator-station-compatibility" aria-labelledby="compatible-exercise-variants-title"><div class="configurator-station-compatibility-header"><h2 id="compatible-exercise-variants-title">Compatible Exercise Variants</h2></div><p class="start-error" role="alert">${escapeHtml(this.#state.compatibilityError)}</p></section>`;
+    const variants = this.#state.compatibility?.enabled_variants ?? [];
+    const edit = `<button type="button" class="nav-button configurator-station-compatibility-edit" data-ui-action="open-configurator-station-compatibility-picker">Edit</button>`;
+    const content = variants.length === 0
+      ? `<p class="start-copy">No compatible Exercise Variants are enabled.</p>`
+      : `<ul class="configurator-station-compatibility-list">${variants.map((variant) => `<li><span>${escapeHtml(variant.exercise_name)}</span><small>${escapeHtml(variant.variant_name)}</small></li>`).join("")}</ul>`;
+    return `<section class="configurator-station-compatibility" aria-labelledby="compatible-exercise-variants-title"><div class="configurator-station-compatibility-header"><div><h2 id="compatible-exercise-variants-title">Compatible Exercise Variants</h2><p>${variants.length} enabled</p></div>${edit}</div>${content}</section>`;
+  }
   #render(): void {
     const station = this.#state.station; const historical = this.#isHistorical(); const profiles = this.#availableProfiles(); const nameError = this.#nameError(); const loadProfileError = !historical ? this.#loadProfileError() : null;
     const disabled = this.#isSaving || this.#isDeleting || !!nameError || !!loadProfileError || (!!station && !this.#hasChanges());
@@ -82,7 +103,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     const selectedProfile = profiles.find((profile) => profile.id === this.#loadProfileIdDraft);
     const profileField = historical ? "" : `<div class="configurator-gym-field"><span class="configurator-gym-field-label">Load Profile</span><button type="button" class="configurator-gym-input configurator-load-profile-picker-trigger" data-ui-action="open-load-profile-picker" aria-haspopup="dialog" aria-expanded="${this.#loadProfilePickerOpen ? "true" : "false"}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>${escapeHtml(selectedProfile?.name ?? "Choose a Load Profile")}</button>${loadProfileError && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(loadProfileError)}</span>` : ""}</div>`;
     const warning = this.#renameWarningOpen ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Historical rename warning"><p class="confirm-dialog-message">Renaming an active or inactive Station can affect how historical workouts are understood. Save this name change?</p><div class="confirm-dialog-actions"><button type="button" class="nav-button" data-ui-action="dismiss-historical-rename-warning">Keep Editing</button><button type="button" class="nav-button" data-ui-action="save-configurator-station">Save Name</button></div></section></div>` : "";
-    this.innerHTML = `<div class="app-screen-shell"><button type="button" class="side-menu-toggle detail-back-button" data-ui-action="navigate-back-from-configurator-station-detail" aria-label="Back"><span aria-hidden="true">←</span></button><section class="screen-panel configurator-gym-editor-screen" aria-label="Station editor"><header class="exercise-variant-detail-header configurator-app-header"><img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" /><h1 class="exercise-variant-detail-header-title">${station ? "Station" : "New Station"}</h1></header><div class="configurator-gym-editor-card"><label class="configurator-gym-field"><span class="configurator-gym-field-label">Name</span><input class="configurator-gym-input" data-field="name" value="${escapeHtml(this.#nameDraft)}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""} />${nameError && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(nameError)}</span>` : ""}</label>${profileField}${metadata}${this.#submitError ? `<p class="start-error" role="alert">${escapeHtml(this.#submitError)}</p>` : ""}<div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-configurator-station" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : station ? historical ? "Save Name" : "Save Changes" : "Create Station"}</button>${station?.status === "new" ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-configurator-station" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div></section>${warning}${this.#renderLoadProfilePicker(profiles)}</div>`;
+    this.innerHTML = `<div class="app-screen-shell"><button type="button" class="side-menu-toggle detail-back-button" data-ui-action="navigate-back-from-configurator-station-detail" aria-label="Back"><span aria-hidden="true">←</span></button><section class="screen-panel configurator-gym-editor-screen" aria-label="Station editor"><header class="exercise-variant-detail-header configurator-app-header"><img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" /><h1 class="exercise-variant-detail-header-title">${station ? "Station" : "New Station"}</h1></header><div class="configurator-gym-editor-card"><label class="configurator-gym-field"><span class="configurator-gym-field-label">Name</span><input class="configurator-gym-input" data-field="name" value="${escapeHtml(this.#nameDraft)}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""} />${nameError && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(nameError)}</span>` : ""}</label>${profileField}${metadata}${this.#renderCompatibilitySummary()}${this.#submitError ? `<p class="start-error" role="alert">${escapeHtml(this.#submitError)}</p>` : ""}<div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-configurator-station" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : station ? historical ? "Save Name" : "Save Changes" : "Create Station"}</button>${station?.status === "new" ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-configurator-station" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div></section>${warning}${this.#renderLoadProfilePicker(profiles)}</div>`;
   }
 }
 

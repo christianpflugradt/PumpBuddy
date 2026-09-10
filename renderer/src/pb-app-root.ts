@@ -214,8 +214,11 @@ class PbAppRootElement extends HTMLElement {
     if (state.viewState.screen === "configurator-station-detail") {
       const { gymId, stationId } = state.viewState;
       const station = stationId === null ? null : state.configuratorGymDetailScreen?.stations?.find((entry) => entry.id === stationId) ?? null;
+      const compatibilityState = stationId !== null && state.configuratorStationCompatibilityScreen?.gymId === gymId && state.configuratorStationCompatibilityScreen.stationId === stationId
+        ? state.configuratorStationCompatibilityScreen
+        : null;
       const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
-      el.state = { gymId, gymName: state.configuratorGymDetailScreen?.detail?.name ?? null, station, loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [] };
+      el.state = { gymId, gymName: state.configuratorGymDetailScreen?.detail?.name ?? null, station, loadProfiles: state.configuratorLoadProfilesScreen?.loadProfiles ?? [], compatibility: compatibilityState?.detail ?? null, isCompatibilityLoading: compatibilityState?.isLoading ?? false, compatibilityError: compatibilityState?.errorMessage ?? null };
       container.append(el);
       return;
     }

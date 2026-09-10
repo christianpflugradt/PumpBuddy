@@ -222,6 +222,13 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
   };
+  configuratorStationCompatibilityScreen?: {
+    gymId: string | null;
+    stationId: string | null;
+    detail: import("./workout-contract").ConfiguratorStationCompatibilityResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
+  };
   aboutScreen?: {
     metadata: AboutMetadata | null;
     errorMessage: string | null;

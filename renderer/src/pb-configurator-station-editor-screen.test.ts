@@ -89,4 +89,36 @@ describe("pb-configurator-station-editor-screen", () => {
     expect(el.textContent).toContain("Load Profile is required.");
     expect((el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it("renders every backend-enabled compatible Exercise Variant with its Exercise context", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", eligible_variants: [], enabled_variants: [
+      { exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" },
+      { exercise_id: "exercise-2", exercise_name: "Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" },
+    ] } };
+    expect(el.textContent).toContain("2 enabled");
+    expect(el.textContent).toContain("Chest Press");
+    expect(el.textContent).toContain("Machine");
+    expect(el.textContent).toContain("Row");
+    expect(el.textContent).toContain("Cable");
+  });
+
+  it("renders an explicit empty compatibility state and exposes the picker entry action", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", eligible_variants: [], enabled_variants: [] } };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    expect(el.textContent).toContain("No compatible Exercise Variants are enabled.");
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0]?.[0].detail).toEqual({ action: "open-configurator-station-compatibility-picker" });
+  });
+
+  it("keeps the summary failure-safe while compatibility data is loading or unavailable", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), isCompatibilityLoading: true };
+    expect(el.textContent).toContain("Loading compatible Exercise Variants");
+    el.state = { ...createState(), compatibilityError: "Unable to load compatible Exercise Variants right now." };
+    expect(el.textContent).toContain("Unable to load compatible Exercise Variants right now.");
+    expect(el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]')).toBeNull();
+  });
 });

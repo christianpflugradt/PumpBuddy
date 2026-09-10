@@ -1,6 +1,7 @@
 import {
   loadAboutMetadata,
   loadConfiguratorStations,
+  loadConfiguratorStationCompatibilities,
   loadConfiguratorExerciseVariants,
   loadExerciseSummaries,
   loadGymDetail,
@@ -36,6 +37,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadConfiguratorExercisesScreenData: () => Promise<void>;
   loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
+  loadConfiguratorStationCompatibilityScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -61,6 +63,7 @@ export const createScreenDataController = (deps: Dependencies): {
   let configuratorExercisesToken = 0;
   let configuratorExerciseDetailToken = 0;
   let configuratorGymDetailToken = 0;
+  let configuratorStationCompatibilityToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
@@ -403,6 +406,22 @@ export const createScreenDataController = (deps: Dependencies): {
     } catch {
       if (requestToken !== configuratorGymDetailToken) return;
       setState({ ...getState(), configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: false, errorMessage: "Unable to load Gym right now." } });
+    }
+    render();
+  };
+
+  const loadConfiguratorStationCompatibilityScreenData = async (gymId: string, stationId: string): Promise<void> => {
+    if (!gymId.trim() || !stationId.trim()) return;
+    const requestToken = ++configuratorStationCompatibilityToken;
+    setState({ ...getState(), configuratorStationCompatibilityScreen: { gymId, stationId, detail: null, isLoading: true, errorMessage: null } });
+    render();
+    try {
+      const detail = await loadConfiguratorStationCompatibilities(fetchJson, gymId, stationId);
+      if (requestToken !== configuratorStationCompatibilityToken) return;
+      setState({ ...getState(), configuratorStationCompatibilityScreen: { gymId, stationId, detail, isLoading: false, errorMessage: null } });
+    } catch {
+      if (requestToken !== configuratorStationCompatibilityToken) return;
+      setState({ ...getState(), configuratorStationCompatibilityScreen: { gymId, stationId, detail: null, isLoading: false, errorMessage: "Unable to load compatible Exercise Variants right now." } });
     }
     render();
   };
@@ -900,6 +919,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadConfiguratorExercisesScreenData,
     loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
+    loadConfiguratorStationCompatibilityScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,

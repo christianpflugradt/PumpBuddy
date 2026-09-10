@@ -4,6 +4,7 @@ import type {
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
   ConfiguratorStation,
+  ConfiguratorStationCompatibilityResponse,
   ConfiguratorStationCreateRequest,
   ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
@@ -42,6 +43,7 @@ import {
   parseActiveWorkoutResponse,
   parseConfiguratorStations,
   parseConfiguratorStation,
+  parseConfiguratorStationCompatibilityResponse,
   parseExerciseSummary,
   parseErrorResponsePayload,
   parseExerciseSummaries,
@@ -222,6 +224,17 @@ export const loadConfiguratorStations = async (
 ): Promise<ConfiguratorStation[]> =>
   parseConfiguratorStations(
     await fetchJson<unknown>(`/api/gyms/${encodeURIComponent(gymId)}/configurator-stations`),
+  );
+
+export const loadConfiguratorStationCompatibilities = async (
+  fetchJson: FetchJson,
+  gymId: string,
+  stationId: string,
+): Promise<ConfiguratorStationCompatibilityResponse> =>
+  parseConfiguratorStationCompatibilityResponse(
+    await fetchJson<unknown>(
+      `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}/compatibilities`,
+    ),
   );
 
 export const loadStationDetail = async (

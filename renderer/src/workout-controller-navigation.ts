@@ -14,6 +14,7 @@ type Dependencies = {
   loadConfiguratorExercisesScreenData: () => Promise<void>;
   loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
+  loadConfiguratorStationCompatibilityScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -165,6 +166,7 @@ export const handleScreenNavigationAction = (
     loadConfiguratorExercisesScreenData,
     loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
+    loadConfiguratorStationCompatibilityScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
@@ -333,6 +335,7 @@ export const handleScreenNavigationAction = (
       if (state.viewState.screen !== "configurator-gym-detail" || state.viewState.gymId === null || !stationId) return true;
       setState({ ...state, viewState: { screen: "configurator-station-detail", gymId: state.viewState.gymId, stationId } }); render();
       void loadConfiguratorLoadProfilesScreenData();
+      void loadConfiguratorStationCompatibilityScreenData(state.viewState.gymId, stationId);
       return true;
     }
     case "navigate-back-from-configurator-station-detail": {
