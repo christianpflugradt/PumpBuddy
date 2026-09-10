@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-06
+  title: Add historical Variant rename confirmation
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Active and inactive Variant name changes require the established historical-rename
+    confirmation before the API mutation.
+  rationale: The plan requires reuse of historical rename confirmation for the lifecycle-aware
+    Configurator flow, but active and inactive Variants currently save their permitted
+    name edits immediately. This leaves the delivered Variant UX inconsistent with
+    the specified historical-record safeguard.
+scope:
+  in:
+  - Add the established confirmation affordance to active and inactive Variant name
+    edits before the save action is emitted.
+  - Keep Variant structural fields read-only and preserve current draft deletion behavior.
+  - Add focused renderer coverage for confirm, dismiss, and save behavior.
+  out:
+  - Backend lifecycle or API contract changes.
+  - Variant status transitions, reactivation, compatibility, or workout behavior changes.
+constraints:
+- Reuse the existing Configurator historical rename confirmation convention and keep
+  backend validation authoritative.
+inputs:
+  required:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Changing an active or inactive Variant name displays a historical rename
+    confirmation; dismissing it preserves the draft and confirming it emits the existing
+    name-only update.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer type, unit, and UI smoke checks pass, including the Variant
+      rename-confirmation behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Configurator Variant editor UX
+handoff:
+  review_focus:
+  - Verify the confirmation applies only to active and inactive Variant name edits
+    and does not expose structural edits.
