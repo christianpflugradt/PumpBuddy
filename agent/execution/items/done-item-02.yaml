@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-065-item-02
   title: Deliver exercise and variant configurator API
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -94,7 +94,7 @@ review_feedback:
     \ constraints.\n  risk: The authoritative ownership and lifecycle rules can regress\
     \ without detection,\n    so ac-02 required focused API or persistence coverage\
     \ is unmet.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: The API commit adds handlers, service, and persistence operations for
       every Exercise and nested Variant endpoint, but it changes no backend test file.
@@ -105,6 +105,19 @@ review_feedback:
     risk: The authoritative ownership and lifecycle rules can regress without detection,
       so ac-02 required focused API or persistence coverage is unmet.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: the canonical OpenAPI contract exposes
+      all Exercise and nested Variant operations, generated artifacts regenerate cleanly,
+      and authenticated lifecycle, ownership, parent-scoping, validation, and reference-protection
+      rules are covered.'
+    evidence: Reviewed router, handler, application, and SQLx persistence paths; current-user
+      and parent predicates are applied at every read/mutation boundary. The new PostgreSQL-backed
+      API test covers foreign reads, cross-parent variant access, invalid enums, active
+      structural edits/deletes, and training-plan reference-protected draft deletion.
+    runtime_build_check: make refresh-api-clients and make check-backend both completed
+      successfully; backend quality ran 137 tests plus API and PostgreSQL-backed integration
+      suites.
+    residual_risk: Lifecycle status transitions remain intentionally out of scope;
+      this review found no defect in the delivered configurator API surface.
+  findings: []
