@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-066-item-03
+  title: Render Station compatibility summary
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add a compact Compatible Exercise Variants summary section to the existing
+    Configurator Station detail screen.
+  rationale: Makes the current enabled compatibility state understandable before a
+    user opens the staged editor.
+scope:
+  in:
+  - Load the compatibility-management read model into the existing Configurator Station
+    detail flow after item 02 is available.
+  - Render an accurate enabled-variant count and compact rows with Exercise and Exercise
+    Variant context.
+  - Render a compact zero-mapping state and an edit affordance that opens the compatibility
+    picker.
+  - Add focused renderer tests for populated, empty, and loading or failure-safe summary
+    states.
+  out:
+  - Picker multi-selection state, save behavior, and persistence requests.
+  - Changes to unrelated Configurator navigation or Exercise Variant detail screens.
+constraints:
+- Keep the Station editor's existing name, load-profile, lifecycle, save, and delete
+  behavior intact.
+- Render only the enabled mappings supplied by the backend; do not derive compatibility
+  in the renderer.
+- Preserve a compact mobile-first layout at the 390 x 800 primary viewport.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-screen-data.ts
+  optional:
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: The existing Station detail displays every enabled compatible Exercise
+    Variant with compact Exercise context and an accurate count.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with populated compatibility-summary rendering
+      coverage.
+- id: ac-02
+  statement: A Station with no enabled mappings displays an explicit compact empty
+    state and a reachable edit affordance.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with zero-mapping and edit-entry coverage.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer-state
+  - renderer-ui
+  - renderer-controller
+handoff:
+  review_focus:
+  - Confirm the summary is a read-only representation of backend-enabled mappings
+    rather than independent client state.
+  - Confirm the compact section remains understandable and reachable on the primary
+    mobile viewport.
+review_feedback: []
+review_result: null

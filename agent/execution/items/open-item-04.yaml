@@ -1,0 +1,90 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-066-item-04
+  title: Build staged Station compatibility picker
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Deliver a searchable staged multi-select picker that saves or discards
+    a Station's complete compatibility selection.
+  rationale: Lets a user safely edit multiple mappings without persisting intermediate
+    picker toggles.
+scope:
+  in:
+  - Evolve the existing Station load-profile picker and overlay conventions into a
+    searchable compatible Exercise Variant multi-select picker.
+  - Show concise Exercise context, selected state, search filtering, and a selection
+    count for eligible station-required variants.
+  - Stage selections locally; Cancel, Escape, and backdrop dismissal restore the unchanged
+    persisted selection and issue no persistence request.
+  - Save one completed selection through the item 02 API, handle failure without discarding
+    the staged selection, and refresh the Station summary after success.
+  - Add focused renderer tests for search, staging, Save, Cancel, error handling,
+    and the critical mobile-first interaction.
+  out:
+  - Individual mapping toggle endpoints or per-toggle persistence.
+  - Changes to Station lifecycle rules, workout execution, or reverse compatibility
+    display.
+constraints:
+- Reuse established Configurator picker and overlay accessibility patterns where they
+  fit.
+- Persist only the complete selection submitted by Save.
+- Keep the interaction compact and usable at the 390 x 800 primary viewport.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/text-input-binding.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The picker filters eligible station-required variants by search, presents
+    compact Exercise context, and stages multi-selection locally.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with search, eligibility presentation, and local
+      multi-selection coverage.
+- id: ac-02
+  statement: Save sends one completed selection and refreshes the summary only after
+    success, while Cancel and dismissal issue no persistence request and preserve
+    the prior enabled set.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with Save, Cancel, Escape or backdrop dismissal,
+      and failure-retention coverage.
+- id: ac-03
+  statement: The picker remains compact and operable in the primary mobile-first viewport.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including the targeted mobile-first picker interaction
+      smoke coverage.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer-ui
+  - renderer-state
+  - renderer-controller
+  - renderer-api-client
+handoff:
+  review_focus:
+  - Confirm no picker toggle can issue a persistence request and every dismissal path
+    discards only local changes.
+  - Confirm Save preserves staged changes on an API failure and returns to an accurate
+    backend-derived summary only after success.
+review_feedback: []
+review_result: null

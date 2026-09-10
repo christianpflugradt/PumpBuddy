@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-066-item-01
+  title: Define Station compatibility management contract
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Publish the canonical OpenAPI contract for retrieving and reconciling a
+    Station's compatible Exercise Variants.
+  rationale: Establishes one generated backend and renderer boundary before compatibility-management
+    behavior is implemented.
+scope:
+  in:
+  - Add authenticated user-scoped Configurator Station compatibility retrieval that
+    distinguishes currently enabled mappings from eligible station-required Exercise
+    Variants and includes compact Exercise context.
+  - Add a complete-selection write operation whose request represents the final selected
+    Exercise Variant identifiers for one Station.
+  - Define successful response and validation, not-found, and conflict response behavior
+    needed by the renderer and backend.
+  - Regenerate the supported OpenAPI client boundaries from the canonical contract.
+  out:
+  - Backend handler, persistence, or reconciliation implementation.
+  - Renderer Station summary, picker, and interaction implementation.
+constraints:
+- Keep agent/design/api-contract.yaml as the canonical contract source.
+- Preserve the existing authenticated renderer-to-backend-to-database topology.
+- Model selection as a complete set rather than an individual mapping toggle.
+- Do not expand the contract into Exercise Variant-detail or reverse-Station management.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  optional:
+  - renderer/src/workout-contract.ts
+  - backend/src/models/mod.rs
+acceptance_criteria:
+- id: ac-01
+  statement: The canonical contract exposes user-scoped compatibility retrieval with
+    enabled mappings, eligible station-required variants, and compact Exercise context.
+  verification:
+    type: command
+    command: make refresh-api-clients
+    expected: OpenAPI generation completes successfully for backend and renderer outputs
+      without schema errors.
+- id: ac-02
+  statement: The canonical contract defines a complete-selection reconciliation request
+    and responses sufficient to distinguish validation, ownership, eligibility, and
+    not-found failures.
+  verification:
+    type: command
+    command: make check
+    expected: Repository quality checks pass with generated client boundaries aligned
+      to the contract.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - api-contract
+  - backend-generated-openapi
+  - renderer-generated-openapi
+handoff:
+  review_focus:
+  - Confirm the write request represents one completed selection and cannot imply
+    persistence for individual picker toggles.
+  - Confirm only station-required variants can appear in the eligible selection model.
+review_feedback: []
+review_result: null

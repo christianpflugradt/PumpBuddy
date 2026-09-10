@@ -1,0 +1,93 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-066-item-02
+  title: Implement atomic Station compatibility reconciliation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Deliver authenticated backend retrieval and atomic reconciliation of a
+    Station's complete compatible Exercise Variant selection.
+  rationale: The backend must remain the authority for user ownership, station-required
+    eligibility, and enabled-mapping lifecycle semantics.
+scope:
+  in:
+  - Implement the contract from item 01 through the Configurator Station application,
+    handler, and SQLx persistence layers.
+  - Retrieve enabled mappings and eligible user-owned Exercise Variants with compact
+    Exercise context, excluding stationless variants.
+  - Reconcile one submitted complete selection atomically by creating or re-enabling
+    selected mappings and disabling unselected mappings.
+  - Reject cross-user, cross-gym, duplicate, malformed, and ineligible selections
+    without partially changing mappings.
+  - Add focused backend tests covering retrieval, ownership, eligibility, duplicate
+    rejection, enable or disable reconciliation, and atomic failure behavior.
+  out:
+  - Database migrations, schema changes, or status-specific compatibility rules.
+  - Renderer rendering and picker interaction behavior.
+constraints:
+- Preserve exercise_variant_equipment_compatibilities as the source of truth.
+- Scope every Station, Exercise Variant, and compatibility query to the authenticated
+  user and selected Gym.
+- Keep existing workout consumers limited to is_enabled = true mappings.
+- Use a single transaction for the completed-set reconciliation.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/training_plans.rs
+  optional:
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - runtime/database/00-schema.sql
+acceptance_criteria:
+- id: ac-01
+  statement: Backend retrieval returns only authenticated-user, station-required eligible
+    variants and enabled mappings for the selected Station and Gym.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with retrieval, user-scope, Gym-scope, and station-required
+      eligibility coverage.
+- id: ac-02
+  statement: A valid completed selection is atomically reconciled so selected mappings
+    are created or enabled and unselected mappings are disabled.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with create, re-enable, disable, and rollback-on-invalid-selection
+      coverage.
+- id: ac-03
+  statement: Cross-user, duplicate, and ineligible variant identifiers are rejected
+    without leaving partial compatibility changes.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with rejection and unchanged-state coverage for
+      each invalid selection class.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: true
+  independent_review_reason: Atomic reconciliation changes user-scoped compatibility
+    state and must be independently checked for transaction boundaries, ownership
+    enforcement, and unintended workout-consumer impact.
+  risk_level: high
+  boundary_impact:
+  - backend-api
+  - backend-application-service
+  - backend-persistence
+  - database-transaction
+handoff:
+  review_focus:
+  - Verify every affected mapping is user-scoped and the Station belongs to the selected
+    Gym before mutation.
+  - Verify invalid input rolls back the entire reconciliation and existing enabled-only
+    workout queries remain unchanged.
+review_feedback: []
+review_result: null
