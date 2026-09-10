@@ -8,7 +8,50 @@ pub mod active_workout {
         "/target/generated/openapi/rust/src/models/active_workout.rs"
     ));
 }
+
+pub mod exercise_create_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_create_request.rs"
+    ));
+}
+pub use exercise_create_request::ExerciseCreateRequest;
+pub mod exercise_update_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_update_request.rs"
+    ));
+}
+pub use exercise_update_request::ExerciseUpdateRequest;
+pub mod exercise_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_summary.rs"
+    ));
+}
+pub use exercise_summary::ExerciseSummary;
+pub mod exercise_variant {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_variant.rs"
+    ));
+}
+pub use exercise_variant::ExerciseVariant;
+pub mod exercise_variant_create_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_variant_create_request.rs"
+    ));
+}
+pub use exercise_variant_create_request::ExerciseVariantCreateRequest;
+pub mod exercise_variant_update_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/exercise_variant_update_request.rs"
+    ));
+}
 pub use active_workout::ActiveWorkout;
+pub use exercise_variant_update_request::ExerciseVariantUpdateRequest;
 
 pub mod active_workout_exercise {
     include!(concat!(

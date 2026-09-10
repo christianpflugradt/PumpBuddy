@@ -7,7 +7,8 @@ use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
     CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, ConfiguratorStationUpdate,
-    GymUpdate, LoadProfileDefinitionInput, LoadProfileUpdate, NewConfiguratorStation, NewGym,
+    ExerciseUpdate, ExerciseVariantUpdate, GymUpdate, LoadProfileDefinitionInput,
+    LoadProfileUpdate, NewConfiguratorStation, NewExercise, NewExerciseVariant, NewGym,
     NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
     WorkoutDetail as DomainWorkoutDetail, WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
@@ -58,6 +59,12 @@ pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
+pub use crate::models::exercise_create_request::ExerciseCreateRequest;
+pub use crate::models::exercise_summary::ExerciseSummary as ExerciseSummaryResponse;
+pub use crate::models::exercise_update_request::ExerciseUpdateRequest;
+pub use crate::models::exercise_variant::ExerciseVariant as ExerciseVariantResponse;
+pub use crate::models::exercise_variant_create_request::ExerciseVariantCreateRequest;
+pub use crate::models::exercise_variant_update_request::ExerciseVariantUpdateRequest;
 pub use crate::models::gym_create_request::GymCreateRequest;
 pub use crate::models::gym_detail_response::GymDetailResponse;
 pub use crate::models::gym_exercise_group::GymExerciseGroup as GymExerciseGroupResponse;
@@ -125,6 +132,81 @@ use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
 use crate::performance::{classify_average, PerformanceAvailability, PerformanceToneCategory};
 pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
+
+impl ExerciseCreateRequest {
+    pub fn into_domain(self) -> NewExercise {
+        NewExercise { name: self.name }
+    }
+}
+impl ExerciseUpdateRequest {
+    pub fn into_domain(self) -> ExerciseUpdate {
+        ExerciseUpdate { name: self.name }
+    }
+}
+impl ExerciseVariantCreateRequest {
+    pub fn into_domain(self) -> NewExerciseVariant {
+        NewExerciseVariant {
+            name: self.name,
+            requires_station: self.requires_station,
+            load_input_mode: match self.load_input_mode {
+                crate::models::exercise_variant_create_request::LoadInputMode::Total => {
+                    "TOTAL".into()
+                }
+                crate::models::exercise_variant_create_request::LoadInputMode::PerSide => {
+                    "PER_SIDE".into()
+                }
+            },
+            set_tracking_mode: match self.set_tracking_mode {
+                crate::models::exercise_variant_create_request::SetTrackingMode::Bilateral => {
+                    "BILATERAL".into()
+                }
+                crate::models::exercise_variant_create_request::SetTrackingMode::Unilateral => {
+                    "UNILATERAL".into()
+                }
+            },
+            repetition_kind: match self.repetition_kind {
+                crate::models::exercise_variant_create_request::RepetitionKind::Reps => {
+                    "REPS".into()
+                }
+                crate::models::exercise_variant_create_request::RepetitionKind::Secs => {
+                    "SECS".into()
+                }
+            },
+        }
+    }
+}
+impl ExerciseVariantUpdateRequest {
+    pub fn into_domain(self) -> ExerciseVariantUpdate {
+        ExerciseVariantUpdate {
+            name: self.name,
+            requires_station: self.requires_station,
+            load_input_mode: self.load_input_mode.map(|x| match x {
+                crate::models::exercise_variant_update_request::LoadInputMode::Total => {
+                    "TOTAL".into()
+                }
+                crate::models::exercise_variant_update_request::LoadInputMode::PerSide => {
+                    "PER_SIDE".into()
+                }
+            }),
+            set_tracking_mode: self.set_tracking_mode.map(|x| match x {
+                crate::models::exercise_variant_update_request::SetTrackingMode::Bilateral => {
+                    "BILATERAL".into()
+                }
+                crate::models::exercise_variant_update_request::SetTrackingMode::Unilateral => {
+                    "UNILATERAL".into()
+                }
+            }),
+            repetition_kind: self.repetition_kind.map(|x| match x {
+                crate::models::exercise_variant_update_request::RepetitionKind::Reps => {
+                    "REPS".into()
+                }
+                crate::models::exercise_variant_update_request::RepetitionKind::Secs => {
+                    "SECS".into()
+                }
+            }),
+        }
+    }
+}
 
 #[derive(Serialize)]
 pub struct AboutMetadataResponse {

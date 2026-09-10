@@ -11,6 +11,7 @@ use std::panic::Location;
 
 mod active_workouts;
 mod auth;
+mod exercises;
 mod gyms;
 mod load_profiles;
 mod logging;
@@ -20,6 +21,64 @@ mod suggestions;
 mod tests;
 mod training_plans;
 mod workouts;
+
+pub(crate) trait ExerciseRepository {
+    async fn fetch_exercise_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<crate::domain::ExerciseSummary>, PersistenceError>;
+    async fn fetch_exercise_for_user(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+    ) -> Result<Option<crate::domain::ExerciseSummary>, PersistenceError>;
+    async fn create_exercise_for_user(
+        &self,
+        user_id: &str,
+        input: &crate::domain::NewExercise,
+    ) -> Result<crate::domain::ExerciseSummary, PersistenceError>;
+    async fn update_exercise_for_user(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+        input: &crate::domain::ExerciseUpdate,
+    ) -> Result<crate::domain::ExerciseSummary, PersistenceError>;
+    async fn delete_exercise_for_user(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
+    async fn fetch_exercise_variants_for_user(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+    ) -> Result<Option<Vec<crate::domain::ExerciseVariant>>, PersistenceError>;
+    async fn fetch_exercise_variant_for_user(
+        &self,
+        exercise_id: &str,
+        variant_id: &str,
+        user_id: &str,
+    ) -> Result<Option<crate::domain::ExerciseVariant>, PersistenceError>;
+    async fn create_exercise_variant_for_user(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+        input: &crate::domain::NewExerciseVariant,
+    ) -> Result<crate::domain::ExerciseVariant, PersistenceError>;
+    async fn update_exercise_variant_for_user(
+        &self,
+        exercise_id: &str,
+        variant_id: &str,
+        user_id: &str,
+        input: &crate::domain::ExerciseVariantUpdate,
+    ) -> Result<crate::domain::ExerciseVariant, PersistenceError>;
+    async fn delete_exercise_variant_for_user(
+        &self,
+        exercise_id: &str,
+        variant_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
+}
 
 #[derive(Debug)]
 pub enum PersistenceError {

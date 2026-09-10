@@ -8,25 +8,28 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
-    create_active_workout, create_configurator_station, create_gym, create_load_profile,
-    create_workout, delete_configurator_station, delete_gym, delete_latest_active_workout_set,
-    delete_load_profile, get_about_metadata, get_active_workout, get_configurator_station,
-    get_gym_detail, get_gym_station_detail, get_load_profile, get_training_plan,
-    get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_configurator_stations, list_gyms, list_load_profiles,
-    list_training_plan_exercise_variants, list_training_plans, list_workouts,
-    reopen_active_workout_exercise, select_active_workout_exercise_option,
-    skip_active_workout_exercise, update_active_workout, update_configurator_station, update_gym,
-    update_load_profile,
+    create_active_workout, create_configurator_station, create_exercise, create_exercise_variant,
+    create_gym, create_load_profile, create_workout, delete_configurator_station, delete_exercise,
+    delete_exercise_variant, delete_gym, delete_latest_active_workout_set, delete_load_profile,
+    get_about_metadata, get_active_workout, get_configurator_station, get_exercise,
+    get_exercise_variant, get_gym_detail, get_gym_station_detail, get_load_profile,
+    get_training_plan, get_workout_detail, get_workout_exercises_performance, get_workout_progress,
+    get_workout_summary, list_configurator_stations, list_exercise_variants, list_exercises,
+    list_gyms, list_load_profiles, list_training_plan_exercise_variants, list_training_plans,
+    list_workouts, reopen_active_workout_exercise, select_active_workout_exercise_option,
+    skip_active_workout_exercise, update_active_workout, update_configurator_station,
+    update_exercise, update_exercise_variant, update_gym, update_load_profile,
 };
 
 use super::middleware;
 use super::models::{
     CompleteActiveWorkoutRequest, ConfiguratorStationCreateRequest,
     ConfiguratorStationUpdateRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, GymWriteRequest, ReopenActiveWorkoutExerciseRequest,
-    SelectActiveWorkoutExerciseOptionRequest, SkipActiveWorkoutExerciseRequest,
-    TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
+    CreateWorkoutRequest, ExerciseCreateRequest, ExerciseUpdateRequest,
+    ExerciseVariantCreateRequest, ExerciseVariantUpdateRequest, GymWriteRequest,
+    ReopenActiveWorkoutExerciseRequest, SelectActiveWorkoutExerciseOptionRequest,
+    SkipActiveWorkoutExerciseRequest, TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery,
+    UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -157,6 +160,10 @@ pub fn app_router(app_state: AppState) -> Router {
                 },
             ),
         )
+        .route("/exercises", get(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>|async move{list_exercises(State(s),Extension(a)).await}).post(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Json(x):Json<ExerciseCreateRequest>|async move{create_exercise(State(s),Extension(a),Json(x)).await}))
+        .route("/exercises/{exercise_id}", get(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(id):Path<String>|async move{get_exercise(State(s),Extension(a),Path(id)).await}).patch(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(id):Path<String>,Json(x):Json<ExerciseUpdateRequest>|async move{update_exercise(State(s),Extension(a),Path(id),Json(x)).await}).delete(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(id):Path<String>|async move{delete_exercise(State(s),Extension(a),Path(id)).await}))
+        .route("/exercises/{exercise_id}/variants", get(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(id):Path<String>|async move{list_exercise_variants(State(s),Extension(a),Path(id)).await}).post(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(id):Path<String>,Json(x):Json<ExerciseVariantCreateRequest>|async move{create_exercise_variant(State(s),Extension(a),Path(id),Json(x)).await}))
+        .route("/exercises/{exercise_id}/variants/{variant_id}", get(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(ids):Path<(String,String)>|async move{get_exercise_variant(State(s),Extension(a),Path(ids)).await}).patch(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(ids):Path<(String,String)>,Json(x):Json<ExerciseVariantUpdateRequest>|async move{update_exercise_variant(State(s),Extension(a),Path(ids),Json(x)).await}).delete(|State(s):State<AppState>,Extension(a):Extension<AuthenticatedSession>,Path(ids):Path<(String,String)>|async move{delete_exercise_variant(State(s),Extension(a),Path(ids)).await}))
         .route(
             "/training-plans",
             get(

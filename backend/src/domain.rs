@@ -135,6 +135,54 @@ pub struct NewLoadProfile {
     pub definition: LoadProfileDefinitionInput,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExerciseSummary {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    pub variant_count: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewExercise {
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExerciseUpdate {
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExerciseVariant {
+    pub id: String,
+    pub exercise_id: String,
+    pub name: String,
+    pub status: String,
+    pub requires_station: bool,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+    pub repetition_kind: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewExerciseVariant {
+    pub name: String,
+    pub requires_station: bool,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+    pub repetition_kind: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExerciseVariantUpdate {
+    pub name: String,
+    pub requires_station: Option<bool>,
+    pub load_input_mode: Option<String>,
+    pub set_tracking_mode: Option<String>,
+    pub repetition_kind: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoadProfileUpdate {
     pub name: String,

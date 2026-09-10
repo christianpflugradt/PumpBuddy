@@ -1,10 +1,16 @@
 pub(crate) mod about;
+pub(crate) mod exercises;
 pub(crate) mod gyms;
 pub(crate) mod load_profiles;
 pub(crate) mod training_plans;
 pub(crate) mod workouts;
 
 pub(crate) use about::get_about_metadata;
+pub(crate) use exercises::{
+    create_exercise, create_exercise_variant, delete_exercise, delete_exercise_variant,
+    get_exercise, get_exercise_variant, list_exercise_variants, list_exercises, update_exercise,
+    update_exercise_variant,
+};
 pub(crate) use gyms::{
     create_configurator_station, create_gym, delete_configurator_station, delete_gym,
     get_configurator_station, get_gym_detail, get_gym_station_detail, list_configurator_stations,

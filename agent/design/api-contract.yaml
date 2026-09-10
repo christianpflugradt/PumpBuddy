@@ -424,44 +424,23 @@ paths:
         - name: loadProfileId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/LoadProfileUpdateRequest'
+            schema: { $ref: '#/components/schemas/LoadProfileUpdateRequest' }
       responses:
         '200':
           description: Load profile updated successfully
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/LoadProfileSummary'
-        '400':
-          description: Invalid load profile update payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Load profile not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Duplicate load profile name or immutable field update
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+              schema: { $ref: '#/components/schemas/LoadProfileSummary' }
+        '400': { $ref: '#/components/responses/InternalServerError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/InternalServerError' }
+        '409': { $ref: '#/components/responses/InternalServerError' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
     delete:
       summary: Delete a draft load profile
       operationId: deleteLoadProfile
@@ -469,26 +448,230 @@ paths:
         - name: loadProfileId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
-        '204':
-          description: Draft load profile deleted successfully
+        '204': { description: Draft load profile deleted successfully }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/InternalServerError' }
+        '409': { $ref: '#/components/responses/InternalServerError' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/exercises:
+    get:
+      summary: List configurator exercises
+      operationId: listExercises
+      responses:
+        '200':
+          description: Authenticated user's exercises in backend-owned display order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a draft exercise
+      operationId: createExercise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseCreateRequest'
+      responses:
+        '201':
+          description: Draft exercise created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSummary'
+        '400':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/exercises/{exerciseId}:
+    get:
+      summary: Retrieve one configurator exercise
+      operationId: getExercise
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Exercise retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSummary'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Load profile not found
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Rename an exercise
+      operationId: updateExercise
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseUpdateRequest'
+      responses:
+        '200':
+          description: Exercise updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ExerciseSummary'
+        '400':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
         '409':
-          description: Load profile cannot be deleted in its current state
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Delete a draft exercise
+      operationId: deleteExercise
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '204':
+          description: Draft exercise deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '409':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/exercises/{exerciseId}/variants:
+    get:
+      summary: List an exercise's configurator variants
+      operationId: listExerciseVariants
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Variants retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseVariant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a draft exercise variant
+      operationId: createExerciseVariant
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseVariantCreateRequest'
+      responses:
+        '201':
+          description: Draft exercise variant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseVariant'
+        '400':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '409':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/exercises/{exerciseId}/variants/{variantId}:
+    get:
+      summary: Retrieve one configurator exercise variant
+      operationId: getExerciseVariant
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+        - $ref: '#/components/parameters/VariantId'
+      responses:
+        '200':
+          description: Variant retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseVariant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Update an exercise variant
+      operationId: updateExerciseVariant
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+        - $ref: '#/components/parameters/VariantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseVariantUpdateRequest'
+      responses:
+        '200':
+          description: Variant updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseVariant'
+        '400':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '409':
+          $ref: '#/components/responses/InternalServerError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Delete a draft exercise variant
+      operationId: deleteExerciseVariant
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+        - $ref: '#/components/parameters/VariantId'
+      responses:
+        '204':
+          description: Draft variant deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/InternalServerError'
+        '409':
+          $ref: '#/components/responses/InternalServerError'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/gyms/{gymId}:
@@ -1438,6 +1621,21 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
+  parameters:
+    ExerciseId:
+      name: exerciseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VariantId:
+      name: variantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Unauthorized:
       description: Unauthorized (empty response body)
@@ -1734,6 +1932,112 @@ components:
           enum: [KG, LBS]
         definition:
           $ref: '#/components/schemas/LoadProfileDefinition'
+    ExerciseSummary:
+      type: object
+      required: [id, name, status, variant_count]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
+        variant_count:
+          type: integer
+          format: int64
+          minimum: 0
+    ExerciseCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+    ExerciseUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+    ExerciseVariant:
+      type: object
+      required:
+        - id
+        - exercise_id
+        - name
+        - status
+        - requires_station
+        - load_input_mode
+        - set_tracking_mode
+        - repetition_kind
+      properties:
+        id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
+        requires_station:
+          type: boolean
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+        set_tracking_mode:
+          type: string
+          enum: [BILATERAL, UNILATERAL]
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+    ExerciseVariantCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - requires_station
+        - load_input_mode
+        - set_tracking_mode
+        - repetition_kind
+      properties:
+        name:
+          type: string
+        requires_station:
+          type: boolean
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+        set_tracking_mode:
+          type: string
+          enum: [BILATERAL, UNILATERAL]
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+    ExerciseVariantUpdateRequest:
+      type: object
+      description: Structural fields may change only while the stored variant status is `new`.
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+        requires_station:
+          type: boolean
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+        set_tracking_mode:
+          type: string
+          enum: [BILATERAL, UNILATERAL]
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
     GymSummary:
       type: object
       required:
