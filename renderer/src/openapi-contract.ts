@@ -17,6 +17,7 @@ import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } 
 import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateActiveWorkoutRequest";
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
+import { ExerciseSummaryFromJSON } from "../generated/openapi/typescript/models/ExerciseSummary";
 import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
 import { GymCreateRequestToJSON } from "../generated/openapi/typescript/models/GymCreateRequest";
 import { GymStationDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymStationDetailResponse";
@@ -52,6 +53,7 @@ import type {
   CreateWorkoutExerciseInput,
   CreateWorkoutRequest,
   ErrorResponse,
+  ExerciseSummary,
   GymDetailResponse,
   GymCreateRequest,
   GymStationDetailResponse,
@@ -182,6 +184,11 @@ export const serializeConfiguratorStationUpdateRequest = (request: ConfiguratorS
 export const parseLoadProfileSummaries = (json: unknown): LoadProfileSummary[] =>
   requireJsonArray(json).map((entry) =>
     toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(entry)),
+  );
+
+export const parseExerciseSummaries = (json: unknown): ExerciseSummary[] =>
+  requireJsonArray(json).map((entry) =>
+    toRendererModel<ExerciseSummary>(ExerciseSummaryFromJSON(entry)),
   );
 
 export const parseLoadProfileSummary = (json: unknown): LoadProfileSummary =>

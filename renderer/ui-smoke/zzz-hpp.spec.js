@@ -985,3 +985,81 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await expect(page.getByRole('heading', { name: 'Completed' })).toBeVisible();
   await expect(page.getByLabel('Workout completion metrics')).toHaveCount(0);
 });
+
+test('UI smoke configurator exercises > navigation, search, lifecycle, loading, and error states', async ({ page }) => {
+  let isLoggedIn = false;
+  let exerciseRequestCount = 0;
+  await page.route('**/auth/session', async (route) => {
+    await route.fulfill({
+      status: isLoggedIn ? 200 : 401,
+      contentType: 'application/json',
+      body: isLoggedIn ? JSON.stringify({ user: { name: 'Dev User' } }) : '{}',
+    });
+  });
+  await page.route('**/auth/login', async (route) => {
+    isLoggedIn = true;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  });
+  await page.route('**/api/training-plans', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+  });
+  await page.route('**/api/gyms', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+  });
+  await page.route('**/api/load-profiles', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+  });
+  await page.route('**/api/exercises', async (route) => {
+    exerciseRequestCount += 1;
+    if (exerciseRequestCount === 2) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    if (exerciseRequestCount >= 3) {
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'Unavailable' }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        { id: 'exercise-active', name: 'Barbell Squat', status: 'active', variant_count: 2 },
+        { id: 'exercise-inactive', name: 'Retired Curl', status: 'inactive', variant_count: 1 },
+      ]),
+    });
+  });
+
+  const signInAndOpenExercises = async () => {
+    await page.goto('/');
+    await page.getByLabel('Login').fill('main');
+    await page.getByLabel('Password', { exact: true }).fill('test-api-key');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.getByRole('button', { name: 'Open navigation menu' }).click();
+    await page.getByRole('button', { name: 'Configurator' }).click();
+    await page.getByRole('button', { name: 'Open navigation menu' }).click();
+    await page.getByRole('button', { name: 'Exercises' }).click();
+  };
+
+  await signInAndOpenExercises();
+  const screen = page.getByRole('region', { name: 'Configurator exercises screen' });
+  await expect(screen).toBeVisible();
+  await expect(screen).toContainText('Barbell Squat');
+  await expect(screen).toContainText('Active');
+  await expect(screen.locator('.configurator-exercise-card--inactive')).toContainText('Retired Curl');
+  await expect(page.getByRole('button', { name: 'Variants' })).toHaveCount(0);
+  await screen.getByRole('searchbox', { name: 'Search exercises' }).fill('retired');
+  await expect(screen).toContainText('Retired Curl');
+  await expect(screen).not.toContainText('Barbell Squat');
+
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Load Profiles' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Exercises' }).click();
+  await expect(screen).toContainText('Loading exercises...');
+  await expect(screen).toContainText('Barbell Squat');
+
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Load Profiles' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Exercises' }).click();
+  await expect(screen).toContainText('Unable to load exercises right now.');
+});

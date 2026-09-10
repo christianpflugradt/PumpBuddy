@@ -6,6 +6,7 @@ type SideMenuScreen =
   | "workout"
   | "configurator-load-profiles"
   | "configurator-gyms"
+  | "configurator-exercises"
   | "progress"
   | "exercises"
   | "training-plans"
@@ -20,6 +21,7 @@ type SideMenuAction =
   | "navigate-workout"
   | "navigate-configurator-load-profiles"
   | "navigate-configurator-gyms"
+  | "navigate-configurator-exercises"
   | "navigate-progress"
   | "navigate-exercises"
   | "navigate-training-plans"
@@ -40,6 +42,7 @@ const sideMenuScreens: SideMenuScreen[] = [
   "workout",
   "configurator-load-profiles",
   "configurator-gyms",
+  "configurator-exercises",
   "progress",
   "exercises",
   "training-plans",
@@ -94,7 +97,11 @@ const configuratorNavigationEntries: SideMenuEntry[] = [
     label: "Load Profiles",
     action: "navigate-configurator-load-profiles",
   },
-  { label: "Exercises (Soon)", action: null },
+  {
+    screen: "configurator-exercises",
+    label: "Exercises",
+    action: "navigate-configurator-exercises",
+  },
   {
     screen: "configurator-gyms",
     label: "Gyms",

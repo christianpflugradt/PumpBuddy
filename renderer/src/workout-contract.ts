@@ -31,6 +31,13 @@ export type LoadProfileSummary = {
   station_count: number;
 };
 
+export type ExerciseSummary = {
+  id: string;
+  name: string;
+  status: "new" | "active" | "inactive";
+  variant_count: number;
+};
+
 export type LoadProfileDefinition = {
   kind: "fixed_list" | "formula";
   values?: number[];

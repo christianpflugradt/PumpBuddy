@@ -11,6 +11,7 @@ import type {
   LoadProfileDetailResponse,
   LoadProfileUpdateRequest,
   ErrorResponse,
+  ExerciseSummary,
   CreateWorkoutRequest,
   GymDetailResponse,
   GymCreateRequest,
@@ -37,6 +38,7 @@ import {
   parseConfiguratorStations,
   parseConfiguratorStation,
   parseErrorResponsePayload,
+  parseExerciseSummaries,
   parseGymDetailResponse,
   parseGymSummary,
   parseGymStationDetailResponse,
@@ -172,6 +174,11 @@ export const loadLoadProfileSummaries = async (
   fetchJson: FetchJson,
 ): Promise<LoadProfileSummary[]> =>
   parseLoadProfileSummaries(await fetchJson<unknown>("/api/load-profiles"));
+
+export const loadExerciseSummaries = async (
+  fetchJson: FetchJson,
+): Promise<ExerciseSummary[]> =>
+  parseExerciseSummaries(await fetchJson<unknown>("/api/exercises"));
 
 export const loadLoadProfileDetail = async (
   fetchJson: FetchJson,

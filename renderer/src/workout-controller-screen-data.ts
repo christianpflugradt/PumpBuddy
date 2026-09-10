@@ -1,6 +1,7 @@
 import {
   loadAboutMetadata,
   loadConfiguratorStations,
+  loadExerciseSummaries,
   loadGymDetail,
   loadGymSummaries,
   loadLoadProfileDetail,
@@ -30,6 +31,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadAboutScreenMetadata: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
+  loadConfiguratorExercisesScreenData: () => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
@@ -52,6 +54,7 @@ export const createScreenDataController = (deps: Dependencies): {
   let workoutDetailLoadToken = 0;
   let configuratorLoadProfilesToken = 0;
   let configuratorGymsToken = 0;
+  let configuratorExercisesToken = 0;
   let configuratorGymDetailToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
@@ -238,6 +241,47 @@ export const createScreenDataController = (deps: Dependencies): {
           gyms: nextState.configuratorGymsScreen?.gyms ?? [],
           isLoading: false,
           errorMessage: "Unable to load gyms right now.",
+          hasLoaded: false,
+        },
+      });
+      render();
+    }
+  };
+
+  const loadConfiguratorExercisesScreenData = async (): Promise<void> => {
+    const requestToken = ++configuratorExercisesToken;
+    const state = getState();
+    const current = state.configuratorExercisesScreen;
+    if (current?.isLoading) return;
+
+    setState({
+      ...state,
+      configuratorExercisesScreen: {
+        exercises: current?.exercises ?? [],
+        isLoading: true,
+        errorMessage: null,
+        hasLoaded: current?.hasLoaded ?? false,
+      },
+    });
+    render();
+
+    try {
+      const exercises = await loadExerciseSummaries(fetchJson);
+      if (requestToken !== configuratorExercisesToken) return;
+      setState({
+        ...getState(),
+        configuratorExercisesScreen: { exercises, isLoading: false, errorMessage: null, hasLoaded: true },
+      });
+      render();
+    } catch {
+      if (requestToken !== configuratorExercisesToken) return;
+      const nextState = getState();
+      setState({
+        ...nextState,
+        configuratorExercisesScreen: {
+          exercises: nextState.configuratorExercisesScreen?.exercises ?? [],
+          isLoading: false,
+          errorMessage: "Unable to load exercises right now.",
           hasLoaded: false,
         },
       });
@@ -753,6 +797,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadAboutScreenMetadata,
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
+    loadConfiguratorExercisesScreenData,
     loadConfiguratorGymDetailScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,

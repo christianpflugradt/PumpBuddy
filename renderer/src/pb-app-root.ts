@@ -66,6 +66,11 @@ import {
   type ConfiguratorGymEditorScreenState,
 } from "./pb-configurator-gym-editor-screen";
 import { pbConfiguratorStationEditorScreenTag, registerPbConfiguratorStationEditorScreen, type ConfiguratorStationEditorScreenState } from "./pb-configurator-station-editor-screen";
+import {
+  pbConfiguratorExercisesScreenTag,
+  registerPbConfiguratorExercisesScreen,
+  type ConfiguratorExercisesScreenState,
+} from "./pb-configurator-exercises-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -96,6 +101,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorGymsScreen();
     registerPbConfiguratorGymEditorScreen();
     registerPbConfiguratorStationEditorScreen();
+    registerPbConfiguratorExercisesScreen();
     this.#render();
   }
 
@@ -198,6 +204,21 @@ class PbAppRootElement extends HTMLElement {
         selectedGym: null,
         isLoading: state.configuratorGymsScreen?.isLoading ?? false,
         errorMessage: state.configuratorGymsScreen?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-exercises" || state.viewState.screen === "configurator-exercise-detail") {
+      const exerciseId = state.viewState.screen === "configurator-exercise-detail" ? state.viewState.exerciseId : null;
+      const exercises = state.configuratorExercisesScreen?.exercises ?? [];
+      const el = document.createElement(pbConfiguratorExercisesScreenTag) as HTMLElement & { state: ConfiguratorExercisesScreenState };
+      el.state = {
+        mode: state.viewState.screen === "configurator-exercises" ? "list" : exerciseId === null ? "create" : "detail",
+        exercises,
+        selectedExercise: exerciseId === null ? null : exercises.find((exercise) => exercise.id === exerciseId) ?? null,
+        isLoading: state.configuratorExercisesScreen?.isLoading ?? false,
+        errorMessage: state.configuratorExercisesScreen?.errorMessage ?? null,
       };
       container.append(el);
       return;

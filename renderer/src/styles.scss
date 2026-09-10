@@ -123,6 +123,7 @@ pb-training-plan-exercise-detail-screen,
 pb-gym-detail-screen,
 pb-station-detail-screen,
 pb-exercise-variant-detail-screen,
+pb-configurator-exercises-screen,
 pb-configurator-load-profile-editor-screen,
 pb-configurator-gym-editor-screen,
 pb-login,
@@ -203,6 +204,64 @@ pb-app-root,
   justify-items: stretch;
   text-align: left;
 }
+
+.configurator-exercises-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
+.configurator-exercise-create-button {
+  width: fit-content;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0.45rem 0.9rem var(--button-primary-shadow);
+}
+
+.configurator-exercise-search input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  background: var(--surface-input);
+  color: var(--text-primary);
+}
+
+.configurator-exercise-search input:focus-visible,
+.configurator-exercise-card:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
+}
+
+.configurator-exercise-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.configurator-exercise-card {
+  display: grid;
+  width: 100%;
+  min-height: 4.5rem;
+  gap: var(--space-xs);
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  text-align: left;
+  cursor: pointer;
+}
+
+.configurator-exercise-card:hover { border-color: var(--border-input); }
+.configurator-exercise-card--inactive { opacity: 0.62; }
+.configurator-exercise-card-topline { display: flex; align-items: start; justify-content: space-between; gap: var(--space-md); }
+.configurator-exercise-name { min-width: 0; font-size: 0.95rem; font-weight: 750; line-height: 1.2; }
+.configurator-exercise-status { flex: 0 0 auto; padding: 0.16rem 0.42rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.configurator-exercise-status--new { background: rgba(249, 115, 22, 0.18); color: #fdba74; }
+.configurator-exercise-status--active { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+.configurator-exercise-status--inactive { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+.configurator-exercise-card-metadata { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.2; }
 
 .configurator-gyms-screen {
   justify-items: stretch;

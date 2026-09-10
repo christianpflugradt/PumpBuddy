@@ -2,6 +2,7 @@ import type {
   AboutMetadata,
   BlockedStartModalState,
   ConfiguratorStation,
+  ExerciseSummary,
   GymDetailResponse,
   GymStationDetailResponse,
   GymStationOption,
@@ -77,6 +78,8 @@ export type ViewState =
   | { screen: "configurator-load-profiles" }
   | { screen: "configurator-load-profile-detail"; loadProfileId: string | null }
   | { screen: "configurator-gyms" }
+  | { screen: "configurator-exercises" }
+  | { screen: "configurator-exercise-detail"; exerciseId: string | null }
   | { screen: "configurator-gym-detail"; gymId: string | null }
   | { screen: "configurator-station-detail"; gymId: string; stationId: string | null }
   | { screen: "history" }
@@ -183,6 +186,12 @@ export type AppState = {
   };
   configuratorGymsScreen?: {
     gyms: GymSummary[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
+  };
+  configuratorExercisesScreen?: {
+    exercises: ExerciseSummary[];
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;

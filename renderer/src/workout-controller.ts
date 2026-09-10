@@ -124,6 +124,12 @@ export const createApp = (
       errorMessage: null,
       hasLoaded: false,
     },
+    configuratorExercisesScreen: {
+      exercises: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     configuratorGymDetailScreen: { gymId: null, detail: null, stations: [], isLoading: false, errorMessage: null },
     aboutScreen: {
       metadata: null,
@@ -289,6 +295,8 @@ export const createApp = (
   const loadConfiguratorLoadProfilesScreenData =
     screenDataController.loadConfiguratorLoadProfilesScreenData;
   const loadConfiguratorGymsScreenData = screenDataController.loadConfiguratorGymsScreenData;
+  const loadConfiguratorExercisesScreenData =
+    screenDataController.loadConfiguratorExercisesScreenData;
   const loadConfiguratorGymDetailScreenData = screenDataController.loadConfiguratorGymDetailScreenData;
   const loadConfiguratorLoadProfileDetailScreenData =
     screenDataController.loadConfiguratorLoadProfileDetailScreenData;
@@ -559,6 +567,7 @@ export const createApp = (
         loadAboutScreenMetadata,
         loadConfiguratorLoadProfilesScreenData,
         loadConfiguratorGymsScreenData,
+        loadConfiguratorExercisesScreenData,
         loadConfiguratorGymDetailScreenData,
         loadConfiguratorLoadProfileDetailScreenData,
         loadHistoryScreenData,
