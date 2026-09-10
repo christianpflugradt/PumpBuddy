@@ -1,0 +1,46 @@
+version: 1
+kind: plan
+id: pb-065
+name: Exercise and Variant Configurator Core
+goal: Deliver user-scoped Exercise and nested Exercise Variant management in the Configurator, with lifecycle-aware behavior and no Station-compatibility or workout changes.
+scope:
+  - Remove the obsolete exercise-variant variant_type property from repository schema, development seed data, design models, test fixtures, and any affected contract/source definitions; exclude live-instance migration work.
+  - Add persisted new, active, and inactive lifecycle status for Exercises and Exercise Variants according to repository development conventions.
+  - Add server-authoritative, user-scoped Exercise and nested Variant list, get, create, update, and draft-delete operations, including lifecycle mutability and ownership validation.
+  - Add one Configurator Exercises navigation entry with searchable Exercise list, Exercise create/edit/detail, and a compact nested Variant list and Variant create/edit/detail flow.
+  - Reuse established Configurator lifecycle badges, historical rename confirmation, draft deletion affordances, compact read-only presentation, and responsive styling.
+  - Add focused backend and renderer coverage for lifecycle, ownership, validation, deletion, and UI behavior.
+out_of_scope:
+  - Production or live-instance database migration, backfill, or operational data conversion.
+  - Exercise or Variant lifecycle transitions, status changes, activation rules, or reactivation rules.
+  - Station-to-Exercise-Variant compatibility management, Gym compatibility UX, or placeholders for that future work.
+  - Training Plan configuration, workout creation/execution, executability logic, and historical workout behavior changes.
+  - The optional atomic Add first variant now convenience; defer it to a small follow-up plan.
+success_criteria:
+  - The Configurator exposes Exercises as its sole new top-level entry; Variants are reachable only within their owning Exercise.
+  - New Exercises and Variants persist as new; Exercise names remain editable at every status; only Variant names remain editable once active or inactive.
+  - The backend rejects direct attempts to alter status, re-parent a Variant, change active/inactive Variant structural fields, or delete active/inactive entities.
+  - A draft Exercise may have zero Variants and its draft deletion follows the existing child relationship semantics without weakening Training Plan reference protection.
+  - All API, schema, seed, domain-model, and test-fixture references to variant_type are removed from repository source.
+  - Focused tests cover current-user and parent scoping, allowed structural enum values, lifecycle-dependent mutation/deletion behavior, list/search, and read-only Variant presentation.
+constraints:
+  - OpenAPI remains the canonical contract; generated artifacts are regenerated rather than manually edited.
+  - Backend business logic remains authoritative; renderer controls must not be the sole enforcement layer.
+  - Preserve explicit SQLx persistence and existing transport, application, and persistence boundaries.
+  - Reuse the Configurator Gym, Station, and Load Profile interaction conventions rather than introducing an Exercise-specific visual system.
+inputs:
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/router.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/application/load_profiles.rs
+  - backend/src/persistence/load_profiles.rs
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
