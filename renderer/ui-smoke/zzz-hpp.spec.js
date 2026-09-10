@@ -988,7 +988,9 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
 
 test('UI smoke configurator exercises > navigation, search, lifecycle, loading, and error states', async ({ page }) => {
   let isLoggedIn = false;
-  let exerciseRequestCount = 0;
+  let holdNextExerciseResponse = false;
+  let failNextExerciseResponse = false;
+  let releaseSecondExerciseRequest;
   await page.route('**/auth/session', async (route) => {
     await route.fulfill({
       status: isLoggedIn ? 200 : 401,
@@ -1010,11 +1012,14 @@ test('UI smoke configurator exercises > navigation, search, lifecycle, loading, 
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
   });
   await page.route('**/api/exercises', async (route) => {
-    exerciseRequestCount += 1;
-    if (exerciseRequestCount === 2) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+    if (holdNextExerciseResponse) {
+      holdNextExerciseResponse = false;
+      await new Promise((resolve) => {
+        releaseSecondExerciseRequest = resolve;
+      });
     }
-    if (exerciseRequestCount >= 3) {
+    if (failNextExerciseResponse) {
+      failNextExerciseResponse = false;
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'Unavailable' }) });
       return;
     }
@@ -1050,13 +1055,16 @@ test('UI smoke configurator exercises > navigation, search, lifecycle, loading, 
   await expect(screen).toContainText('Retired Curl');
   await expect(screen).not.toContainText('Barbell Squat');
 
+  holdNextExerciseResponse = true;
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Load Profiles' }).click();
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Exercises' }).click();
   await expect(screen).toContainText('Loading exercises...');
+  releaseSecondExerciseRequest();
   await expect(screen).toContainText('Barbell Squat');
 
+  failNextExerciseResponse = true;
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Load Profiles' }).click();
   await page.getByRole('button', { name: 'Open navigation menu' }).click();

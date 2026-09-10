@@ -708,7 +708,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           class="screen-panel configurator-load-profile-editor-screen"
           aria-label="Load profile editor"
         >
-          <header class="exercise-variant-detail-header configurator-load-profile-detail-header">
+          <header class="exercise-variant-detail-header configurator-app-header configurator-load-profile-detail-header">
+            <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
             <h1 class="exercise-variant-detail-header-title">${escapeHtml(title)}</h1>
           </header>
           ${this.#renderForm()}

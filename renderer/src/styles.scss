@@ -184,6 +184,16 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   gap: var(--space-2xs);
 }
 
+.configurator-app-header {
+  gap: 1rem;
+  text-align: center;
+}
+
+.configurator-app-header .app-title,
+.configurator-app-header .start-copy {
+  text-align: center;
+}
+
 .app-kicker {
   margin: 0;
   color: var(--brand-accent);

@@ -117,7 +117,7 @@ class PbConfiguratorGymsScreenElement extends HTMLElement {
     this.innerHTML = `<div class="app-screen-shell">
       <pb-side-menu mode="configurator" active-screen="configurator-gyms" menu-id="configurator-gyms-side-menu"></pb-side-menu>
       <section class="screen-panel configurator-gyms-screen" aria-label="Configurator gyms screen">
-        <header class="app-header app-header-compact"><h1 class="app-title">${escapeHtml(title)}</h1><p class="start-copy">${isList ? "Manage your available training locations." : "Stay in configurator mode while opening Gym destinations."}</p></header>
+        <header class="app-header configurator-app-header"><img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" /><h1 class="app-title">${escapeHtml(title)}</h1><p class="start-copy">${isList ? "Manage your available training locations." : "Stay in configurator mode while opening Gym destinations."}</p></header>
         ${isList ? '<pb-create-button action="start-configurator-gym-create" label="New Gym"></pb-create-button>' : '<button type="button" class="configurator-gym-back-button" data-ui-action="navigate-back-from-configurator-gym-detail">‹ Back to Gyms</button>'}
         ${isList ? this.#renderListBody() : this.#renderDestination()}
       </section>

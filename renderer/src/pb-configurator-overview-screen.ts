@@ -58,7 +58,11 @@ class PbConfiguratorOverviewScreenElement extends HTMLElement {
     this.innerHTML = `<div class="app-screen-shell">
       <pb-side-menu mode="configurator" active-screen="configurator-overview" menu-id="configurator-overview-side-menu"></pb-side-menu>
       <section class="screen-panel configurator-overview-screen" aria-label="Configurator overview">
-        <header class="app-header app-header-compact"><h1 class="app-title">Configurator</h1><p class="start-copy">Manage the building blocks of your workout setup.</p></header>
+        <header class="app-header configurator-app-header">
+          <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
+          <h1 class="app-title">Configurator</h1>
+          <p class="start-copy">Manage the building blocks of your workout setup.</p>
+        </header>
         ${status}
         <dl class="configurator-overview-list" aria-label="Configurator inventory">${rows}</dl>
       </section>

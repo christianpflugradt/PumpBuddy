@@ -260,7 +260,8 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
           class="screen-panel configurator-load-profiles-screen"
           aria-label="Configurator load profiles screen"
         >
-          <header class="app-header app-header-compact">
+          <header class="app-header configurator-app-header">
+            <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
             <h1 class="app-title">${escapeHtml(title)}</h1>
             <p class="start-copy">
               ${
