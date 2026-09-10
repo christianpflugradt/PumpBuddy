@@ -17,7 +17,9 @@ import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } 
 import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateActiveWorkoutRequest";
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
+import { ExerciseCreateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseCreateRequest";
 import { ExerciseSummaryFromJSON } from "../generated/openapi/typescript/models/ExerciseSummary";
+import { ExerciseUpdateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseUpdateRequest";
 import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
 import { GymCreateRequestToJSON } from "../generated/openapi/typescript/models/GymCreateRequest";
 import { GymStationDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymStationDetailResponse";
@@ -53,7 +55,9 @@ import type {
   CreateWorkoutExerciseInput,
   CreateWorkoutRequest,
   ErrorResponse,
+  ExerciseCreateRequest,
   ExerciseSummary,
+  ExerciseUpdateRequest,
   GymDetailResponse,
   GymCreateRequest,
   GymStationDetailResponse,
@@ -190,6 +194,17 @@ export const parseExerciseSummaries = (json: unknown): ExerciseSummary[] =>
   requireJsonArray(json).map((entry) =>
     toRendererModel<ExerciseSummary>(ExerciseSummaryFromJSON(entry)),
   );
+
+export const parseExerciseSummary = (json: unknown): ExerciseSummary =>
+  toRendererModel<ExerciseSummary>(ExerciseSummaryFromJSON(json));
+
+export const serializeExerciseCreateRequest = (
+  request: ExerciseCreateRequest,
+): unknown => ExerciseCreateRequestToJSON(request);
+
+export const serializeExerciseUpdateRequest = (
+  request: ExerciseUpdateRequest,
+): unknown => ExerciseUpdateRequestToJSON(request);
 
 export const parseLoadProfileSummary = (json: unknown): LoadProfileSummary =>
   toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(json));

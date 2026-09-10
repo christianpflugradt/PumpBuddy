@@ -38,6 +38,14 @@ export type ExerciseSummary = {
   variant_count: number;
 };
 
+export type ExerciseCreateRequest = {
+  name: string;
+};
+
+export type ExerciseUpdateRequest = {
+  name: string;
+};
+
 export type LoadProfileDefinition = {
   kind: "fixed_list" | "formula";
   values?: number[];

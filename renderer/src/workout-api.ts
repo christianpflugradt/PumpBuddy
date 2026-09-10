@@ -11,7 +11,9 @@ import type {
   LoadProfileDetailResponse,
   LoadProfileUpdateRequest,
   ErrorResponse,
+  ExerciseCreateRequest,
   ExerciseSummary,
+  ExerciseUpdateRequest,
   CreateWorkoutRequest,
   GymDetailResponse,
   GymCreateRequest,
@@ -37,6 +39,7 @@ import {
   parseActiveWorkoutResponse,
   parseConfiguratorStations,
   parseConfiguratorStation,
+  parseExerciseSummary,
   parseErrorResponsePayload,
   parseExerciseSummaries,
   parseGymDetailResponse,
@@ -64,6 +67,8 @@ import {
   serializeGymUpdateRequest,
   serializeConfiguratorStationCreateRequest,
   serializeConfiguratorStationUpdateRequest,
+  serializeExerciseCreateRequest,
+  serializeExerciseUpdateRequest,
   serializeReopenActiveWorkoutExerciseRequest,
   serializeSelectActiveWorkoutExerciseOptionRequest,
   serializeSkipActiveWorkoutExerciseRequest,
@@ -538,6 +543,46 @@ export const deleteGym = async (
     method: "DELETE",
     credentials: "same-origin",
   });
+  if (!response.ok) {
+    if (response.status === 401) dispatchUnauthorized();
+    throw new RequestError(response.status, await parseErrorResponse(response));
+  }
+};
+
+export const createExercise = async (
+  payload: ExerciseCreateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ExerciseSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    "/api/exercises",
+    "POST",
+    serializeExerciseCreateRequest(payload),
+    parseExerciseSummary,
+  );
+
+export const updateExercise = async (
+  exerciseId: string,
+  payload: ExerciseUpdateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ExerciseSummary> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/exercises/${encodeURIComponent(exerciseId)}`,
+    "PATCH",
+    serializeExerciseUpdateRequest(payload),
+    parseExerciseSummary,
+  );
+
+export const deleteExercise = async (
+  exerciseId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> => {
+  const response = await fetchImpl(
+    `/api/exercises/${encodeURIComponent(exerciseId)}`,
+    { method: "DELETE", credentials: "same-origin" },
+  );
+
   if (!response.ok) {
     if (response.status === 401) dispatchUnauthorized();
     throw new RequestError(response.status, await parseErrorResponse(response));

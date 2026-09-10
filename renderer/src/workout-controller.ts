@@ -2,18 +2,21 @@ import type { AppState, SessionUser } from "./workout-types";
 import {
   createLoadProfile,
   createConfiguratorStation,
+  createExercise,
   createGym,
   createActiveWorkoutApi,
   createFetchJson,
   deleteLoadProfile,
   deleteGym,
   deleteConfiguratorStation,
+  deleteExercise,
   type ActiveWorkoutApi,
   type FetchJson,
   RequestError,
   updateLoadProfile,
   updateGym,
   updateConfiguratorStation,
+  updateExercise,
 } from "./workout-api";
 import {
   canReopenFallbackOptionSelection,
@@ -761,6 +764,89 @@ export const createApp = (
             state = { ...state, configuratorGymsScreen: { ...(state.configuratorGymsScreen ?? { gyms: [], isLoading: false, errorMessage: null, hasLoaded: false }), gyms: (state.configuratorGymsScreen?.gyms ?? []).filter((gym) => gym.id !== gymId) }, viewState: { screen: "configurator-gyms" } };
             render(); detail.respond?.({ ok: true }); void loadConfiguratorGymsScreenData();
           } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to delete Gym right now.") }); }
+        })();
+        return;
+      }
+      case "save-configurator-exercise": {
+        if (state.viewState.screen !== "configurator-exercise-detail") return;
+        const detail = customEvent.detail as {
+          payload?: { mode?: unknown; exerciseId?: unknown; request?: unknown };
+          respond?: ((result: { ok: boolean; errorMessage?: string }) => void);
+        };
+        const payload = detail.payload;
+        const respond = detail.respond;
+        if (
+          !respond ||
+          !payload ||
+          (payload.mode !== "create" && payload.mode !== "edit") ||
+          !payload.request ||
+          typeof payload.request !== "object"
+        ) return;
+        void (async () => {
+          try {
+            const summary = payload.mode === "create"
+              ? await createExercise(payload.request as never)
+              : await updateExercise(String(payload.exerciseId ?? ""), payload.request as never);
+            state = {
+              ...state,
+              configuratorExercisesScreen: {
+                ...(state.configuratorExercisesScreen ?? {
+                  exercises: [], isLoading: false, errorMessage: null, hasLoaded: false,
+                }),
+                exercises: payload.mode === "create"
+                  ? [...(state.configuratorExercisesScreen?.exercises ?? []), summary]
+                  : (state.configuratorExercisesScreen?.exercises ?? []).map((exercise) =>
+                      exercise.id === summary.id ? summary : exercise),
+              },
+              viewState: { screen: "configurator-exercises" },
+            };
+            render();
+            respond({ ok: true });
+            void loadConfiguratorExercisesScreenData();
+          } catch (error) {
+            respond({
+              ok: false,
+              errorMessage: getRequestErrorMessage(error, "Unable to save Exercise right now."),
+            });
+          }
+        })();
+        return;
+      }
+      case "delete-configurator-exercise": {
+        if (state.viewState.screen !== "configurator-exercise-detail") return;
+        const detail = customEvent.detail as {
+          payload?: { exerciseId?: unknown };
+          respond?: ((result: { ok: boolean; errorMessage?: string }) => void);
+        };
+        const exerciseId = typeof detail.payload?.exerciseId === "string"
+          ? detail.payload.exerciseId.trim()
+          : "";
+        const respond = detail.respond;
+        if (!respond || !exerciseId) return;
+        void (async () => {
+          try {
+            await deleteExercise(exerciseId);
+            state = {
+              ...state,
+              configuratorExercisesScreen: {
+                ...(state.configuratorExercisesScreen ?? {
+                  exercises: [], isLoading: false, errorMessage: null, hasLoaded: false,
+                }),
+                exercises: (state.configuratorExercisesScreen?.exercises ?? []).filter(
+                  (exercise) => exercise.id !== exerciseId,
+                ),
+              },
+              viewState: { screen: "configurator-exercises" },
+            };
+            render();
+            respond({ ok: true });
+            void loadConfiguratorExercisesScreenData();
+          } catch (error) {
+            respond({
+              ok: false,
+              errorMessage: getRequestErrorMessage(error, "Unable to delete Exercise right now."),
+            });
+          }
         })();
         return;
       }

@@ -71,6 +71,11 @@ import {
   registerPbConfiguratorExercisesScreen,
   type ConfiguratorExercisesScreenState,
 } from "./pb-configurator-exercises-screen";
+import {
+  pbConfiguratorExerciseEditorScreenTag,
+  registerPbConfiguratorExerciseEditorScreen,
+  type ConfiguratorExerciseEditorScreenState,
+} from "./pb-configurator-exercise-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -102,6 +107,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorGymEditorScreen();
     registerPbConfiguratorStationEditorScreen();
     registerPbConfiguratorExercisesScreen();
+    registerPbConfiguratorExerciseEditorScreen();
     this.#render();
   }
 
@@ -209,16 +215,32 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
-    if (state.viewState.screen === "configurator-exercises" || state.viewState.screen === "configurator-exercise-detail") {
-      const exerciseId = state.viewState.screen === "configurator-exercise-detail" ? state.viewState.exerciseId : null;
+    if (state.viewState.screen === "configurator-exercises") {
       const exercises = state.configuratorExercisesScreen?.exercises ?? [];
       const el = document.createElement(pbConfiguratorExercisesScreenTag) as HTMLElement & { state: ConfiguratorExercisesScreenState };
       el.state = {
-        mode: state.viewState.screen === "configurator-exercises" ? "list" : exerciseId === null ? "create" : "detail",
+        mode: "list",
         exercises,
-        selectedExercise: exerciseId === null ? null : exercises.find((exercise) => exercise.id === exerciseId) ?? null,
+        selectedExercise: null,
         isLoading: state.configuratorExercisesScreen?.isLoading ?? false,
         errorMessage: state.configuratorExercisesScreen?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-exercise-detail") {
+      const exerciseId = state.viewState.exerciseId;
+      const exercises = state.configuratorExercisesScreen?.exercises ?? [];
+      const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
+        state: ConfiguratorExerciseEditorScreenState;
+      };
+      el.state = {
+        mode: exerciseId === null ? "create" : "edit",
+        exercises,
+        detail: exerciseId === null ? null : exercises.find((exercise) => exercise.id === exerciseId) ?? null,
+        isLoading: false,
+        errorMessage: null,
       };
       container.append(el);
       return;
