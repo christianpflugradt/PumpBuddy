@@ -1,9 +1,9 @@
 use crate::domain::{
-    CompletedActiveWorkoutSet, ConfiguratorStation, ConfiguratorStationUpdate,
-    ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail, GymSummary,
-    GymUpdate, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate, NewConfiguratorStation,
-    NewGym, NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
-    WorkoutHistorySummary,
+    CompletedActiveWorkoutSet, ConfiguratorStation, ConfiguratorStationCompatibilitySelection,
+    ConfiguratorStationUpdate, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
+    GymStationDetail, GymSummary, GymUpdate, LoadProfileDetail, LoadProfileSummary,
+    LoadProfileUpdate, NewConfiguratorStation, NewGym, NewLoadProfile, NewWorkout,
+    TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -499,6 +499,19 @@ pub(crate) trait GymRepository {
         gym_id: &str,
         station_id: &str,
         user_id: &str,
+    ) -> Result<(), PersistenceError>;
+    async fn fetch_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStationCompatibilitySelection>, PersistenceError>;
+    async fn reconcile_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        variant_ids: &[uuid::Uuid],
     ) -> Result<(), PersistenceError>;
 }
 
@@ -1038,6 +1051,33 @@ impl GymRepository for DomainRepository {
         DomainRepository::delete_configurator_station_for_user(self, gym_id, station_id, user_id)
             .await
     }
+    async fn fetch_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStationCompatibilitySelection>, PersistenceError> {
+        DomainRepository::fetch_configurator_station_compatibilities_for_user(
+            self, gym_id, station_id, user_id,
+        )
+        .await
+    }
+    async fn reconcile_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        variant_ids: &[uuid::Uuid],
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::reconcile_configurator_station_compatibilities_for_user(
+            self,
+            gym_id,
+            station_id,
+            user_id,
+            variant_ids,
+        )
+        .await
+    }
 }
 
 impl LoadProfileRepository for DomainRepository {
@@ -1419,6 +1459,31 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<(), PersistenceError> {
         gyms::delete_configurator_station_for_user(self, gym_id, station_id, user_id).await
+    }
+    pub async fn fetch_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<ConfiguratorStationCompatibilitySelection>, PersistenceError> {
+        gyms::fetch_configurator_station_compatibilities_for_user(self, gym_id, station_id, user_id)
+            .await
+    }
+    pub async fn reconcile_configurator_station_compatibilities_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+        variant_ids: &[uuid::Uuid],
+    ) -> Result<(), PersistenceError> {
+        gyms::reconcile_configurator_station_compatibilities_for_user(
+            self,
+            gym_id,
+            station_id,
+            user_id,
+            variant_ids,
+        )
+        .await
     }
 
     pub async fn fetch_load_profile_summaries_for_user(

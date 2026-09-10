@@ -11,25 +11,27 @@ use super::handlers::{
     create_active_workout, create_configurator_station, create_exercise, create_exercise_variant,
     create_gym, create_load_profile, create_workout, delete_configurator_station, delete_exercise,
     delete_exercise_variant, delete_gym, delete_latest_active_workout_set, delete_load_profile,
-    get_about_metadata, get_active_workout, get_configurator_station, get_exercise,
-    get_exercise_variant, get_gym_detail, get_gym_station_detail, get_load_profile,
-    get_training_plan, get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_configurator_stations, list_exercise_variants, list_exercises,
-    list_gyms, list_load_profiles, list_training_plan_exercise_variants, list_training_plans,
-    list_workouts, reopen_active_workout_exercise, select_active_workout_exercise_option,
-    skip_active_workout_exercise, update_active_workout, update_configurator_station,
-    update_exercise, update_exercise_variant, update_gym, update_load_profile,
+    get_about_metadata, get_active_workout, get_configurator_station,
+    get_configurator_station_compatibilities, get_exercise, get_exercise_variant, get_gym_detail,
+    get_gym_station_detail, get_load_profile, get_training_plan, get_workout_detail,
+    get_workout_exercises_performance, get_workout_progress, get_workout_summary,
+    list_configurator_stations, list_exercise_variants, list_exercises, list_gyms,
+    list_load_profiles, list_training_plan_exercise_variants, list_training_plans, list_workouts,
+    reconcile_configurator_station_compatibilities, reopen_active_workout_exercise,
+    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
+    update_configurator_station, update_exercise, update_exercise_variant, update_gym,
+    update_load_profile,
 };
 
 use super::middleware;
 use super::models::{
-    CompleteActiveWorkoutRequest, ConfiguratorStationCreateRequest,
-    ConfiguratorStationUpdateRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, ExerciseCreateRequest, ExerciseUpdateRequest,
-    ExerciseVariantCreateRequest, ExerciseVariantUpdateRequest, GymWriteRequest,
-    ReopenActiveWorkoutExerciseRequest, SelectActiveWorkoutExerciseOptionRequest,
-    SkipActiveWorkoutExerciseRequest, TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery,
-    UpdateActiveWorkoutRequest,
+    CompleteActiveWorkoutRequest, ConfiguratorStationCompatibilitySelectionRequest,
+    ConfiguratorStationCreateRequest, ConfiguratorStationUpdateRequest,
+    ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
+    ExerciseCreateRequest, ExerciseUpdateRequest, ExerciseVariantCreateRequest,
+    ExerciseVariantUpdateRequest, GymWriteRequest, ReopenActiveWorkoutExerciseRequest,
+    SelectActiveWorkoutExerciseOptionRequest, SkipActiveWorkoutExerciseRequest,
+    TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -111,6 +113,11 @@ pub fn app_router(app_state: AppState) -> Router {
             get(|State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(ids): Path<(String, String)>| async move { get_configurator_station(State(state), Extension(session), Path(ids)).await })
                 .patch(|State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(ids): Path<(String, String)>, payload: Result<Json<ConfiguratorStationUpdateRequest>, JsonRejection>| async move { update_configurator_station(State(state), Extension(session), Path(ids), payload).await })
                 .delete(|State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(ids): Path<(String, String)>| async move { delete_configurator_station(State(state), Extension(session), Path(ids)).await }),
+        )
+        .route(
+            "/gyms/{gym_id}/configurator-stations/{station_id}/compatibilities",
+            get(|State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(ids): Path<(String, String)>| async move { get_configurator_station_compatibilities(State(state), Extension(session), Path(ids)).await })
+                .put(|State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(ids): Path<(String, String)>, payload: Result<Json<ConfiguratorStationCompatibilitySelectionRequest>, JsonRejection>| async move { reconcile_configurator_station_compatibilities(State(state), Extension(session), Path(ids), payload).await }),
         )
         .route(
             "/load-profiles",

@@ -100,6 +100,25 @@ pub struct ConfiguratorStationUpdate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorStationCompatibilityVariant {
+    pub exercise_id: String,
+    pub exercise_name: String,
+    pub variant_id: String,
+    pub variant_name: String,
+    pub repetition_kind: String,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorStationCompatibilitySelection {
+    pub gym_id: String,
+    pub station_id: String,
+    pub enabled_variants: Vec<ConfiguratorStationCompatibilityVariant>,
+    pub eligible_variants: Vec<ConfiguratorStationCompatibilityVariant>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadProfileSummary {
     pub id: String,
     pub name: String,

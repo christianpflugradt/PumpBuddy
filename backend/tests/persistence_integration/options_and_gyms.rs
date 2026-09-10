@@ -1311,3 +1311,91 @@ async fn station_profile_load_lookup_for_user_excludes_foreign_user_station() {
         .expect("owner lookup should succeed");
     assert_eq!(visible_for_owner, vec![7.5, 10.0]);
 }
+
+#[tokio::test]
+async fn configurator_station_compatibilities_reconcile_complete_selection_atomically() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(pool.clone());
+    let gym_id = "50000000-0000-0000-0000-000000000001";
+    let station_id = "50000000-0000-0000-0000-000000000001";
+    let deadlift_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000001").unwrap();
+    let pallof_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000005").unwrap();
+    let stationless_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000004").unwrap();
+
+    sqlx::query(
+        "INSERT INTO exercise_variant_equipment_compatibilities (
+             exercise_variant_id, equipment_station_id, user_id, is_enabled
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, FALSE)
+         ON CONFLICT (exercise_variant_id, equipment_station_id)
+         DO UPDATE SET is_enabled = FALSE",
+    )
+    .bind(pallof_id)
+    .bind(station_id)
+    .bind(DEV_USER_ID)
+    .execute(pool)
+    .await
+    .expect("disabled compatibility fixture should persist");
+
+    let before = repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, DEV_USER_ID)
+        .await
+        .expect("compatibilities should load")
+        .expect("owned station should load");
+    assert!(before
+        .eligible_variants
+        .iter()
+        .all(|variant| variant.variant_id != stationless_id.to_string()));
+    assert!(before
+        .enabled_variants
+        .iter()
+        .all(|variant| variant.variant_id != pallof_id.to_string()));
+
+    repository
+        .reconcile_configurator_station_compatibilities_for_user(
+            gym_id,
+            station_id,
+            DEV_USER_ID,
+            &[deadlift_id, pallof_id],
+        )
+        .await
+        .expect("eligible complete selection should reconcile");
+    let after = repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, DEV_USER_ID)
+        .await
+        .expect("compatibilities should load")
+        .expect("owned station should load");
+    let enabled_ids: Vec<String> = after
+        .enabled_variants
+        .iter()
+        .map(|variant| variant.variant_id.clone())
+        .collect();
+    assert_eq!(enabled_ids, vec![deadlift_id.to_string(), pallof_id.to_string()]);
+
+    let rejected = repository
+        .reconcile_configurator_station_compatibilities_for_user(
+            gym_id,
+            station_id,
+            DEV_USER_ID,
+            &[deadlift_id, stationless_id],
+        )
+        .await;
+    assert!(matches!(rejected, Err(PersistenceError::Conflict(_))));
+    let unchanged = repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, DEV_USER_ID)
+        .await
+        .expect("compatibilities should load")
+        .expect("owned station should load");
+    let unchanged_ids: Vec<String> = unchanged
+        .enabled_variants
+        .iter()
+        .map(|variant| variant.variant_id.clone())
+        .collect();
+    assert_eq!(unchanged_ids, vec![deadlift_id.to_string(), pallof_id.to_string()]);
+    assert!(repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, USER_B_ID)
+        .await
+        .expect("foreign lookup should succeed")
+        .is_none());
+}

@@ -49,6 +49,9 @@ pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutReq
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
 use crate::models::completed_active_workout_set::RepetitionKind as CompletedActiveWorkoutSetRepetitionKindResponse;
 use crate::models::completed_active_workout_set::SetSide as CompletedActiveWorkoutSetSideResponse;
+pub use crate::models::configurator_station_compatibility_response::ConfiguratorStationCompatibilityResponse;
+pub use crate::models::configurator_station_compatibility_selection_request::ConfiguratorStationCompatibilitySelectionRequest;
+pub use crate::models::configurator_station_compatibility_variant::ConfiguratorStationCompatibilityVariant as ConfiguratorStationCompatibilityVariantResponse;
 pub use crate::models::configurator_station_create_request::ConfiguratorStationCreateRequest;
 pub use crate::models::configurator_station_load_profile::ConfiguratorStationLoadProfile as ConfiguratorStationLoadProfileResponse;
 pub use crate::models::configurator_station_response::ConfiguratorStationResponse;

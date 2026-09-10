@@ -1,9 +1,11 @@
 use super::{logging, DomainRepository, PersistenceError};
 use crate::domain::{
-    ConfiguratorStation, ConfiguratorStationLoadProfile, ConfiguratorStationUpdate, GymDetail,
-    GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary, GymStationAvailability,
-    GymStationDetail, GymStationExerciseGroup, GymStationExerciseVariantSummary, GymStationOption,
-    GymStationSummary, GymSummary, GymUpdate, NewConfiguratorStation, NewGym,
+    ConfiguratorStation, ConfiguratorStationCompatibilitySelection,
+    ConfiguratorStationCompatibilityVariant, ConfiguratorStationLoadProfile,
+    ConfiguratorStationUpdate, GymDetail, GymExerciseGroup, GymExerciseVariantSummary,
+    GymLoadProfileSummary, GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
+    GymStationExerciseVariantSummary, GymStationOption, GymStationSummary, GymSummary, GymUpdate,
+    NewConfiguratorStation, NewGym,
 };
 use sqlx::{postgres::PgRow, Row};
 use uuid::Uuid;
@@ -202,6 +204,201 @@ pub(super) async fn delete_configurator_station_for_user(
     } else {
         Err(PersistenceError::NotFound("Station not found".to_owned()))
     }
+}
+
+pub(super) async fn fetch_configurator_station_compatibilities_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<Option<ConfiguratorStationCompatibilitySelection>, PersistenceError> {
+    let station_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1
+            FROM equipment_stations es
+            JOIN gyms g ON g.id = es.gym_id AND g.user_id = $3::uuid
+            WHERE es.gym_id = $1::uuid AND es.id = $2::uuid AND es.user_id = $3::uuid
+        )",
+    )
+    .bind(gym_id)
+    .bind(station_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+    if !station_exists {
+        return Ok(None);
+    }
+
+    let enabled_variants = fetch_configurator_station_compatibility_variants(
+        &repository.pool,
+        gym_id,
+        station_id,
+        user_id,
+        true,
+    )
+    .await?;
+    let eligible_variants = fetch_configurator_station_compatibility_variants(
+        &repository.pool,
+        gym_id,
+        station_id,
+        user_id,
+        false,
+    )
+    .await?;
+    Ok(Some(ConfiguratorStationCompatibilitySelection {
+        gym_id: gym_id.to_owned(),
+        station_id: station_id.to_owned(),
+        enabled_variants,
+        eligible_variants,
+    }))
+}
+
+pub(super) async fn reconcile_configurator_station_compatibilities_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+    variant_ids: &[Uuid],
+) -> Result<(), PersistenceError> {
+    let mut tx = logging::begin_transaction(
+        &repository.pool,
+        "reconcile_configurator_station_compatibilities",
+        "station_compatibility",
+    )
+    .await?;
+    let station = sqlx::query(
+        "SELECT es.id
+         FROM equipment_stations es
+         JOIN gyms g ON g.id = es.gym_id AND g.user_id = $3::uuid
+         WHERE es.gym_id = $1::uuid AND es.id = $2::uuid AND es.user_id = $3::uuid
+         FOR UPDATE",
+    )
+    .bind(gym_id)
+    .bind(station_id)
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+    if station.is_none() {
+        logging::rollback_transaction(
+            tx,
+            "reconcile_configurator_station_compatibilities",
+            "station_compatibility",
+        )
+        .await;
+        return Err(PersistenceError::NotFound("Station not found".to_owned()));
+    }
+
+    let eligible_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)
+         FROM exercise_variants ev
+         JOIN exercises e ON e.id = ev.exercise_id AND e.user_id = $2::uuid
+         WHERE ev.id = ANY($1::uuid[])
+           AND ev.user_id = $2::uuid
+           AND ev.requires_station = TRUE",
+    )
+    .bind(variant_ids)
+    .bind(user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if eligible_count != variant_ids.len() as i64 {
+        logging::rollback_transaction(
+            tx,
+            "reconcile_configurator_station_compatibilities",
+            "station_compatibility",
+        )
+        .await;
+        return Err(PersistenceError::Conflict(
+            "One or more exercise variants are not eligible for this station selection".to_owned(),
+        ));
+    }
+
+    sqlx::query(
+        "UPDATE exercise_variant_equipment_compatibilities
+         SET is_enabled = FALSE
+         WHERE equipment_station_id = $1::uuid
+           AND user_id = $2::uuid
+           AND NOT (exercise_variant_id = ANY($3::uuid[]))",
+    )
+    .bind(station_id)
+    .bind(user_id)
+    .bind(variant_ids)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO exercise_variant_equipment_compatibilities (
+             exercise_variant_id, equipment_station_id, user_id, is_enabled
+         )
+         SELECT variant_id, $2::uuid, $3::uuid, TRUE
+         FROM unnest($1::uuid[]) AS variant_id
+         ON CONFLICT (exercise_variant_id, equipment_station_id)
+         DO UPDATE SET is_enabled = TRUE",
+    )
+    .bind(variant_ids)
+    .bind(station_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+    logging::commit_transaction(
+        tx,
+        "reconcile_configurator_station_compatibilities",
+        "station_compatibility",
+    )
+    .await
+}
+
+async fn fetch_configurator_station_compatibility_variants(
+    pool: &sqlx::PgPool,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+    enabled_only: bool,
+) -> Result<Vec<ConfiguratorStationCompatibilityVariant>, PersistenceError> {
+    let rows = if enabled_only {
+        sqlx::query(
+            "SELECT e.id::text AS exercise_id, e.name AS exercise_name,
+                    ev.id::text AS variant_id, ev.name AS variant_name,
+                    ev.repetition_kind, ev.load_input_mode, ev.set_tracking_mode
+             FROM exercise_variant_equipment_compatibilities evec
+             JOIN exercise_variants ev ON ev.id = evec.exercise_variant_id
+                AND ev.user_id = $3::uuid AND ev.requires_station = TRUE
+             JOIN exercises e ON e.id = ev.exercise_id AND e.user_id = $3::uuid
+             JOIN equipment_stations es ON es.id = evec.equipment_station_id
+                AND es.user_id = $3::uuid AND es.gym_id = $1::uuid
+             WHERE evec.equipment_station_id = $2::uuid
+                AND evec.user_id = $3::uuid AND evec.is_enabled = TRUE
+             ORDER BY lower(e.name), e.name, e.id, lower(ev.name), ev.name, ev.id",
+        )
+        .bind(gym_id)
+        .bind(station_id)
+        .bind(user_id)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query(
+            "SELECT e.id::text AS exercise_id, e.name AS exercise_name,
+                    ev.id::text AS variant_id, ev.name AS variant_name,
+                    ev.repetition_kind, ev.load_input_mode, ev.set_tracking_mode
+             FROM exercise_variants ev
+             JOIN exercises e ON e.id = ev.exercise_id AND e.user_id = $2::uuid
+             WHERE ev.user_id = $2::uuid AND ev.requires_station = TRUE
+             ORDER BY lower(e.name), e.name, e.id, lower(ev.name), ev.name, ev.id",
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await?
+    };
+    Ok(rows
+        .into_iter()
+        .map(|row| ConfiguratorStationCompatibilityVariant {
+            exercise_id: row.get("exercise_id"),
+            exercise_name: row.get("exercise_name"),
+            variant_id: row.get("variant_id"),
+            variant_name: row.get("variant_name"),
+            repetition_kind: row.get("repetition_kind"),
+            load_input_mode: row.get("load_input_mode"),
+            set_tracking_mode: row.get("set_tracking_mode"),
+        })
+        .collect())
 }
 
 fn configurator_station_from_row(row: PgRow) -> ConfiguratorStation {
