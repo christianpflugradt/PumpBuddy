@@ -1,6 +1,7 @@
 import {
   loadAboutMetadata,
   loadConfiguratorStations,
+  loadConfiguratorExerciseVariants,
   loadExerciseSummaries,
   loadGymDetail,
   loadGymSummaries,
@@ -32,6 +33,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorExercisesScreenData: () => Promise<void>;
+  loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
@@ -55,6 +57,7 @@ export const createScreenDataController = (deps: Dependencies): {
   let configuratorLoadProfilesToken = 0;
   let configuratorGymsToken = 0;
   let configuratorExercisesToken = 0;
+  let configuratorExerciseDetailToken = 0;
   let configuratorGymDetailToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
@@ -285,6 +288,22 @@ export const createScreenDataController = (deps: Dependencies): {
           hasLoaded: false,
         },
       });
+      render();
+    }
+  };
+
+  const loadConfiguratorExerciseDetailScreenData = async (exerciseId: string): Promise<void> => {
+    const token = ++configuratorExerciseDetailToken;
+    setState({ ...getState(), configuratorExerciseDetailScreen: { exerciseId, variants: [], isLoading: true, errorMessage: null } });
+    render();
+    try {
+      const variants = await loadConfiguratorExerciseVariants(fetchJson, exerciseId);
+      if (token !== configuratorExerciseDetailToken) return;
+      setState({ ...getState(), configuratorExerciseDetailScreen: { exerciseId, variants, isLoading: false, errorMessage: null } });
+      render();
+    } catch {
+      if (token !== configuratorExerciseDetailToken) return;
+      setState({ ...getState(), configuratorExerciseDetailScreen: { exerciseId, variants: [], isLoading: false, errorMessage: "Unable to load Variants right now." } });
       render();
     }
   };
@@ -798,6 +817,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
     loadConfiguratorExercisesScreenData,
+    loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,

@@ -80,6 +80,7 @@ export type ViewState =
   | { screen: "configurator-gyms" }
   | { screen: "configurator-exercises" }
   | { screen: "configurator-exercise-detail"; exerciseId: string | null }
+  | { screen: "configurator-exercise-variant-detail"; exerciseId: string; variantId: string | null }
   | { screen: "configurator-gym-detail"; gymId: string | null }
   | { screen: "configurator-station-detail"; gymId: string; stationId: string | null }
   | { screen: "history" }
@@ -195,6 +196,12 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+  };
+  configuratorExerciseDetailScreen?: {
+    exerciseId: string;
+    variants: import("./workout-contract").ConfiguratorExerciseVariant[];
+    isLoading: boolean;
+    errorMessage: string | null;
   };
   configuratorGymDetailScreen?: {
     gymId: string | null;

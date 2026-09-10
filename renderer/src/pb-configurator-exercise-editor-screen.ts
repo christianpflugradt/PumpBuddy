@@ -2,6 +2,7 @@ import type {
   ExerciseCreateRequest,
   ExerciseSummary,
   ExerciseUpdateRequest,
+  ConfiguratorExerciseVariant,
 } from "./workout-contract";
 
 export const pbConfiguratorExerciseEditorScreenTag =
@@ -13,6 +14,7 @@ export type ConfiguratorExerciseEditorScreenState = {
   detail: ExerciseSummary | null;
   isLoading: boolean;
   errorMessage: string | null;
+  variants: ConfiguratorExerciseVariant[];
 };
 
 type SaveResult = { ok: boolean; errorMessage?: string };
@@ -50,6 +52,7 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
     detail: null,
     isLoading: false,
     errorMessage: null,
+    variants: [],
   };
   #loadedKey: string | null = null;
   #nameDraft = "";
@@ -155,6 +158,15 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
       this.#emit(action);
       return;
     }
+    if (action === "start-configurator-exercise-variant-create") {
+      if (this.#state.detail) this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action, payload: { exerciseId: this.#state.detail.id } } }));
+      return;
+    }
+    if (action === "open-configurator-exercise-variant-detail") {
+      const variantId = target.closest<HTMLElement>("[data-variant-id]")?.dataset.variantId;
+      if (this.#state.detail && variantId) this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action, payload: { exerciseId: this.#state.detail.id, variantId } } }));
+      return;
+    }
     if (action === "dismiss-historical-rename-warning") {
       this.#renameWarningOpen = false;
       this.#render();
@@ -238,7 +250,7 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
         ? `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>`
         : !isCreate && !detail
           ? '<p class="start-error" role="alert">Unable to find that Exercise right now.</p>'
-          : `<div class="configurator-gym-editor-card"><label class="configurator-gym-field"><span class="configurator-gym-field-label">Name</span><input class="configurator-gym-input" data-field="name" value="${escapeHtml(this.#nameDraft)}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""} />${error && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(error)}</span>` : ""}</label>${detail ? `<dl class="configurator-load-profile-metadata"><div><dt>Status</dt><dd>${statusLabel(detail.status)}</dd></div><div><dt>Variants</dt><dd>${detail.variant_count === 1 ? "1 variant" : `${detail.variant_count} variants`}</dd></div></dl>` : ""}${this.#submitError ? `<p class="start-error" role="alert">${escapeHtml(this.#submitError)}</p>` : ""}<div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-configurator-exercise" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : isCreate ? "Create Exercise" : "Save Name"}</button>${detail?.status === "new" ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-configurator-exercise" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div>`;
+          : (() => { const variants = this.#state.variants ?? []; return `<div class="configurator-gym-editor-card"><label class="configurator-gym-field"><span class="configurator-gym-field-label">Name</span><input class="configurator-gym-input" data-field="name" value="${escapeHtml(this.#nameDraft)}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""} />${error && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(error)}</span>` : ""}</label>${detail ? `<dl class="configurator-load-profile-metadata"><div><dt>Status</dt><dd>${statusLabel(detail.status)}</dd></div><div><dt>Variants</dt><dd>${detail.variant_count === 1 ? "1 variant" : `${detail.variant_count} variants`}</dd></div></dl><section class="configurator-exercise-variants" aria-label="Variants"><div class="configurator-gym-editor-actions"><button type="button" class="nav-button" data-ui-action="start-configurator-exercise-variant-create">+ New Variant</button></div>${variants.length ? `<div class="configurator-exercise-list">${variants.map((variant) => `<button type="button" class="configurator-exercise-card configurator-exercise-card--${variant.status}" data-ui-action="open-configurator-exercise-variant-detail" data-variant-id="${escapeHtml(variant.id)}"><span class="configurator-exercise-card-topline"><span class="configurator-exercise-name">${escapeHtml(variant.name)}</span><span class="configurator-exercise-status configurator-exercise-status--${variant.status}">${statusLabel(variant.status)}</span></span><span class="configurator-exercise-card-metadata">${variant.requires_station ? "Station required" : "Stationless"} · ${variant.repetition_kind === "REPS" ? "Reps" : "Seconds"}</span></button>`).join("")}</div>` : '<p class="start-copy">No Variants yet.</p>'}</section>` : ""}${this.#submitError ? `<p class="start-error" role="alert">${escapeHtml(this.#submitError)}</p>` : ""}<div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-configurator-exercise" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : isCreate ? "Create Exercise" : "Save Name"}</button>${detail?.status === "new" ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-configurator-exercise" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div>`; })();
     const warning = this.#renameWarningOpen
       ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Historical rename warning"><p class="confirm-dialog-message">Renaming an active or inactive Exercise can affect how historical workouts are understood. Save this name change?</p><div class="confirm-dialog-actions"><button type="button" class="nav-button" data-ui-action="dismiss-historical-rename-warning">Keep Editing</button><button type="button" class="nav-button" data-ui-action="save-configurator-exercise">Save Name</button></div></section></div>`
       : "";

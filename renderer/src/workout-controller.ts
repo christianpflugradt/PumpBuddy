@@ -3,6 +3,7 @@ import {
   createLoadProfile,
   createConfiguratorStation,
   createExercise,
+  createConfiguratorExerciseVariant,
   createGym,
   createActiveWorkoutApi,
   createFetchJson,
@@ -10,6 +11,7 @@ import {
   deleteGym,
   deleteConfiguratorStation,
   deleteExercise,
+  deleteConfiguratorExerciseVariant,
   type ActiveWorkoutApi,
   type FetchJson,
   RequestError,
@@ -17,6 +19,7 @@ import {
   updateGym,
   updateConfiguratorStation,
   updateExercise,
+  updateConfiguratorExerciseVariant,
 } from "./workout-api";
 import {
   canReopenFallbackOptionSelection,
@@ -300,6 +303,7 @@ export const createApp = (
   const loadConfiguratorGymsScreenData = screenDataController.loadConfiguratorGymsScreenData;
   const loadConfiguratorExercisesScreenData =
     screenDataController.loadConfiguratorExercisesScreenData;
+  const loadConfiguratorExerciseDetailScreenData = screenDataController.loadConfiguratorExerciseDetailScreenData;
   const loadConfiguratorGymDetailScreenData = screenDataController.loadConfiguratorGymDetailScreenData;
   const loadConfiguratorLoadProfileDetailScreenData =
     screenDataController.loadConfiguratorLoadProfileDetailScreenData;
@@ -571,6 +575,7 @@ export const createApp = (
         loadConfiguratorLoadProfilesScreenData,
         loadConfiguratorGymsScreenData,
         loadConfiguratorExercisesScreenData,
+        loadConfiguratorExerciseDetailScreenData,
         loadConfiguratorGymDetailScreenData,
         loadConfiguratorLoadProfileDetailScreenData,
         loadHistoryScreenData,
@@ -855,6 +860,28 @@ export const createApp = (
         const payload = detail.payload; const gymId = payload?.gymId;
         if (!detail.respond || !gymId || !payload?.request || state.viewState.screen !== "configurator-station-detail") return;
         void (async () => { try { const station = payload.stationId ? await updateConfiguratorStation(gymId, payload.stationId, payload.request as never) : await createConfiguratorStation(gymId, payload.request as never); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: payload.stationId ? state.configuratorGymDetailScreen.stations?.map((entry) => entry.id === station.id ? station : entry) : [...(state.configuratorGymDetailScreen.stations ?? []), station] } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); detail.respond?.({ ok: true }); } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Station right now.") }); } })(); return;
+      }
+      case "save-configurator-exercise-variant": {
+        if (state.viewState.screen !== "configurator-exercise-variant-detail") return;
+        const detail = customEvent.detail as { payload?: { exerciseId?: string; variantId?: string | null; request?: object }; respond?: (result: { ok: boolean; errorMessage?: string }) => void };
+        const payload = detail.payload;
+        if (!detail.respond || !payload?.exerciseId || !payload.request) return;
+        const exerciseId = payload.exerciseId;
+        void (async () => { try {
+          const variant = payload.variantId ? await updateConfiguratorExerciseVariant(exerciseId, payload.variantId, payload.request as never) : await createConfiguratorExerciseVariant(exerciseId, payload.request as never);
+          const current = state.configuratorExerciseDetailScreen;
+          state = { ...state, configuratorExerciseDetailScreen: current ? { ...current, variants: payload.variantId ? current.variants.map((entry) => entry.id === variant.id ? variant : entry) : [...current.variants, variant] } : current, viewState: { screen: "configurator-exercise-detail", exerciseId } };
+          render(); detail.respond?.({ ok: true }); void loadConfiguratorExerciseDetailScreenData(exerciseId);
+        } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Variant right now.") }); } })();
+        return;
+      }
+      case "delete-configurator-exercise-variant": {
+        if (state.viewState.screen !== "configurator-exercise-variant-detail") return;
+        const detail = customEvent.detail as { payload?: { exerciseId?: string; variantId?: string }; respond?: (result: { ok: boolean; errorMessage?: string }) => void };
+        const exerciseId = detail.payload?.exerciseId; const variantId = detail.payload?.variantId;
+        if (!detail.respond || !exerciseId || !variantId) return;
+        void (async () => { try { await deleteConfiguratorExerciseVariant(exerciseId, variantId); const current = state.configuratorExerciseDetailScreen; state = { ...state, configuratorExerciseDetailScreen: current ? { ...current, variants: current.variants.filter((entry) => entry.id !== variantId) } : current, viewState: { screen: "configurator-exercise-detail", exerciseId } }; render(); detail.respond?.({ ok: true }); void loadConfiguratorExerciseDetailScreenData(exerciseId); } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to delete Variant right now.") }); } })();
+        return;
       }
       case "delete-configurator-station": {
         const detail = customEvent.detail as { payload?: { gymId?: string; stationId?: string }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };

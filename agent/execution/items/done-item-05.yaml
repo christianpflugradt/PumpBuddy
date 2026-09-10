@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-065-item-05
   title: Implement nested Variant configurator flow
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

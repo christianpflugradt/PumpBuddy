@@ -12,6 +12,9 @@ import type {
   LoadProfileUpdateRequest,
   ErrorResponse,
   ExerciseCreateRequest,
+  ConfiguratorExerciseVariant,
+  ConfiguratorExerciseVariantCreateRequest,
+  ConfiguratorExerciseVariantUpdateRequest,
   ExerciseSummary,
   ExerciseUpdateRequest,
   CreateWorkoutRequest,
@@ -42,6 +45,8 @@ import {
   parseExerciseSummary,
   parseErrorResponsePayload,
   parseExerciseSummaries,
+  parseConfiguratorExerciseVariant,
+  parseConfiguratorExerciseVariants,
   parseGymDetailResponse,
   parseGymSummary,
   parseGymStationDetailResponse,
@@ -69,6 +74,8 @@ import {
   serializeConfiguratorStationUpdateRequest,
   serializeExerciseCreateRequest,
   serializeExerciseUpdateRequest,
+  serializeConfiguratorExerciseVariantCreateRequest,
+  serializeConfiguratorExerciseVariantUpdateRequest,
   serializeReopenActiveWorkoutExerciseRequest,
   serializeSelectActiveWorkoutExerciseOptionRequest,
   serializeSkipActiveWorkoutExerciseRequest,
@@ -184,6 +191,14 @@ export const loadExerciseSummaries = async (
   fetchJson: FetchJson,
 ): Promise<ExerciseSummary[]> =>
   parseExerciseSummaries(await fetchJson<unknown>("/api/exercises"));
+
+export const loadConfiguratorExerciseVariants = async (
+  fetchJson: FetchJson,
+  exerciseId: string,
+): Promise<ConfiguratorExerciseVariant[]> =>
+  parseConfiguratorExerciseVariants(
+    await fetchJson<unknown>(`/api/exercises/${encodeURIComponent(exerciseId)}/variants`),
+  );
 
 export const loadLoadProfileDetail = async (
   fetchJson: FetchJson,
@@ -587,6 +602,34 @@ export const deleteExercise = async (
     if (response.status === 401) dispatchUnauthorized();
     throw new RequestError(response.status, await parseErrorResponse(response));
   }
+};
+
+export const createConfiguratorExerciseVariant = async (
+  exerciseId: string,
+  payload: ConfiguratorExerciseVariantCreateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ConfiguratorExerciseVariant> =>
+  submitLoadProfileRequest(
+    fetchImpl, `/api/exercises/${encodeURIComponent(exerciseId)}/variants`, "POST",
+    serializeConfiguratorExerciseVariantCreateRequest(payload), parseConfiguratorExerciseVariant,
+  );
+
+export const updateConfiguratorExerciseVariant = async (
+  exerciseId: string,
+  variantId: string,
+  payload: ConfiguratorExerciseVariantUpdateRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ConfiguratorExerciseVariant> =>
+  submitLoadProfileRequest(
+    fetchImpl, `/api/exercises/${encodeURIComponent(exerciseId)}/variants/${encodeURIComponent(variantId)}`, "PATCH",
+    serializeConfiguratorExerciseVariantUpdateRequest(payload), parseConfiguratorExerciseVariant,
+  );
+
+export const deleteConfiguratorExerciseVariant = async (
+  exerciseId: string, variantId: string, fetchImpl: typeof fetch = fetch,
+): Promise<void> => {
+  const response = await fetchImpl(`/api/exercises/${encodeURIComponent(exerciseId)}/variants/${encodeURIComponent(variantId)}`, { method: "DELETE", credentials: "same-origin" });
+  if (!response.ok) { if (response.status === 401) dispatchUnauthorized(); throw new RequestError(response.status, await parseErrorResponse(response)); }
 };
 
 export const createConfiguratorStation = async (gymId: string, payload: ConfiguratorStationCreateRequest, fetchImpl: typeof fetch = fetch): Promise<ConfiguratorStation> => submitLoadProfileRequest(fetchImpl, `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations`, "POST", serializeConfiguratorStationCreateRequest(payload), parseConfiguratorStation);

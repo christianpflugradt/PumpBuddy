@@ -18,6 +18,9 @@ import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescrip
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
 import { ExerciseCreateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseCreateRequest";
+import { ExerciseVariantFromJSON } from "../generated/openapi/typescript/models/ExerciseVariant";
+import { ExerciseVariantCreateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseVariantCreateRequest";
+import { ExerciseVariantUpdateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseVariantUpdateRequest";
 import { ExerciseSummaryFromJSON } from "../generated/openapi/typescript/models/ExerciseSummary";
 import { ExerciseUpdateRequestToJSON } from "../generated/openapi/typescript/models/ExerciseUpdateRequest";
 import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
@@ -56,6 +59,9 @@ import type {
   CreateWorkoutRequest,
   ErrorResponse,
   ExerciseCreateRequest,
+  ConfiguratorExerciseVariant,
+  ConfiguratorExerciseVariantCreateRequest,
+  ConfiguratorExerciseVariantUpdateRequest,
   ExerciseSummary,
   ExerciseUpdateRequest,
   GymDetailResponse,
@@ -205,6 +211,22 @@ export const serializeExerciseCreateRequest = (
 export const serializeExerciseUpdateRequest = (
   request: ExerciseUpdateRequest,
 ): unknown => ExerciseUpdateRequestToJSON(request);
+
+export const parseConfiguratorExerciseVariants = (json: unknown): ConfiguratorExerciseVariant[] =>
+  requireJsonArray(json).map((entry) =>
+    toRendererModel<ConfiguratorExerciseVariant>(ExerciseVariantFromJSON(entry)),
+  );
+
+export const parseConfiguratorExerciseVariant = (json: unknown): ConfiguratorExerciseVariant =>
+  toRendererModel<ConfiguratorExerciseVariant>(ExerciseVariantFromJSON(json));
+
+export const serializeConfiguratorExerciseVariantCreateRequest = (
+  request: ConfiguratorExerciseVariantCreateRequest,
+): unknown => ExerciseVariantCreateRequestToJSON(request);
+
+export const serializeConfiguratorExerciseVariantUpdateRequest = (
+  request: ConfiguratorExerciseVariantUpdateRequest,
+): unknown => ExerciseVariantUpdateRequestToJSON(request);
 
 export const parseLoadProfileSummary = (json: unknown): LoadProfileSummary =>
   toRendererModel<LoadProfileSummary>(LoadProfileSummaryFromJSON(json));

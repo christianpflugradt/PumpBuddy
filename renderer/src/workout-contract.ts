@@ -46,6 +46,26 @@ export type ExerciseUpdateRequest = {
   name: string;
 };
 
+export type ConfiguratorExerciseVariant = {
+  id: string;
+  exercise_id: string;
+  name: string;
+  status: "new" | "active" | "inactive";
+  requires_station: boolean;
+  load_input_mode: "TOTAL" | "PER_SIDE";
+  set_tracking_mode: "BILATERAL" | "UNILATERAL";
+  repetition_kind: "REPS" | "SECS";
+};
+
+export type ConfiguratorExerciseVariantCreateRequest = Pick<
+  ConfiguratorExerciseVariant,
+  "name" | "requires_station" | "load_input_mode" | "set_tracking_mode" | "repetition_kind"
+>;
+
+export type ConfiguratorExerciseVariantUpdateRequest =
+  | ConfiguratorExerciseVariantCreateRequest
+  | Pick<ConfiguratorExerciseVariant, "name">;
+
 export type LoadProfileDefinition = {
   kind: "fixed_list" | "formula";
   values?: number[];

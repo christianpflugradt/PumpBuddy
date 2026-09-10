@@ -11,6 +11,7 @@ type Dependencies = {
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorExercisesScreenData: () => Promise<void>;
+  loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
@@ -159,6 +160,7 @@ export const handleScreenNavigationAction = (
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
     loadConfiguratorExercisesScreenData,
+    loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
@@ -242,6 +244,7 @@ export const handleScreenNavigationAction = (
       if (state.viewState.screen !== "configurator-exercises" || !exerciseId || !state.configuratorExercisesScreen?.exercises.some((exercise) => exercise.id === exerciseId)) return true;
       setState({ ...state, viewState: { screen: "configurator-exercise-detail", exerciseId } });
       render();
+      void loadConfiguratorExerciseDetailScreenData(exerciseId);
       return true;
     }
     case "navigate-back-from-configurator-exercise-detail": {
@@ -249,6 +252,24 @@ export const handleScreenNavigationAction = (
       if (state.viewState.screen !== "configurator-exercise-detail") return true;
       setState({ ...state, viewState: { screen: "configurator-exercises" } });
       render();
+      return true;
+    }
+    case "start-configurator-exercise-variant-create": {
+      const state = getState();
+      const exerciseId = (event as CustomEvent<{ payload?: { exerciseId?: string } }>).detail?.payload?.exerciseId;
+      if (state.viewState.screen !== "configurator-exercise-detail" || !exerciseId) return true;
+      setState({ ...state, viewState: { screen: "configurator-exercise-variant-detail", exerciseId, variantId: null } }); render();
+      return true;
+    }
+    case "open-configurator-exercise-variant-detail": {
+      const state = getState(); const payload = (event as CustomEvent<{ payload?: { exerciseId?: string; variantId?: string } }>).detail?.payload;
+      if (state.viewState.screen !== "configurator-exercise-detail" || !payload?.exerciseId || !payload.variantId || !state.configuratorExerciseDetailScreen?.variants.some((variant) => variant.id === payload.variantId)) return true;
+      setState({ ...state, viewState: { screen: "configurator-exercise-variant-detail", exerciseId: payload.exerciseId, variantId: payload.variantId } }); render();
+      return true;
+    }
+    case "navigate-back-from-configurator-exercise-variant-detail": {
+      const state = getState(); if (state.viewState.screen !== "configurator-exercise-variant-detail") return true;
+      setState({ ...state, viewState: { screen: "configurator-exercise-detail", exerciseId: state.viewState.exerciseId } }); render();
       return true;
     }
     case "start-configurator-gym-create": {

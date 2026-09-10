@@ -76,6 +76,7 @@ import {
   registerPbConfiguratorExerciseEditorScreen,
   type ConfiguratorExerciseEditorScreenState,
 } from "./pb-configurator-exercise-editor-screen";
+import { pbConfiguratorExerciseVariantEditorScreenTag, registerPbConfiguratorExerciseVariantEditorScreen, type ConfiguratorExerciseVariantEditorScreenState } from "./pb-configurator-exercise-variant-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -108,6 +109,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorStationEditorScreen();
     registerPbConfiguratorExercisesScreen();
     registerPbConfiguratorExerciseEditorScreen();
+    registerPbConfiguratorExerciseVariantEditorScreen();
     this.#render();
   }
 
@@ -241,7 +243,18 @@ class PbAppRootElement extends HTMLElement {
         detail: exerciseId === null ? null : exercises.find((exercise) => exercise.id === exerciseId) ?? null,
         isLoading: false,
         errorMessage: null,
+        variants: exerciseId === null ? [] : state.configuratorExerciseDetailScreen?.exerciseId === exerciseId ? state.configuratorExerciseDetailScreen.variants : [],
       };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-exercise-variant-detail") {
+      const { exerciseId, variantId } = state.viewState;
+      const exercise = state.configuratorExercisesScreen?.exercises.find((entry) => entry.id === exerciseId);
+      const detail = state.configuratorExerciseDetailScreen?.exerciseId === exerciseId ? state.configuratorExerciseDetailScreen : null;
+      const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+      el.state = { exerciseId, exerciseName: exercise?.name ?? "Exercise", variant: variantId === null ? null : detail?.variants.find((entry) => entry.id === variantId) ?? null, isLoading: detail?.isLoading ?? false, errorMessage: detail?.errorMessage ?? null };
       container.append(el);
       return;
     }
