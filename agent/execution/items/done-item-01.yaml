@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-065-item-01
   title: Prepare exercise lifecycle persistence
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -69,4 +69,21 @@ handoff:
   - Verify default values, status constraints, and seed columns stay aligned.
   - Verify variant_type removal includes fixtures and authoritative design models.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01: exercises and exercise_variants constrain status to new,
+      active, or inactive with active defaults, and variant_type is absent from runtime,
+      backend, renderer, and design paths. ac-02: revised schema, seed data, fixture
+      coverage, and canonical models are aligned.'
+    evidence: Independent source review verified matching status columns and constraints
+      in runtime/database/00-schema.sql, explicit status columns in runtime/database/10-seed-dev.sql,
+      lifecycle documentation in agent/design models, and database-backed lifecycle
+      tests in backend/tests/persistence_integration/user_scope_and_seed.rs; rtk rg
+      -n variant_type runtime backend renderer agent/design exited 1.
+    runtime_build_check: User reran make check-backend after the local PostgreSQL
+      connectivity blocker and confirmed it passed.
+    residual_risk: Live-instance migrations and backfills remain intentionally out
+      of scope; no review findings for development initialization or persisted lifecycle
+      semantics.
+  findings: []
