@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-02
   title: Expose Configurator Station management API
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,5 +78,27 @@ handoff:
   - Check active or inactive Stations cannot change Gym, Load Profile, or status and
     cannot be hard-deleted.
   - Check existing workout-facing Station contracts remain untouched.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-10T06:22:08Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: The only focused Configurator\
+    \ Station test (backend/tests/api_workouts.rs:830)\n    covers draft creation/update/delete,\
+    \ inactive-profile rejection on create, and\n    active-station rename/lock/delete.\
+    \ It contains no inactive Station fixture or\n    assertion that a Station retaining\
+    \ an inactive Load Profile is returned and remains\n    name-editable but locked\
+    \ from profile changes/deletion.\n  risk: A regression could break inactive lifecycle\
+    \ handling or historical inactive\n    Load Profile display while the current\
+    \ backend check remains green.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: The only focused Configurator Station test (backend/tests/api_workouts.rs:830)
+      covers draft creation/update/delete, inactive-profile rejection on create, and
+      active-station rename/lock/delete. It contains no inactive Station fixture or
+      assertion that a Station retaining an inactive Load Profile is returned and
+      remains name-editable but locked from profile changes/deletion.
+    risk: A regression could break inactive lifecycle handling or historical inactive
+      Load Profile display while the current backend check remains green.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
