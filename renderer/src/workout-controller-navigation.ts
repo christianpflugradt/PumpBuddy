@@ -8,6 +8,7 @@ type Dependencies = {
   setState: SetState;
   render: () => void;
   loadAboutScreenMetadata: () => Promise<void>;
+  loadConfiguratorOverviewScreenData: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorExercisesScreenData: () => Promise<void>;
@@ -62,6 +63,7 @@ const shouldClearProgressSelection = (state: AppState): boolean =>
 
 const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "start" ||
+  state.viewState.screen === "configurator-overview" ||
   state.viewState.screen === "configurator-load-profiles" ||
   state.viewState.screen === "configurator-load-profile-detail" ||
   state.viewState.screen === "configurator-gyms" ||
@@ -157,6 +159,7 @@ export const handleScreenNavigationAction = (
     setState,
     render,
     loadAboutScreenMetadata,
+    loadConfiguratorOverviewScreenData,
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
     loadConfiguratorExercisesScreenData,
@@ -196,6 +199,17 @@ export const handleScreenNavigationAction = (
   };
 
   switch (action) {
+    case "navigate-configurator-overview": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) {
+        return true;
+      }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
+      setState({ ...nextState, viewState: { screen: "configurator-overview" } });
+      render();
+      void loadConfiguratorOverviewScreenData();
+      return true;
+    }
     case "navigate-configurator-load-profiles": {
       const state = getState();
       if (!canNavigateFromScreen(state)) {

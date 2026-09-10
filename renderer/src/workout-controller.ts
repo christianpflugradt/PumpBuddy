@@ -300,6 +300,8 @@ export const createApp = (
   });
   const loadConfiguratorLoadProfilesScreenData =
     screenDataController.loadConfiguratorLoadProfilesScreenData;
+  const loadConfiguratorOverviewScreenData =
+    screenDataController.loadConfiguratorOverviewScreenData;
   const loadConfiguratorGymsScreenData = screenDataController.loadConfiguratorGymsScreenData;
   const loadConfiguratorExercisesScreenData =
     screenDataController.loadConfiguratorExercisesScreenData;
@@ -572,6 +574,7 @@ export const createApp = (
         setState,
         render,
         loadAboutScreenMetadata,
+        loadConfiguratorOverviewScreenData,
         loadConfiguratorLoadProfilesScreenData,
         loadConfiguratorGymsScreenData,
         loadConfiguratorExercisesScreenData,

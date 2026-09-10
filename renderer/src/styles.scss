@@ -216,6 +216,41 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   text-align: left;
 }
 
+.configurator-overview-screen {
+  justify-items: stretch;
+  max-width: 34rem;
+  text-align: left;
+}
+
+.configurator-overview-list {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--border-card);
+}
+
+.configurator-overview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 3.25rem;
+  padding: 0 var(--space-sm);
+  border-bottom: 1px solid var(--border-card);
+}
+
+.configurator-overview-row dt {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.configurator-overview-row dd {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .configurator-exercises-screen {
   justify-items: stretch;
   text-align: left;

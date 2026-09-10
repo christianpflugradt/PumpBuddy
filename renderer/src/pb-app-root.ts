@@ -51,6 +51,11 @@ import {
   type ConfiguratorLoadProfilesScreenState,
 } from "./pb-configurator-load-profiles-screen";
 import {
+  pbConfiguratorOverviewScreenTag,
+  registerPbConfiguratorOverviewScreen,
+  type ConfiguratorOverviewScreenState,
+} from "./pb-configurator-overview-screen";
+import {
   pbConfiguratorLoadProfileEditorScreenTag,
   registerPbConfiguratorLoadProfileEditorScreen,
   type ConfiguratorLoadProfileEditorScreenState,
@@ -102,6 +107,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbStationDetailScreen();
     registerPbExerciseVariantDetailScreen();
     registerPbWorkoutDetailScreen();
+    registerPbConfiguratorOverviewScreen();
     registerPbConfiguratorLoadProfilesScreen();
     registerPbConfiguratorLoadProfileEditorScreen();
     registerPbConfiguratorGymsScreen();
@@ -141,6 +147,19 @@ class PbAppRootElement extends HTMLElement {
       el.state = {
         ...state.startScreen,
         sessionUser: state.sessionUser ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-overview") {
+      const el = document.createElement(pbConfiguratorOverviewScreenTag) as HTMLElement & {
+        state: ConfiguratorOverviewScreenState;
+      };
+      el.state = state.configuratorOverviewScreen ?? {
+        counts: { loadProfiles: 0, gyms: 0, stations: 0, exercises: 0, exerciseVariants: 0 },
+        isLoading: false,
+        errorMessage: null,
       };
       container.append(el);
       return;

@@ -75,6 +75,7 @@ export type ExerciseStep = {
 
 export type ViewState =
   | { screen: "start" }
+  | { screen: "configurator-overview" }
   | { screen: "configurator-load-profiles" }
   | { screen: "configurator-load-profile-detail"; loadProfileId: string | null }
   | { screen: "configurator-gyms" }
@@ -173,6 +174,17 @@ export type GymStationChooserState = {
 
 export type AppState = {
   sessionUser?: SessionUser | null;
+  configuratorOverviewScreen?: {
+    counts: {
+      loadProfiles: number;
+      gyms: number;
+      stations: number;
+      exercises: number;
+      exerciseVariants: number;
+    };
+    isLoading: boolean;
+    errorMessage: string | null;
+  };
   configuratorLoadProfilesScreen?: {
     loadProfiles: LoadProfileSummary[];
     isLoading: boolean;

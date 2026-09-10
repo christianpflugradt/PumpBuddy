@@ -30,6 +30,7 @@ type Dependencies = {
 
 export const createScreenDataController = (deps: Dependencies): {
   loadAboutScreenMetadata: () => Promise<void>;
+  loadConfiguratorOverviewScreenData: () => Promise<void>;
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorExercisesScreenData: () => Promise<void>;
@@ -54,6 +55,7 @@ export const createScreenDataController = (deps: Dependencies): {
 } => {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
+  let configuratorOverviewToken = 0;
   let configuratorLoadProfilesToken = 0;
   let configuratorGymsToken = 0;
   let configuratorExercisesToken = 0;
@@ -144,6 +146,84 @@ export const createScreenDataController = (deps: Dependencies): {
         aboutScreen: {
           metadata: null,
           errorMessage: "Unable to load build metadata right now.",
+        },
+      });
+      render();
+    }
+  };
+
+  const loadConfiguratorOverviewScreenData = async (): Promise<void> => {
+    const requestToken = ++configuratorOverviewToken;
+    const state = getState();
+    const current = state.configuratorOverviewScreen;
+    if (current?.isLoading) {
+      return;
+    }
+
+    setState({
+      ...state,
+      configuratorOverviewScreen: {
+        counts: current?.counts ?? {
+          loadProfiles: 0,
+          gyms: 0,
+          stations: 0,
+          exercises: 0,
+          exerciseVariants: 0,
+        },
+        isLoading: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const [loadProfiles, gyms, exercises] = await Promise.all([
+        loadLoadProfileSummaries(fetchJson),
+        loadGymSummaries(fetchJson),
+        loadExerciseSummaries(fetchJson),
+      ]);
+      const stationLists = await Promise.all(
+        gyms.map((gym) => loadConfiguratorStations(fetchJson, gym.id)),
+      );
+      if (requestToken !== configuratorOverviewToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        configuratorOverviewScreen: {
+          counts: {
+            loadProfiles: loadProfiles.length,
+            gyms: gyms.length,
+            stations: stationLists.reduce((total, stations) => total + stations.length, 0),
+            exercises: exercises.length,
+            exerciseVariants: exercises.reduce(
+              (total, exercise) => total + exercise.variant_count,
+              0,
+            ),
+          },
+          isLoading: false,
+          errorMessage: null,
+        },
+      });
+      render();
+    } catch {
+      if (requestToken !== configuratorOverviewToken) {
+        return;
+      }
+      const nextState = getState();
+      setState({
+        ...nextState,
+        configuratorOverviewScreen: {
+          counts: nextState.configuratorOverviewScreen?.counts ?? {
+            loadProfiles: 0,
+            gyms: 0,
+            stations: 0,
+            exercises: 0,
+            exerciseVariants: 0,
+          },
+          isLoading: false,
+          errorMessage: "Unable to load configurator overview right now.",
         },
       });
       render();
@@ -814,6 +894,7 @@ export const createScreenDataController = (deps: Dependencies): {
 
   return {
     loadAboutScreenMetadata,
+    loadConfiguratorOverviewScreenData,
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
     loadConfiguratorExercisesScreenData,

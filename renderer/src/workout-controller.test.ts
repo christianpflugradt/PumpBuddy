@@ -5,6 +5,8 @@ import {
   createLoadProfile,
   deleteGym,
   deleteLoadProfile,
+  loadConfiguratorStations,
+  loadExerciseSummaries,
   loadActiveWorkout,
   loadGymDetail,
   loadGymSummaries,
@@ -76,6 +78,8 @@ vi.mock("./workout-api", async () => {
     deleteLoadProfile: vi.fn(),
     deleteGym: vi.fn(),
     loadGymDetail: vi.fn(),
+    loadConfiguratorStations: vi.fn(),
+    loadExerciseSummaries: vi.fn(),
     loadGymSummaries: vi.fn(),
     loadLoadProfileDetail: vi.fn(),
     loadLoadProfileSummaries: vi.fn(),
@@ -98,6 +102,8 @@ const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
 const deleteGymMock = vi.mocked(deleteGym);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
+const loadConfiguratorStationsMock = vi.mocked(loadConfiguratorStations);
+const loadExerciseSummariesMock = vi.mocked(loadExerciseSummaries);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadLoadProfileDetailMock = vi.mocked(loadLoadProfileDetail);
 const loadLoadProfileSummariesMock = vi.mocked(loadLoadProfileSummaries);
@@ -458,6 +464,8 @@ describe("workout-controller (createApp)", () => {
     createGymMock.mockResolvedValue({ id: "created-gym", name: "Created Gym", status: "new" });
     deleteGymMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
+    loadConfiguratorStationsMock.mockResolvedValue([]);
+    loadExerciseSummariesMock.mockResolvedValue([]);
     loadLoadProfileDetailMock.mockResolvedValue({
       id: "profile-1",
       name: "Alpha Draft",
@@ -681,13 +689,34 @@ describe("workout-controller (createApp)", () => {
     };
     document.body.append(app);
 
-    loadLoadProfileSummariesMock.mockResolvedValue([]);
+    loadLoadProfileSummariesMock.mockResolvedValue([
+      { id: "profile-1", name: "Barbell", status: "active", definition_kind: "fixed_list", weight_unit: "KG", station_count: 2 },
+    ]);
+    loadGymSummariesMock.mockResolvedValue([{ id: "gym-1", name: "Downtown", status: "inactive" }]);
+    loadConfiguratorStationsMock.mockResolvedValue([
+      { id: "station-1", gym_id: "gym-1", name: "Rack", status: "new", load_profile: { id: "profile-1", name: "Barbell", status: "active" } },
+    ]);
+    loadExerciseSummariesMock.mockResolvedValue([
+      { id: "exercise-1", name: "Squat", status: "active", variant_count: 2 },
+    ]);
     createApp(app);
     await flush();
 
-    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
-    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+    dispatchSideMenuAction(app, "navigate-configurator-overview");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-overview" });
+    await flush();
+    await flush();
     expect(loadLoadProfileSummariesMock).toHaveBeenCalledTimes(1);
+    expect(loadGymSummariesMock).toHaveBeenCalledTimes(1);
+    expect(loadConfiguratorStationsMock).toHaveBeenCalledWith(expect.any(Function), "gym-1");
+    expect(loadExerciseSummariesMock).toHaveBeenCalledTimes(1);
+    expect(app.state?.configuratorOverviewScreen?.counts).toEqual({
+      loadProfiles: 1,
+      gyms: 1,
+      stations: 1,
+      exercises: 1,
+      exerciseVariants: 2,
+    });
 
     dispatchSideMenuAction(app, "navigate-workout");
     expect(app.state?.viewState).toEqual({ screen: "start" });

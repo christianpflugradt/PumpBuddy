@@ -108,7 +108,7 @@ describe("pb-side-menu", () => {
       action: "navigate-workout",
     });
     expect(handler.mock.calls[1]?.[0].detail).toEqual({
-      action: "navigate-configurator-load-profiles",
+      action: "navigate-configurator-overview",
     });
     expect(handler.mock.calls[2]?.[0].detail).toEqual({ action: "logout" });
   });
@@ -171,7 +171,7 @@ describe("pb-side-menu", () => {
   it("renders configurator mode with a neutral return action, separators, and Exercise navigation", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("mode", "configurator");
-    el.setAttribute("active-screen", "configurator-load-profiles");
+    el.setAttribute("active-screen", "configurator-overview");
     document.body.append(el);
 
     const entries = Array.from(el.querySelectorAll(".side-menu-entry"));
@@ -183,7 +183,7 @@ describe("pb-side-menu", () => {
     expect(entries[0]?.textContent?.trim()).toBe("Back to Workout");
     expect(entries[1]?.textContent?.trim()).toBe("Load Profiles");
     expect(workoutEntry?.dataset.uiAction).toBe("navigate-workout");
-    expect(loadProfilesEntry?.dataset.uiAction).toBe("close-side-menu");
+    expect(loadProfilesEntry?.dataset.uiAction).toBe("navigate-configurator-load-profiles");
     expect(
       workoutEntry?.classList.contains("side-menu-entry--main-workout"),
     ).toBe(false);
