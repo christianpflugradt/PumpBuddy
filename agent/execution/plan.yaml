@@ -1,23 +1,36 @@
 version: 1
 kind: plan
 id: pb-066
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Station exercise-variant compatibility management
+goal: Let a user manage a Station's compatible, station-required Exercise Variants from its existing Configurator detail screen.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Extend Configurator > Gyms > Gym > Station with a compact Compatible Exercise Variants section that shows every enabled mapping and an empty state.
+  - Provide a searchable, staged multi-select picker with compact Exercise context; Save persists the complete set and Cancel discards local changes.
+  - Add the smallest contract-first, user-scoped backend support to retrieve compatible and eligible variants and reconcile the complete selected set safely.
+  - Reuse or cleanly evolve the existing Configurator Station Load Profile picker and established overlay patterns where appropriate.
+  - Cover set reconciliation, user ownership, eligibility, UI staging, and the critical mobile-first interaction with focused automated tests.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Database migrations, lifecycle transitions, inactive-state behavior, or status-specific compatibility rules.
+  - A new Configurator navigation entry, standalone compatibility screen, Exercise Variant-detail management, or reverse Station display.
+  - Training Plan changes, workout executability behavior changes, historical workout mutation, and unrelated Configurator cleanup.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - A Station detail shows all enabled compatible variants in compact rows, with an accurate count, edit affordance, and compact zero-mapping state.
+  - The picker offers only user-owned Exercise Variants where requires_station is true, supports search and local multi-selection, and includes concise Exercise context when useful.
+  - Save atomically reconciles the selected set: selected mappings are enabled or created and unselected mappings are disabled; Cancel issues no persistence request.
+  - The existing exercise_variant_equipment_compatibilities relation remains the source of truth, duplicate or cross-user mappings are rejected, and existing workout consumers continue to see only enabled mappings.
+  - The Configurator interaction remains compact and usable at the 390 x 800 primary viewport, with focused backend and renderer test coverage.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Keep OpenAPI as the canonical contract and update generated/client boundary code with the backend surface.
+  - Preserve backend-owned validation, SQLx persistence, authenticated user scoping, and the renderer-to-backend-to-database topology.
+  - Do not persist individual picker toggles; reconcile only the completed selection on Save.
+  - Existing consumers filter is_enabled = true, so deselection disables an existing mapping and selection re-enables it or creates it as needed.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/training_plans.rs
+  - renderer/src/pb-configurator-station-editor-screen.ts
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
