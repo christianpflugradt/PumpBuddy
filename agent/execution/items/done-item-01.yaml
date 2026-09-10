@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-064-item-01
   title: Add Station lifecycle persistence foundation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -74,4 +74,17 @@ handoff:
     handling is explicitly delegated to the external backfill.
   - Verify no workout-facing Station payload changes are introduced.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 met.
+    evidence: The schema constrains equipment_stations.status to new, active, or inactive;
+      the Rust domain contains StationStatus; development seed stations are active;
+      and the authoritative designs document the external active-backfill prerequisite
+      with no migration automation. Commit fc3c6520 introduced no workout-facing projection
+      change.
+    runtime_build_check: make check-backend passed after the local Docker mount was
+      restored.
+    residual_risk: Production deployment still requires the documented manual schema
+      upgrade and active backfill before release.
+  findings: []
