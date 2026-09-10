@@ -33,6 +33,32 @@ describe("pb-configurator-gym-editor-screen", () => {
     expect(el.querySelector('[data-ui-action="delete-gym"]')).toBeNull();
   });
 
+  it("confirms deletion only when a Draft Gym has Stations", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+
+    (el.querySelector('[data-ui-action="delete-gym"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Delete draft gym?");
+    expect(el.textContent).toContain("This will also delete 1 station.");
+    expect(handler).not.toHaveBeenCalled();
+
+    (el.querySelector('[data-ui-action="dismiss-delete-gym-warning"]') as HTMLButtonElement).click();
+    expect(el.textContent).not.toContain("Delete draft gym?");
+    (el.querySelector('[data-ui-action="delete-gym"]') as HTMLButtonElement).click();
+    (el.querySelector('.confirm-dialog [data-ui-action="delete-gym"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1" });
+  });
+
+  it("deletes a Draft Gym without Stations immediately", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), stations: [] };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="delete-gym"]') as HTMLButtonElement).click();
+    expect(el.textContent).not.toContain("Delete draft gym?");
+    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1" });
+  });
+
   it("keeps the editor open and presents request failures", () => {
     const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
     document.body.append(el); el.state = createState();

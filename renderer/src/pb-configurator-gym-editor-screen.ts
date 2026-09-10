@@ -35,6 +35,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
   #isSaving = false;
   #isDeleting = false;
   #renameWarningOpen = false;
+  #deleteWarningOpen = false;
   #touched = false;
   #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
@@ -44,7 +45,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     this.#state = value;
     const key = value.mode === "create" ? "create" : value.detail ? `edit:${value.detail.id}` : "edit:loading";
     if (key !== this.#loadedKey && (value.mode === "create" || value.detail)) {
-      this.#loadedKey = key; this.#nameDraft = value.detail?.name ?? ""; this.#submitError = null; this.#isSaving = false; this.#isDeleting = false; this.#renameWarningOpen = false; this.#touched = false;
+      this.#loadedKey = key; this.#nameDraft = value.detail?.name ?? ""; this.#submitError = null; this.#isSaving = false; this.#isDeleting = false; this.#renameWarningOpen = false; this.#deleteWarningOpen = false; this.#touched = false;
     }
     this.#render();
   }
@@ -75,6 +76,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     if (action === "start-configurator-station-create") { const gymId = this.#state.detail?.id; if (gymId) this.#emit(action, { gymId }); return; }
     if (action === "open-configurator-station-detail") { const gymId = this.#state.detail?.id; const stationId = target.closest<HTMLElement>("[data-station-id]")?.dataset.stationId?.trim(); if (gymId && stationId) this.#emit(action, { gymId, stationId }); return; }
     if (action === "dismiss-historical-rename-warning") { this.#renameWarningOpen = false; this.#render(); return; }
+    if (action === "dismiss-delete-gym-warning") { this.#deleteWarningOpen = false; this.#render(); return; }
     if (action === "save-gym") {
       const error = this.#nameError();
       if (error) { this.#touched = true; this.#submitError = error; this.#render(); return; }
@@ -85,6 +87,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     }
     if (action === "delete-gym") {
       const gymId = this.#state.detail?.id; if (!gymId || this.#isSaving || this.#isDeleting) return;
+      if ((this.#state.stations ?? []).length > 0 && !this.#deleteWarningOpen) { this.#deleteWarningOpen = true; this.#render(); return; }
       this.#isDeleting = true; this.#submitError = null; this.#render();
       this.dispatchEvent(new CustomEvent<DeleteDetail>("pb-ui-action", { bubbles: true, composed: true, detail: { action: "delete-configurator-gym", payload: { gymId }, respond: (result) => { this.#isDeleting = false; this.#submitError = result.ok ? null : result.errorMessage ?? null; this.#render(); } } }));
     }
@@ -99,7 +102,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
       <div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-gym" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : isCreate ? "Create Gym" : "Save Name"}</button>${canDelete ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-gym" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div>`;
     const stations = this.#state.stations ?? [];
     const stationSection = !isCreate && detail ? `<section class="configurator-gym-stations" aria-label="Stations"><div class="configurator-gym-stations-header"><h2>Stations</h2><button type="button" class="nav-button nav-button-primary action-button action-button-primary" data-ui-action="start-configurator-station-create">+ New Station</button></div>${stations.length === 0 ? '<p class="start-copy">No stations yet.</p>' : `<ul class="configurator-gym-station-list">${stations.map((station) => `<li><button type="button" class="configurator-gym-station-row" data-ui-action="open-configurator-station-detail" data-station-id="${escapeHtml(station.id)}" aria-label="Open ${escapeHtml(station.name)} station"><span><strong>${escapeHtml(station.name)}</strong><small>${escapeHtml(station.load_profile.name)}</small></span><span class="configurator-gym-status configurator-gym-status--${escapeHtml(station.status)}">${station.status === "new" ? "Draft" : station.status === "active" ? "Active" : "Inactive"}</span></button></li>`).join("")}</ul>`}</section>` : "";
-    const warning = this.#renameWarningOpen ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Historical rename warning"><p class="confirm-dialog-message">Renaming an active or inactive Gym can affect how historical workouts are understood. Save this name change?</p><div class="confirm-dialog-actions"><button type="button" class="nav-button" data-ui-action="dismiss-historical-rename-warning">Keep Editing</button><button type="button" class="nav-button" data-ui-action="save-gym">Save Name</button></div></section></div>` : "";
+    const warning = this.#renameWarningOpen ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Historical rename warning"><p class="confirm-dialog-message">Renaming an active or inactive Gym can affect how historical workouts are understood. Save this name change?</p><div class="confirm-dialog-actions"><button type="button" class="nav-button" data-ui-action="dismiss-historical-rename-warning">Keep Editing</button><button type="button" class="nav-button" data-ui-action="save-gym">Save Name</button></div></section></div>` : this.#deleteWarningOpen ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-gym-warning-title"><h2 class="confirm-dialog-title" id="delete-gym-warning-title">Delete draft gym?</h2><p class="confirm-dialog-message">This will also delete ${stations.length} ${stations.length === 1 ? "station" : "stations"}.</p><div class="confirm-dialog-actions"><button type="button" class="nav-button" data-ui-action="dismiss-delete-gym-warning">Cancel</button><button type="button" class="nav-button" data-ui-action="delete-gym">Delete</button></div></section></div>` : "";
     this.innerHTML = `<div class="app-screen-shell"><button type="button" class="side-menu-toggle detail-back-button" data-ui-action="navigate-back-from-configurator-gym-detail" aria-label="Back"><span aria-hidden="true">←</span></button><section class="screen-panel configurator-gym-editor-screen" aria-label="Gym editor"><header class="exercise-variant-detail-header"><h1 class="exercise-variant-detail-header-title">Gym</h1></header>${form}${stationSection}</section>${warning}</div>`;
   }
 }

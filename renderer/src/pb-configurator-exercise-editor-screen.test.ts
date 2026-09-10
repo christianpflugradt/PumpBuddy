@@ -108,4 +108,28 @@ describe("pb-configurator-exercise-editor-screen", () => {
     (el.querySelector('[data-ui-action="delete-configurator-exercise"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ exerciseId: "exercise-1" });
   });
+
+  it("confirms deletion only when a Draft Exercise has Variants", () => {
+    const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
+      state: ConfiguratorExerciseEditorScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      detail: { ...createState().detail!, variant_count: 1 },
+      variants: [{ id: "variant-1", exercise_id: "exercise-1", name: "Low Bar", status: "new", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }],
+    };
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    (el.querySelector('[data-ui-action="delete-configurator-exercise"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Delete draft exercise?");
+    expect(el.textContent).toContain("This will also delete 1 variant.");
+    expect(handler).not.toHaveBeenCalled();
+
+    (el.querySelector('[data-ui-action="dismiss-delete-exercise-warning"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="delete-configurator-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('.confirm-dialog [data-ui-action="delete-configurator-exercise"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ exerciseId: "exercise-1" });
+  });
 });
