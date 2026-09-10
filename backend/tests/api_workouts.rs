@@ -1020,6 +1020,97 @@ async fn configurator_station_routes_enforce_scope_validation_lifecycle_and_prof
     .await;
     assert_eq!(status, StatusCode::CONFLICT);
 
+    let inactive_station_id = "6f000000-0000-0000-0000-000000000702";
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id, status)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'Station API Retired', $4::uuid, 'inactive')",
+    )
+    .bind(inactive_station_id)
+    .bind(DEV_USER_ID)
+    .bind(&gym_id)
+    .bind(inactive_profile_id)
+    .execute(&pool)
+    .await
+    .expect("inactive station fixture should insert");
+
+    let (status, inactive_station) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{inactive_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(inactive_station["status"], json!("inactive"));
+    assert_eq!(
+        inactive_station["load_profile"]["id"],
+        json!(inactive_profile_id)
+    );
+    assert_eq!(
+        inactive_station["load_profile"]["status"],
+        json!("inactive")
+    );
+
+    let (status, renamed) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{inactive_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "Renamed Retired Station" }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(renamed["name"], json!("Renamed Retired Station"));
+    assert_eq!(renamed["load_profile"]["id"], json!(inactive_profile_id));
+
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{inactive_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "name": "Blocked Retired Change", "load_profile_id": active_profile_id })
+                    .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        body["message"],
+        json!("Only draft stations can change load profile")
+    );
+
+    let status = empty_response_status(
+        app.clone(),
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/gyms/{gym_id}/configurator-stations/{inactive_station_id}"
+            ))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
     let status = empty_response_status(
         app.clone(),
         Request::builder()
