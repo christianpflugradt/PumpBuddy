@@ -1,4 +1,5 @@
 import type { ConfiguratorStation, ConfiguratorStationCreateRequest, ConfiguratorStationUpdateRequest, LoadProfileSummary } from "./workout-contract";
+import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorStationEditorScreenTag = "pb-configurator-station-editor-screen";
 export type ConfiguratorStationEditorScreenState = { gymId: string; gymName: string | null; station: ConfiguratorStation | null; loadProfiles: LoadProfileSummary[] };
@@ -20,9 +21,10 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #touched = false;
   #loadProfilePickerOpen = false;
   #loadProfileSearch = "";
+  #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
-  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.addEventListener("input", this.#onInput); this.addEventListener("keydown", this.#onKeyDown); }
-  disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.removeEventListener("input", this.#onInput); this.removeEventListener("keydown", this.#onKeyDown); }
+  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); this.addEventListener("keydown", this.#onKeyDown); }
+  disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.#textInput.disconnect(); this.removeEventListener("keydown", this.#onKeyDown); }
   set state(value: ConfiguratorStationEditorScreenState) {
     this.#state = value;
     const key = value.station ? `edit:${value.station.id}` : `create:${value.gymId}`;
@@ -39,12 +41,10 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #loadProfileError(): string | null { return this.#loadProfileIdDraft && this.#availableProfiles().some((profile) => profile.id === this.#loadProfileIdDraft) ? null : "Load Profile is required."; }
   #hasChanges(): boolean { const station = this.#state.station; return !station || normalizeName(this.#nameDraft) !== normalizeName(station.name) || (!this.#isHistorical() && this.#loadProfileIdDraft !== station.load_profile.id); }
   #emit(action: string): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action } })); }
-  #onInput = (event: Event): void => {
-    const input = event.target; if (!(input instanceof HTMLInputElement)) return;
-    if (input.dataset.field === "load-profile-search") { this.#loadProfileSearch = input.value; this.#render(); const next = this.querySelector<HTMLInputElement>('[data-field="load-profile-search"]'); next?.focus(); next?.setSelectionRange(input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length); return; }
-    if (input.dataset.field !== "name") return;
-    this.#nameDraft = input.value; this.#touched = true; this.#submitError = null; const start = input.selectionStart; const end = input.selectionEnd; this.#render();
-    const next = this.querySelector<HTMLInputElement>('[data-field="name"]'); next?.focus(); if (start !== null && end !== null) next?.setSelectionRange(start, end);
+  #onTextInput = (field: string, value: string): void => {
+    if (field === "load-profile-search") { this.#loadProfileSearch = value; this.#render(); return; }
+    if (field !== "name") return;
+    this.#nameDraft = value; this.#touched = true; this.#submitError = null; this.#render();
   };
   #onKeyDown = (event: KeyboardEvent): void => { if (event.key === "Escape" && this.#loadProfilePickerOpen) { event.preventDefault(); this.#loadProfilePickerOpen = false; this.#render(); } };
   #onClick = (event: Event): void => {

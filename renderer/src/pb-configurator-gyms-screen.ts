@@ -1,4 +1,5 @@
 import "./pb-side-menu";
+import "./pb-create-button";
 import type { GymSummary } from "./workout-contract";
 
 export const pbConfiguratorGymsScreenTag = "pb-configurator-gyms-screen";
@@ -117,7 +118,7 @@ class PbConfiguratorGymsScreenElement extends HTMLElement {
       <pb-side-menu mode="configurator" active-screen="configurator-gyms" menu-id="configurator-gyms-side-menu"></pb-side-menu>
       <section class="screen-panel configurator-gyms-screen" aria-label="Configurator gyms screen">
         <header class="app-header app-header-compact"><h1 class="app-title">${escapeHtml(title)}</h1><p class="start-copy">${isList ? "Manage your available training locations." : "Stay in configurator mode while opening Gym destinations."}</p></header>
-        ${isList ? '<button type="button" class="configurator-gym-create-button nav-button nav-button-primary action-button action-button-primary" data-ui-action="start-configurator-gym-create">+ New Gym</button>' : '<button type="button" class="configurator-gym-back-button" data-ui-action="navigate-back-from-configurator-gym-detail">‹ Back to Gyms</button>'}
+        ${isList ? '<pb-create-button action="start-configurator-gym-create" label="New Gym"></pb-create-button>' : '<button type="button" class="configurator-gym-back-button" data-ui-action="navigate-back-from-configurator-gym-detail">‹ Back to Gyms</button>'}
         ${isList ? this.#renderListBody() : this.#renderDestination()}
       </section>
     </div>`;

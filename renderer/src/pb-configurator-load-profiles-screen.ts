@@ -1,4 +1,5 @@
 import "./pb-side-menu";
+import "./pb-create-button";
 import type { LoadProfileSummary } from "./workout-contract";
 
 export const pbConfiguratorLoadProfilesScreenTag =
@@ -272,13 +273,7 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
           ${
             isList
               ? `
-                <button
-                  type="button"
-                  class="configurator-load-profile-create-button nav-button nav-button-primary action-button action-button-primary"
-                  data-ui-action="start-configurator-load-profile-create"
-                >
-                  + New Load Profile
-                </button>
+                <pb-create-button action="start-configurator-load-profile-create" label="New Load Profile"></pb-create-button>
                 <label class="configurator-load-profile-search" aria-label="Search load profiles">
                   <input
                     type="search"

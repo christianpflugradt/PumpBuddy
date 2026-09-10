@@ -4,6 +4,7 @@ import type {
   ExerciseUpdateRequest,
   ConfiguratorExerciseVariant,
 } from "./workout-contract";
+import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorExerciseEditorScreenTag =
   "pb-configurator-exercise-editor-screen";
@@ -61,16 +62,17 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
   #isDeleting = false;
   #renameWarningOpen = false;
   #touched = false;
+  #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
-    this.addEventListener("input", this.#onInput);
+    this.#textInput.connect();
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
-    this.removeEventListener("input", this.#onInput);
+    this.#textInput.disconnect();
   }
 
   set state(value: ConfiguratorExerciseEditorScreenState) {
@@ -134,18 +136,17 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
     );
   }
 
-  #onInput = (event: Event): void => {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.dataset.field !== "name") return;
-    this.#nameDraft = input.value;
+  #onTextInput = (field: string, value: string): void => {
+    if (field !== "name") return;
+    this.#nameDraft = value;
     this.#touched = true;
     this.#submitError = null;
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    this.#render();
-    const next = this.querySelector<HTMLInputElement>('[data-field="name"]');
-    next?.focus();
-    if (start !== null && end !== null) next?.setSelectionRange(start, end);
+    const error = this.#nameError();
+    const fieldElement = this.querySelector('[data-field="name"]')?.closest(".configurator-gym-field");
+    fieldElement?.querySelector(".configurator-gym-field-error")?.remove();
+    if (error && fieldElement) { const message = document.createElement("span"); message.className = "configurator-gym-field-error"; message.textContent = error; fieldElement.append(message); }
+    const saveButton = this.querySelector<HTMLButtonElement>('[data-ui-action="save-configurator-exercise"]');
+    if (saveButton) saveButton.disabled = this.#isSaving || this.#isDeleting || !!error;
   };
 
   #onClick = (event: Event): void => {

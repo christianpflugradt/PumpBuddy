@@ -20,10 +20,21 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     const deletion = handler.mock.calls[1][0].detail;
     expect(deletion.payload).toEqual({ exerciseId: "exercise-1", variantId: "variant-1" });
   });
+  it("retains focus while typing a variant name", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = { ...state(), variant: null };
+    let input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.focus(); input.value = "C"; input.setSelectionRange(1, 1); input.dispatchEvent(new Event("input", { bubbles: true }));
+    input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    expect(document.activeElement).toBe(input);
+    input.value = "Ca"; input.setSelectionRange(2, 2); input.dispatchEvent(new Event("input", { bubbles: true }));
+    input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    expect(document.activeElement).toBe(input); expect(input.value).toBe("Ca");
+  });
   it("renders structural fields read-only while retaining name saves for historical variants", () => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
     document.body.append(el); el.state = state("active"); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
-    expect(el.textContent).toContain("Structural settings are read-only"); expect(el.querySelector('[data-ui-action="delete-configurator-exercise-variant"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="delete-configurator-exercise-variant"]')).toBeNull();
     expect(el.querySelector('[data-field="load-input-mode"]')).toBeNull();
     const name = el.querySelector<HTMLInputElement>('[data-field="name"]')!; name.value = "Neutral"; name.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();

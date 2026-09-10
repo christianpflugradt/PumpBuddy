@@ -1,4 +1,5 @@
 import type { ConfiguratorStation, GymCreateRequest, GymDetailResponse, GymSummary, GymUpdateRequest } from "./workout-contract";
+import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorGymEditorScreenTag = "pb-configurator-gym-editor-screen";
 
@@ -35,9 +36,10 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
   #isDeleting = false;
   #renameWarningOpen = false;
   #touched = false;
+  #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
-  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.addEventListener("input", this.#onInput); }
-  disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.removeEventListener("input", this.#onInput); }
+  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); }
+  disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.#textInput.disconnect(); }
   set state(value: ConfiguratorGymEditorScreenState) {
     this.#state = value;
     const key = value.mode === "create" ? "create" : value.detail ? `edit:${value.detail.id}` : "edit:loading";
@@ -57,12 +59,13 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
   #isHistorical(): boolean { return this.#state.detail?.status === "active" || this.#state.detail?.status === "inactive"; }
   #hasChanges(): boolean { return this.#state.mode === "create" || normalizeName(this.#nameDraft) !== normalizeName(this.#state.detail?.name ?? ""); }
   #emit(action: string, payload?: Record<string, string>): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: payload ? { action, payload } : { action } })); }
-  #onInput = (event: Event): void => {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.dataset.field !== "name") return;
-    this.#nameDraft = input.value; this.#touched = true; this.#submitError = null;
-    const start = input.selectionStart; const end = input.selectionEnd; this.#render();
-    const next = this.querySelector<HTMLInputElement>('[data-field="name"]'); next?.focus(); if (start !== null && end !== null) next?.setSelectionRange(start, end);
+  #onTextInput = (field: string, value: string): void => {
+    if (field !== "name") return;
+    this.#nameDraft = value; this.#touched = true; this.#submitError = null; const error = this.#nameError();
+    const fieldElement = this.querySelector('[data-field="name"]')?.closest(".configurator-gym-field"); fieldElement?.querySelector(".configurator-gym-field-error")?.remove();
+    if (error && fieldElement) { const message = document.createElement("span"); message.className = "configurator-gym-field-error"; message.textContent = error; fieldElement.append(message); }
+    const saveButton = this.querySelector<HTMLButtonElement>('[data-ui-action="save-gym"]');
+    if (saveButton) saveButton.disabled = this.#isSaving || this.#isDeleting || !!error || (!this.#state.mode.includes("create") && !this.#hasChanges());
   };
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return;
@@ -91,6 +94,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     const disabled = this.#isSaving || this.#isDeleting || !!error || (!isCreate && !this.#hasChanges());
     const form = this.#state.isLoading ? '<p class="start-status" role="status">Loading gym detail...</p>' : this.#state.errorMessage ? `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>` : !isCreate && !detail ? '<p class="start-error" role="alert">Unable to find that Gym right now.</p>' : `
       <div class="configurator-gym-editor-card"><label class="configurator-gym-field"><span class="configurator-gym-field-label">Name</span><input class="configurator-gym-input" data-field="name" value="${escapeHtml(this.#nameDraft)}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""} />${error && this.#touched ? `<span class="configurator-gym-field-error">${escapeHtml(error)}</span>` : ""}</label>
+      ${detail ? `<dl class="configurator-load-profile-metadata"><div><dt>Status</dt><dd>${detail.status === "new" ? "Draft" : detail.status === "active" ? "Active" : "Inactive"}</dd></div><div><dt>Stations</dt><dd>${(this.#state.stations ?? []).length === 1 ? "1 station" : `${(this.#state.stations ?? []).length} stations`}</dd></div></dl>` : ""}
       ${this.#submitError ? `<p class="start-error" role="alert">${escapeHtml(this.#submitError)}</p>` : ""}
       <div class="configurator-gym-editor-actions"><button type="button" class="configurator-gym-save-button" data-ui-action="save-gym" ${disabled ? "disabled" : ""}>${this.#isSaving ? "Saving..." : isCreate ? "Create Gym" : "Save Name"}</button>${canDelete ? `<button type="button" class="configurator-gym-delete-button" data-ui-action="delete-gym" ${this.#isDeleting ? "disabled" : ""}>${this.#isDeleting ? "Deleting..." : "Delete Draft"}</button>` : ""}</div></div>`;
     const stations = this.#state.stations ?? [];

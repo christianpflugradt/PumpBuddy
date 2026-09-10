@@ -124,6 +124,9 @@ pb-gym-detail-screen,
 pb-station-detail-screen,
 pb-exercise-variant-detail-screen,
 pb-configurator-exercises-screen,
+pb-create-button,
+pb-configurator-exercise-editor-screen,
+pb-configurator-exercise-variant-editor-screen,
 pb-configurator-load-profile-editor-screen,
 pb-configurator-gym-editor-screen,
 pb-login,
@@ -136,6 +139,8 @@ pb-side-menu {
   display: contents;
 }
 
+pb-create-button { display: block; width: 100%; }
+
 pb-app-root,
 .pb-app-root {
   display: grid;
@@ -146,6 +151,12 @@ pb-app-root,
 .app-screen-shell {
   position: relative;
   width: min(100%, var(--screen-panel-max-width));
+}
+
+pb-configurator-exercise-editor-screen .app-screen-shell,
+pb-configurator-exercise-variant-editor-screen .app-screen-shell {
+  width: 100%;
+  max-width: none;
 }
 
 .app-screen-shell > .screen-panel {
@@ -211,7 +222,7 @@ pb-app-root,
 }
 
 .configurator-exercise-create-button {
-  width: fit-content;
+  width: 100%;
   min-height: 2.75rem;
   padding: 0.55rem 0.85rem;
   border-radius: var(--radius-md);
@@ -270,6 +281,7 @@ pb-app-root,
 }
 
 .configurator-gyms-screen .configurator-gym-create-button {
+  width: 100%;
   margin: 0 0 1rem;
 }
 
@@ -332,7 +344,9 @@ pb-app-root,
 .configurator-gym-field,
 .configurator-gym-editor-actions { display: grid; gap: var(--space-md); }
 
-.configurator-gym-field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 700; }
+.configurator-gym-field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.configurator-gym-field:has(> input[type="checkbox"]) { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-sm); }
+.configurator-gym-field:has(> input[type="checkbox"]) > input[type="checkbox"] { order: -1; width: 1.1rem; height: 1.1rem; margin: 0; }
 .configurator-gym-input { width: 100%; min-height: var(--action-target-min-height); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); }
 .configurator-load-profile-picker-trigger { text-align: left; cursor: pointer; }
 .configurator-load-profile-picker { max-height: min(82vh, 36rem); grid-template-rows: auto minmax(0, 1fr); }
@@ -343,6 +357,11 @@ pb-app-root,
 .configurator-load-profile-picker-option small { color: var(--text-secondary); }
 .configurator-gym-field-error { color: var(--status-danger-text); font-size: var(--font-size-label); }
 .configurator-gym-editor-actions { grid-template-columns: 1fr; margin-top: var(--space-sm); }
+.configurator-exercise-variants > .configurator-gym-editor-actions { margin-bottom: var(--space-md); }
+.configurator-exercise-variants,
+.configurator-exercise-variants > .configurator-gym-editor-actions,
+.configurator-exercise-variants > .configurator-gym-editor-actions .nav-button { width: 100%; }
+.configurator-exercise-variants > .configurator-gym-editor-actions .nav-button { border: 0; background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start)); color: var(--button-primary-text); font-weight: 700; box-shadow: 0 8px 16px var(--button-primary-shadow); }
 .configurator-gym-save-button,
 .configurator-gym-delete-button { min-height: var(--action-target-min-height); border-radius: var(--radius-md); cursor: pointer; font-weight: 700; }
 .configurator-gym-save-button { border: 0; background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end)); color: var(--button-primary-text); }
@@ -350,7 +369,8 @@ pb-app-root,
 .configurator-gym-save-button:disabled,
 .configurator-gym-delete-button:disabled { cursor: not-allowed; opacity: 0.55; }
 .configurator-gym-stations { display: grid; gap: var(--space-md); margin-top: var(--space-xl); }
-.configurator-gym-stations-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.configurator-gym-stations-header { display: grid; align-items: center; justify-content: stretch; gap: var(--space-md); }
+.configurator-gym-stations-header .action-button { width: 100%; }
 .configurator-gym-stations-header h2 { margin: 0; font-size: var(--font-size-section); }
 .configurator-gym-station-list { display: grid; gap: var(--space-sm); margin: 0; padding: 0; list-style: none; }
 .configurator-gym-station-row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
@@ -358,7 +378,7 @@ pb-app-root,
 .configurator-gym-station-row small { color: var(--text-secondary); }
 
 .configurator-load-profiles-screen .configurator-load-profile-create-button {
-  width: fit-content;
+  width: 100%;
   min-height: 2.75rem;
   padding: 0.55rem 0.85rem;
   border-radius: var(--radius-md);

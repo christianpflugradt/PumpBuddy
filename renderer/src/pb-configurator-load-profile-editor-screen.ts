@@ -4,6 +4,7 @@ import type {
   LoadProfileSummary,
   LoadProfileUpdateRequest,
 } from "./workout-contract";
+import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorLoadProfileEditorScreenTag =
   "pb-configurator-load-profile-editor-screen";
@@ -141,17 +142,18 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
   #renameWarningOpen = false;
   #touchedFields = new Set<string>();
   #saveAttempted = false;
+  #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
-    this.addEventListener("input", this.#onInput);
+    this.#textInput.connect();
     this.addEventListener("change", this.#onChange);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
-    this.removeEventListener("input", this.#onInput);
+    this.#textInput.disconnect();
     this.removeEventListener("change", this.#onChange);
   }
 
@@ -429,46 +431,25 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     this.#emitUiAction(action as UiAction);
   };
 
-  #onInput = (event: Event): void => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
-      return;
-    }
-
-    const field = target.dataset.field;
-    if (!field) {
-      return;
-    }
-
+  #onTextInput = (field: string, value: string): void => {
     if (field === "name") {
-      this.#nameDraft = target.value;
+      this.#nameDraft = value;
       this.#touchedFields.add("name");
     } else if (field === "fixed-list") {
-      this.#fixedListDraft = target.value;
+      this.#fixedListDraft = value;
       this.#touchedFields.add("definition");
     } else if (field === "formula-min") {
-      this.#formulaMinDraft = target.value;
+      this.#formulaMinDraft = value;
       this.#touchedFields.add("definition");
     } else if (field === "formula-step") {
-      this.#formulaStepDraft = target.value;
+      this.#formulaStepDraft = value;
       this.#touchedFields.add("definition");
     } else {
       return;
     }
 
     this.#submitError = null;
-    const selectionStart = target.selectionStart;
-    const selectionEnd = target.selectionEnd;
-    const selectionDirection = target.selectionDirection ?? "none";
     this.#render();
-
-    const updatedInput = this.querySelector(`[data-field="${field}"]`);
-    if (updatedInput instanceof HTMLInputElement || updatedInput instanceof HTMLTextAreaElement) {
-      updatedInput.focus();
-      if (selectionStart !== null && selectionEnd !== null) {
-        updatedInput.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
-      }
-    }
   };
 
   #onChange = (event: Event): void => {
