@@ -2587,20 +2587,18 @@ mod tests {
                  id,
                  exercise_id,
                  name,
-                 variant_type,
                  requires_station,
                  load_input_mode,
                  set_tracking_mode,
                  repetition_kind,
                  user_id
              )
-             VALUES ($1::uuid, $2::uuid, $3, $4, FALSE, 'TOTAL', 'BILATERAL', 'REPS', $5::uuid)
+             VALUES ($1::uuid, $2::uuid, $3, FALSE, 'TOTAL', 'BILATERAL', 'REPS', $4::uuid)
              ON CONFLICT (id) DO NOTHING",
         )
         .bind(USER_B_VARIANT_ID)
         .bind(USER_B_EXERCISE_ID)
         .bind("User B Application Variant")
-        .bind("bodyweight")
         .bind(USER_B_ID)
         .execute(pool)
         .await

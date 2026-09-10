@@ -75,6 +75,18 @@ decisions:
   - id: gym_mutability_semantics
     decision: Allow Gym-name updates in every status, but allow physical deletion only while status is new. Do not expose status mutation in ordinary Gym writes.
     rationale: Lets users correct names while retaining established or retired historical Gym identities until lifecycle transitions have a separately defined trigger.
+  - id: exercise_status_storage
+    decision: Persist exercises.status with values new|active|inactive. `new` is a Draft in user-facing language; Configurator-created Exercises explicitly write new, while development seed Exercises are active.
+    rationale: Establishes durable Exercise lifecycle state before Exercise management while preserving existing seeded reference data as established movements.
+  - id: exercise_mutability_semantics
+    decision: Allow Exercise-name updates in every status, but allow physical deletion only while status is new. Do not expose status mutation in ordinary Exercise writes.
+    rationale: Lets users correct canonical movement names while retaining established or retired Exercise identities until lifecycle transitions have a separately defined trigger.
+  - id: exercise_variant_status_storage
+    decision: Persist exercise_variants.status with values new|active|inactive. `new` is a Draft in user-facing language; Configurator-created Variants explicitly write new, while development seed Variants are active.
+    rationale: Establishes durable Variant lifecycle state before Variant management while preserving seeded execution forms as established reference data.
+  - id: exercise_variant_mutability_semantics
+    decision: Permit ExerciseVariant name and structural-field updates and physical deletion only while status is new; active and inactive Variants may be renamed but keep their Exercise parent, structural fields, and status.
+    rationale: Preserves historical execution semantics after activation while allowing complete draft authoring before lifecycle transitions are defined.
   - id: equipment_station_status_storage
     decision: Persist equipment_stations.status with values new|active|inactive. Configurator-created Stations explicitly write new, while pre-existing Stations must be manually backfilled to active before this code is released.
     rationale: Establishes durable Station lifecycle state without exposing it through the existing workout-facing Station projections.
@@ -250,10 +262,11 @@ tables:
       - version_number > 0
 
   - name: exercises
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: status, type: text, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
@@ -263,6 +276,8 @@ tables:
     unique_constraints:
       - { columns: [name, user_id] }
       - { columns: [id, user_id] }
+    checks:
+      - status in ('new', 'active', 'inactive')
 
   - name: gyms
     lifecycle_policy: ARCHIVABLE
@@ -352,12 +367,12 @@ tables:
       - position > 0
 
   - name: exercise_variants
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: exercise_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
-      - { name: variant_type, type: text, nullable: false }
+      - { name: status, type: text, nullable: false }
       - { name: requires_station, type: boolean, nullable: false }
       - { name: load_input_mode, type: text, nullable: false }
       - { name: set_tracking_mode, type: text, nullable: false }
@@ -373,6 +388,7 @@ tables:
       - { columns: [exercise_id, user_id, name] }
       - { columns: [id, user_id] }
     checks:
+      - status in ('new', 'active', 'inactive')
       - load_input_mode in ('TOTAL', 'PER_SIDE')
       - set_tracking_mode in ('UNILATERAL', 'BILATERAL')
       - repetition_kind in ('REPS', 'SECS')

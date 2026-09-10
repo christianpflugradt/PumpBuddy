@@ -38,24 +38,25 @@ lifecycle_policies:
 
 entities:
   - name: Exercise
-    description: Canonical movement definition.
+    description: Canonical movement definition with Configurator lifecycle status. The persisted `new` status is a Draft in user-facing language.
     attributes:
       - id
       - name
+      - status
     relationships:
       - type: one_to_many
         target: ExerciseVariant
       - type: one_to_many
         target: TrainingPlanExercise
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: ExerciseVariant
-    description: Concrete execution form of an exercise, including station-required versus stationless behavior and side-tracking semantics.
+    description: Concrete execution form of an exercise, including station-required versus stationless behavior, side-tracking semantics, and Configurator lifecycle status. The persisted `new` status is a Draft in user-facing language.
     attributes:
       - id
       - exercise_id
       - name
-      - variant_type
+      - status
       - requires_station
       - load_input_mode
       - set_tracking_mode
@@ -67,7 +68,7 @@ entities:
         target: TrainingPlanExerciseVariant
       - type: one_to_many
         target: ExerciseVariantEquipmentCompatibility
-    lifecycle_policy: IMMUTABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: Gym
     description: Real-world gym location with Configurator lifecycle status. The persisted `new` status is a Draft in user-facing language.
@@ -593,6 +594,14 @@ invariants:
     rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist canonical total load values.
   - id: invariant.load_profile_status_values
     rule: LoadProfile.status permits only new, active, or inactive.
+  - id: invariant.exercise_status_values
+    rule: Exercise.status permits only new, active, or inactive; new is a Draft in user-facing language.
+  - id: invariant.exercise_variant_status_values
+    rule: ExerciseVariant.status permits only new, active, or inactive; new is a Draft in user-facing language.
+  - id: invariant.exercise_lifecycle_mutability
+    rule: Exercise.name is editable in every status, while Exercise deletion is permitted only while status is new. Status transitions are not exposed through ordinary Exercise writes.
+  - id: invariant.exercise_variant_lifecycle_mutability
+    rule: ExerciseVariant name and structural fields are editable and the row is physically deletable only while status is new. Active or inactive Variants may be renamed but retain their parent Exercise, structural fields, and status.
   - id: invariant.equipment_station_status_values
     rule: EquipmentStation.status permits only new, active, or inactive; new is a Draft in user-facing language.
   - id: invariant.equipment_station_lifecycle_mutability

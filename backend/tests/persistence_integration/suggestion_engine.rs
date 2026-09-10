@@ -55,14 +55,13 @@ async fn insert_owned_suggestion_reference_fixture(
              id,
              exercise_id,
              name,
-             variant_type,
              requires_station,
              load_input_mode,
              set_tracking_mode,
              repetition_kind,
              user_id
          )
-         VALUES ($1::uuid, $2::uuid, $3, 'machine', TRUE, 'TOTAL', 'BILATERAL', 'REPS', $4::uuid)
+         VALUES ($1::uuid, $2::uuid, $3, TRUE, 'TOTAL', 'BILATERAL', 'REPS', $4::uuid)
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(ids.variant_id)

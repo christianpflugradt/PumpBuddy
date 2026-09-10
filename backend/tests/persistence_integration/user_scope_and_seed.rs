@@ -8,6 +8,122 @@ fn assert_foreign_key_violation(error: sqlx::Error, constraint: &str) {
     }
 }
 
+#[tokio::test]
+async fn exercise_and_variant_lifecycle_statuses_are_constrained_and_default_to_active() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+
+    for (suffix, status) in [("e1", "new"), ("e2", "active"), ("e3", "inactive")] {
+        let exercise_id = format!("1f000000-0000-0000-0000-0000000000{suffix}");
+        let variant_id = format!("2f000000-0000-0000-0000-0000000000{suffix}");
+
+        sqlx::query(
+            "INSERT INTO exercises (id, user_id, name, status)
+             VALUES ($1::uuid, $2::uuid, $3, $4)",
+        )
+        .bind(&exercise_id)
+        .bind(DEV_USER_ID)
+        .bind(format!("{status} Lifecycle Exercise"))
+        .bind(status)
+        .execute(pool)
+        .await
+        .expect("allowed exercise lifecycle status should insert");
+
+        sqlx::query(
+            "INSERT INTO exercise_variants (
+                 id, exercise_id, user_id, name, status, requires_station
+             )
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, FALSE)",
+        )
+        .bind(variant_id)
+        .bind(exercise_id)
+        .bind(DEV_USER_ID)
+        .bind(format!("{status} Lifecycle Variant"))
+        .bind(status)
+        .execute(pool)
+        .await
+        .expect("allowed exercise variant lifecycle status should insert");
+    }
+
+    let default_exercise_status: String = sqlx::query_scalar(
+        "INSERT INTO exercises (id, user_id, name)
+         VALUES ('1f000000-0000-0000-0000-0000000000e4'::uuid, $1::uuid, 'Default Lifecycle Exercise')
+         RETURNING status",
+    )
+    .bind(DEV_USER_ID)
+    .fetch_one(pool)
+    .await
+    .expect("pre-existing exercise default should be active");
+    assert_eq!(default_exercise_status, "active");
+
+    let default_variant_status: String = sqlx::query_scalar(
+        "INSERT INTO exercise_variants (
+             id, exercise_id, user_id, name, requires_station
+         )
+         VALUES (
+             '2f000000-0000-0000-0000-0000000000e4'::uuid,
+             '1f000000-0000-0000-0000-0000000000e4'::uuid,
+             $1::uuid,
+             'Default Lifecycle Variant',
+             FALSE
+         )
+         RETURNING status",
+    )
+    .bind(DEV_USER_ID)
+    .fetch_one(pool)
+    .await
+    .expect("pre-existing exercise variant default should be active");
+    assert_eq!(default_variant_status, "active");
+
+    for (table, id, constraint) in [
+        (
+            "exercises",
+            "1f000000-0000-0000-0000-0000000000e5",
+            "exercises_status_check",
+        ),
+        (
+            "exercise_variants",
+            "2f000000-0000-0000-0000-0000000000e5",
+            "exercise_variants_status_check",
+        ),
+    ] {
+        let query = match table {
+            "exercises" => {
+                "INSERT INTO exercises (id, user_id, name, status)
+                 VALUES ($1::uuid, $2::uuid, 'Invalid Lifecycle Exercise', 'retired')"
+            }
+            "exercise_variants" => {
+                "INSERT INTO exercise_variants (
+                     id, exercise_id, user_id, name, status, requires_station
+                 )
+                 VALUES (
+                     $1::uuid,
+                     '1f000000-0000-0000-0000-0000000000e4'::uuid,
+                     $2::uuid,
+                     'Invalid Lifecycle Variant',
+                     'retired',
+                     FALSE
+                 )"
+            }
+            _ => unreachable!("only exercise lifecycle tables are covered"),
+        };
+        let error = sqlx::query(query)
+            .bind(id)
+            .bind(DEV_USER_ID)
+            .execute(pool)
+            .await
+            .expect_err("unsupported lifecycle status should be rejected");
+        match error {
+            sqlx::Error::Database(error) => {
+                assert_eq!(error.code().as_deref(), Some("23514"));
+                assert_eq!(error.constraint(), Some(constraint));
+            }
+            other => panic!("unexpected invalid lifecycle insert error: {other:?}"),
+        }
+    }
+}
+
 async fn insert_user_b_plan_fixture(pool: &sqlx::PgPool) {
     sqlx::query(
         "INSERT INTO training_plans (id, user_id, name)
