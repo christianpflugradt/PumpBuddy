@@ -31,12 +31,18 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
     expect(document.activeElement).toBe(input); expect(input.value).toBe("Ca");
   });
-  it("renders structural fields read-only while retaining name saves for historical variants", () => {
+  it.each(["active", "inactive"] as const)("requires confirmation before saving a renamed %s variant", (status) => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
-    document.body.append(el); el.state = state("active"); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    document.body.append(el); el.state = state(status); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     expect(el.querySelector('[data-ui-action="delete-configurator-exercise-variant"]')).toBeNull();
     expect(el.querySelector('[data-field="load-input-mode"]')).toBeNull();
     const name = el.querySelector<HTMLInputElement>('[data-field="name"]')!; name.value = "Neutral"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
+    expect(handler).not.toHaveBeenCalled();
+    expect(el.querySelector('[aria-label="Historical variant rename warning"]')).not.toBeNull();
+    (el.querySelector('[data-ui-action="dismiss-historical-variant-rename-warning"]') as HTMLButtonElement).click();
+    expect(el.querySelector<HTMLInputElement>('[data-field="name"]')!.value).toBe("Neutral");
+    (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0][0].detail.payload.request).toEqual({ name: "Neutral" });
   });
