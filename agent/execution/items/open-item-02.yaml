@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-065-item-02
   title: Deliver exercise and variant configurator API
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -82,5 +82,29 @@ handoff:
     and parent scoping.
   - Confirm generated artifacts originate only from the OpenAPI contract.
   - Confirm deletion preserves existing Training Plan reference protection.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-10T12:22:52Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: The API commit adds handlers,\
+    \ service, and persistence operations for\n    every Exercise and nested Variant\
+    \ endpoint, but it changes no backend test file.\n    Searches of backend/tests\
+    \ find no request coverage for /api/exercises or tests\n    of current-user/cross-parent\
+    \ access, immutable structural updates, invalid request\n    enums, or draft deletion/reference\
+    \ protection. The only selected persistence test\n    verifies lifecycle database\
+    \ constraints.\n  risk: The authoritative ownership and lifecycle rules can regress\
+    \ without detection,\n    so ac-02 required focused API or persistence coverage\
+    \ is unmet.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: The API commit adds handlers, service, and persistence operations for
+      every Exercise and nested Variant endpoint, but it changes no backend test file.
+      Searches of backend/tests find no request coverage for /api/exercises or tests
+      of current-user/cross-parent access, immutable structural updates, invalid request
+      enums, or draft deletion/reference protection. The only selected persistence
+      test verifies lifecycle database constraints.
+    risk: The authoritative ownership and lifecycle rules can regress without detection,
+      so ac-02 required focused API or persistence coverage is unmet.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
