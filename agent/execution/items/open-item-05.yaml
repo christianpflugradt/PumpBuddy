@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-05
+  title: Implement nested Variant configurator flow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Each Exercise detail provides a compact nested Variant list and lifecycle-aware
+    Variant create, edit, detail, and draft-delete flow.
+  rationale: Variants belong exclusively to their owning Exercise and need clear structural
+    versus read-only presentation.
+scope:
+  in:
+  - Render a compact nested Variant list within its owning Exercise detail.
+  - Implement nested Variant create, edit, and detail routes and API actions.
+  - Collect and display requires_station, load_input_mode, set_tracking_mode, and
+    repetition_kind with allowed enum values.
+  - Allow Variant names in every status, allow structural edits only while new, and
+    render active or inactive structural fields read-only.
+  - Use existing draft deletion affordances and hide or disable destructive actions
+    for active or inactive records.
+  - Add renderer coverage for parent-scoped navigation, validation, lifecycle read-only
+    presentation, and deletion affordances.
+  out:
+  - Variant status changes, reactivation, or transition controls.
+  - Station compatibility management, Gym compatibility UX, or workout behavior changes.
+constraints:
+- Variants are reachable only through the owning Exercise.
+- Reuse compact Configurator detail styling and responsive behavior.
+- Renderer controls complement but do not replace backend lifecycle validation.
+inputs:
+  required:
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  optional:
+  - renderer/generated/openapi/typescript
+acceptance_criteria:
+- id: ac-01
+  statement: Exercise detail contains the only Configurator Variant list and users
+    can create, inspect, update, and draft-delete a Variant through its owning Exercise.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior tests and targeted UI smoke checks pass.
+- id: ac-02
+  statement: Variant structural controls are editable only while new and active or
+    inactive detail presents those fields read-only while retaining permitted name
+    editing.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Lifecycle-aware Variant presentation and interaction coverage passes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Nested ownership, contract fields, and adjacent editor patterns
+    are sufficiently explicit.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Nested Configurator Variant presentation
+  - Renderer-to-API Variant integration
+handoff:
+  review_focus:
+  - Confirm all Variant navigation retains its owning Exercise context.
+  - Confirm active and inactive structural fields are unmistakably read-only and no
+    lifecycle transition UI appears.
+review_feedback: []
+review_result: null

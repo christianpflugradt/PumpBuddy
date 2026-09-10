@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-03
+  title: Add Configurator Exercise navigation and list
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator users can reach a searchable, lifecycle-aware Exercise list
+    through one new top-level Exercises entry.
+  rationale: This creates the focused entry point for Exercise management while keeping
+    Variants nested.
+scope:
+  in:
+  - Add one Exercises entry to existing Configurator navigation and route state.
+  - Implement a searchable Exercise list backed by the configurator Exercise API.
+  - Render established lifecycle badges and responsive list affordances using existing
+    Configurator conventions.
+  - Link list actions only to the Exercise create and detail or edit flow.
+  - Add meaningful renderer behavior and mocked UI smoke coverage for navigation,
+    search, loading, error, and lifecycle display.
+  out:
+  - A top-level Variant navigation entry or standalone Variant list.
+  - Exercise or Variant lifecycle transition controls.
+constraints:
+- Reuse Configurator Gym, Station, and Load Profile visual and interaction conventions.
+- Keep user-facing copy in English and renderer business logic thin.
+- Do not change workout routes or behavior.
+inputs:
+  required:
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-gyms-screen.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+  optional:
+  - renderer/generated/openapi/typescript
+acceptance_criteria:
+- id: ac-01
+  statement: Configurator exposes exactly one new top-level Exercises entry with a
+    searchable Exercise list, lifecycle badges, and create or detail navigation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer type, unit, and targeted UI smoke checks pass.
+- id: ac-02
+  statement: Variants remain unreachable as a top-level Configurator destination.
+  verification:
+    type: command
+    command: rtk rg -n 'Variants' renderer/src/pb-side-menu.ts renderer/src/pumpbuddy-app.ts
+    expected: Matches show only nested Exercise flow references and no standalone
+      Configurator navigation item.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The established Configurator patterns provide sufficient
+    implementation direction.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Renderer navigation
+  - Configurator list presentation
+handoff:
+  review_focus:
+  - Check search behavior and empty, loading, and error states against existing Configurator
+    lists.
+  - Check responsive layout and absence of a top-level Variant destination.
+review_feedback: []
+review_result: null

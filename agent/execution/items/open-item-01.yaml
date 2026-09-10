@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-01
+  title: Prepare exercise lifecycle persistence
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Repository schema, development seed data, and canonical models represent
+    Exercise and Exercise Variant lifecycle state without variant_type.
+  rationale: The configurator lifecycle and all later API work require one consistent
+    persisted model.
+scope:
+  in:
+  - Remove exercise_variants.variant_type from the repository schema, development
+    seed data, design models, fixtures, and affected source definitions.
+  - Persist new, active, and inactive status for exercises and exercise_variants using
+    the established Configurator conventions.
+  - Update canonical domain and persistence design documentation for Exercise and
+    Exercise Variant lifecycle and mutation semantics.
+  - Adapt database-backed fixtures and repository tests to the new schema.
+  out:
+  - Live-instance migrations, backfills, and operational data conversion.
+  - Station-to-Variant compatibility management or workout behavior changes.
+constraints:
+- Keep schema changes compatible with repository development initialization conventions.
+- Do not retain compatibility placeholders for variant_type.
+- Preserve explicit PostgreSQL schema definitions and SQLx-backed persistence.
+inputs:
+  required:
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/tests/persistence_integration/user_scope_and_seed.rs
+  optional:
+  - backend/src/persistence/tests.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Exercises and Exercise Variants persist a constrained new, active, or
+    inactive status, and no repository source or fixture retains variant_type.
+  verification:
+    type: command
+    command: rtk rg -n 'variant_type' runtime backend renderer agent/design
+    expected: The command exits with status 1 after intentional removal of every repository
+      reference.
+- id: ac-02
+  statement: Development database setup and persistence coverage execute against the
+    revised schema.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality and PostgreSQL-backed integration checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Implementation scope and acceptance criteria are sufficient
+    for one focused delivery.
+  independent_review_required: true
+  independent_review_reason: Lifecycle persistence and schema changes can silently
+    affect data integrity and all downstream API behavior.
+  risk_level: high
+  boundary_impact:
+  - PostgreSQL schema
+  - Canonical domain and persistence models
+handoff:
+  review_focus:
+  - Verify default values, status constraints, and seed columns stay aligned.
+  - Verify variant_type removal includes fixtures and authoritative design models.
+review_feedback: []
+review_result: null

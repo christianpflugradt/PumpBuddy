@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-04
+  title: Implement Exercise create and detail editing
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Users can create, inspect, rename, and draft-delete Exercises through a
+    lifecycle-aware Configurator flow.
+  rationale: Exercise management must be complete before users manage its nested Variants.
+scope:
+  in:
+  - Implement Exercise create, edit, and detail presentation connected to the new
+    API.
+  - Allow Exercise name edits in every status and use the established historical rename
+    confirmation for active and inactive records.
+  - Offer draft deletion using existing Configurator child relationship and reference-protection
+    semantics.
+  - Present a compact read-only lifecycle-aware Exercise detail where controls are
+    not applicable.
+  - Add renderer coverage for create, edit, confirmation, delete affordance, and API
+    failure behavior.
+  out:
+  - Variant create, edit, or detail interactions.
+  - Exercise status transition controls or lifecycle rule changes.
+constraints:
+- Backend remains the authority for mutation and deletion eligibility.
+- Reuse existing Gym, Station, and Load Profile confirmation and draft-deletion affordances.
+- A draft Exercise may have zero Variants.
+inputs:
+  required:
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  optional:
+  - renderer/generated/openapi/typescript
+acceptance_criteria:
+- id: ac-01
+  statement: Users can create an Exercise, view its lifecycle-aware detail, rename
+    it in every status with the established historical confirmation, and request deletion
+    only when draft.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior tests and targeted UI smoke checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The API and adjacent editor patterns provide a direct implementation
+    path.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator Exercise editor
+  - Renderer-to-API mutation integration
+handoff:
+  review_focus:
+  - Confirm active and inactive Exercise names are editable only through the expected
+    confirmation flow.
+  - Confirm client presentation does not imply deletion eligibility beyond backend
+    enforcement.
+review_feedback: []
+review_result: null

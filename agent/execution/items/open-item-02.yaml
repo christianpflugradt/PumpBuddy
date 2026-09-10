@@ -1,0 +1,86 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-065-item-02
+  title: Deliver exercise and variant configurator API
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A contract-first, user-scoped backend API manages Exercises and nested
+    Exercise Variants with authoritative lifecycle validation.
+  rationale: The renderer needs one safe server boundary for all configurator reads
+    and writes.
+scope:
+  in:
+  - Define OpenAPI paths and schemas for Exercise list, get, create, update, draft
+    delete, and nested Variant list, get, create, update, and draft delete.
+  - Regenerate backend and renderer API artifacts from the OpenAPI contract.
+  - Implement domain, application, persistence, router, and transport layers using
+    explicit SQLx queries and current-user ownership checks.
+  - 'Enforce lifecycle mutation rules: Exercise names are editable in every status;
+    active or inactive Variants permit name-only edits; status and Variant parent
+    changes are rejected; active or inactive entities cannot be deleted.'
+  - Validate Variant structural enum fields and preserve Training Plan reference protection
+    during draft Exercise deletion.
+  - Add focused unit and PostgreSQL-backed API or persistence coverage for scoping,
+    validation, lifecycle mutation, and deletion behavior.
+  out:
+  - Lifecycle transition, activation, deactivation, or reactivation endpoints.
+  - Station compatibility endpoints, Gym compatibility UX, and workout API behavior
+    changes.
+constraints:
+- OpenAPI YAML is canonical; never hand-edit generated artifacts.
+- Keep business rules server-authoritative and preserve transport, application, and
+  persistence boundaries.
+- Scope every read and mutation to the authenticated user and owning Exercise.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/api/router.rs
+  - backend/src/api/models.rs
+  - backend/src/domain.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/tests/api_integration.rs
+  - backend/tests/persistence_integration/user_scope_and_seed.rs
+  optional:
+  - backend/src/application/load_profiles.rs
+  - backend/src/persistence/load_profiles.rs
+acceptance_criteria:
+- id: ac-01
+  statement: The canonical OpenAPI contract and generated backend and renderer artifacts
+    expose the scoped Exercise and nested Variant operations.
+  verification:
+    type: command
+    command: make refresh-api-clients
+    expected: Generated API artifacts are recreated successfully from agent/design/api-contract.yaml.
+- id: ac-02
+  statement: The backend rejects cross-user or cross-parent access, prohibited status
+    or re-parent writes, invalid Variant structural values, and deletion of non-draft
+    entities while allowing documented edits.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Focused unit, API, and PostgreSQL-backed integration coverage passes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Contract and backend boundary work are one inseparable, implementation-ready
+    deliverable.
+  independent_review_required: true
+  independent_review_reason: Authenticated ownership and lifecycle enforcement protect
+    data isolation and historical configuration integrity.
+  risk_level: high
+  boundary_impact:
+  - OpenAPI contract
+  - Authenticated backend API
+  - Application and SQLx persistence layers
+handoff:
+  review_focus:
+  - Trace every endpoint from router through application to persistence for current-user
+    and parent scoping.
+  - Confirm generated artifacts originate only from the OpenAPI contract.
+  - Confirm deletion preserves existing Training Plan reference protection.
+review_feedback: []
+review_result: null
