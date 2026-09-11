@@ -1,0 +1,94 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-04
+  title: Build current training plan structural editor
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A mobile-first current-plan detail editor for renaming and structural Exercise
+    and Variant changes.
+  rationale: This is the user-facing surface that makes version-safe structural plan
+    management practical.
+scope:
+  in:
+  - Show current plan name, stable visible Exercise positions, allowed Variants, and
+    existing variant-level sets and reps guidance as read-only information.
+  - Allow renaming, adding and removing plan Exercises, and adding and removing allowed
+    Variants while retaining at least one Variant per Exercise.
+  - Use searchable Exercise and Variant pickers that restrict Variants to the selected
+    Exercise and block duplicate choices.
+  - Use one dynamic PumpBuddy-style confirmation dialog that combines rename and version-producing
+    consequences, while saving ordinary Variant additions without confirmation.
+  - Refresh detail state from the backend save result after every successful save.
+  out:
+  - Edit target sets, repetition ranges, exercise defaults, or Variant overrides.
+  - Edit or manage historical plan versions.
+  - Add reorder controls, drag-and-drop, Gym executability configuration, or Station
+    compatibility controls.
+constraints:
+- The editor must ask the backend for version outcome authority and must not implement
+  a separate frontend version-relevance classifier.
+- The final allowed Variant removal is disabled or rejected before save and remains
+  enforced by the backend.
+- Reuse pb-confirm-dialog and existing searchable-picker conventions where available.
+- Keep historical training-plan browsing and workout behavior unchanged.
+inputs:
+  required:
+  - renderer/src/pb-training-plan-detail-screen.ts
+  - renderer/src/pb-confirm-dialog.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-contract.ts
+  optional:
+  - renderer/src/pb-training-plan-detail-screen.test.ts
+  - renderer/src/text-input-binding.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The current-plan detail shows stable positions, allowed Variants, and
+    any existing sets and reps guidance without editable guidance controls.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass for current-plan detail rendering and read-only
+      guidance.
+- id: ac-02
+  statement: Exercise and Variant pickers are searchable, scope Variants to their
+    Exercise, reject duplicates, and never leave a plan Exercise with zero allowed
+    Variants.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer interaction coverage passes for picker scoping, duplicate prevention,
+      and final-Variant protection.
+- id: ac-03
+  statement: One confirmation dialog accurately combines a pending rename and backend-reported
+    version creation, while an ordinary Variant addition saves without confirmation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass for combined confirmation and direct additive-Variant
+      saves.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The existing detail, dialog, and editor components provide
+    clear implementation precedents.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Training Plan Configurator detail UI
+  - renderer save workflow
+  - accessible confirmation dialogs
+handoff:
+  review_focus:
+  - Verify the renderer consumes backend version semantics rather than re-deriving
+    them.
+  - Verify all declared editing exclusions remain unavailable.
+  - Verify mobile layout and dialog content stay aligned with existing Configurator
+    visual patterns.
+review_feedback: []
+review_result: null

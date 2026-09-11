@@ -1,0 +1,87 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-01
+  title: Define training plan configurator write contract
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A contract-first backend command surface for creating and updating the
+    current training plan version.
+  rationale: The Configurator needs one authoritative write boundary before persistence
+    and renderer work can safely depend on it.
+scope:
+  in:
+  - Add OpenAPI operations and generated client updates for creating a plan and saving
+    its current editable definition.
+  - Define API, domain, application, and repository command models for a name plus
+    ordered exercises and allowed variant identifiers.
+  - Validate authenticated ownership, selected Exercise and Variant relationships,
+    duplicate Variant selections, and the final-Variant rule at the backend boundary.
+  - Return enough save metadata for the renderer to distinguish in-place saves from
+    a newly created version without independently classifying the change.
+  out:
+  - Implement database mutation SQL or schema changes.
+  - Add Configurator screens or frontend change-detection behavior.
+  - Expose historical-version editing or guidance editing.
+constraints:
+- Keep agent/design/api-contract.yaml authoritative and regenerate clients through
+  the existing Make target.
+- Keep version-relevance classification in backend application logic rather than in
+  renderer code.
+- Accept only one or more allowed Variants for every submitted plan Exercise.
+- Preserve the existing read-only training-plan browsing operations and response shapes.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/api/models.rs
+  - backend/src/api/handlers/training_plans.rs
+  - backend/src/application/training_plans.rs
+  - backend/src/persistence/mod.rs
+  optional:
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-contract.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The canonical OpenAPI contract exposes authenticated create and current-plan
+    save operations with ordered exercises, Exercise-scoped allowed Variants, and
+    a save result that identifies whether a new version was created.
+  verification:
+    type: command
+    command: make refresh-api-clients
+    expected: The generated backend and renderer API models refresh without contract-generation
+      errors.
+- id: ac-02
+  statement: The application boundary rejects empty plan Exercise variant lists, duplicate
+    submitted Variant identifiers, and Variants that do not belong to their submitted
+    Exercise.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend unit coverage passes, including command-validation behavior.
+- id: ac-03
+  statement: The backend alone reports version-producing save semantics, and a rename
+    or additive Variant change is not classified by the renderer as version-producing.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests pass for the authoritative save-classification contract.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan already gives bounded contract and validation scope.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - OpenAPI contract
+  - authenticated training-plan API
+  - training-plan application service
+handoff:
+  review_focus:
+  - Ensure generated artifacts derive only from the OpenAPI contract.
+  - Ensure validation does not create a second version-relevance policy in the renderer.
+review_feedback: []
+review_result: null

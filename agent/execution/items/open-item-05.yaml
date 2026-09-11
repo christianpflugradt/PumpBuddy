@@ -1,0 +1,84 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-05
+  title: Verify training plan configurator workflow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Targeted regression coverage for the end-to-end Training Plan Configurator
+    workflow.
+  rationale: The feature crosses contract, transaction, and renderer state boundaries,
+    so focused workflow coverage is needed beyond the unit tests embedded in implementation
+    items.
+scope:
+  in:
+  - Add or refine targeted backend integration and renderer workflow tests for create,
+    rename, structural version creation, and additive Variant saves.
+  - Cover preservation of historical versions and their workout-facing behavior after
+    a later structural save.
+  - Exercise confirmation behavior and picker constraints at the renderer boundary
+    with mocked API routes where appropriate.
+  - Run the repository quality gates relevant to backend and renderer changes.
+  out:
+  - Broaden into unscoped test-suite cleanup or coverage-target changes.
+  - Add brittle exhaustive UI automation for every form state.
+  - Change product behavior, API shapes, or persistence semantics solely to simplify
+    tests.
+constraints:
+- Keep backend persistence confidence centered on PostgreSQL-backed integration tests.
+- Keep renderer workflow coverage stable and focused on critical behavior.
+- Assert observable behavior and immutable-history guarantees rather than component
+  internals.
+inputs:
+  required:
+  - agent/strategy/test-strategy.yaml
+  - backend/tests/persistence_integration.rs
+  - backend/tests/api_integration.rs
+  - renderer/src/pb-training-plan-detail-screen.test.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  - renderer/src/workout-api.test.ts
+  optional:
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Regression tests prove that a structural save leaves prior plan versions
+    and workout-referenced history unchanged while a new complete version is readable.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality and PostgreSQL-backed integration checks pass.
+- id: ac-02
+  statement: Renderer tests prove list-to-create-to-edit flow behavior, picker constraints,
+    and conditional confirmation behavior without a live backend dependency.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality and targeted workflow checks pass.
+- id: ac-03
+  statement: The combined repository gates pass with no contract or generated-client
+    drift.
+  verification:
+    type: command
+    command: make check
+    expected: The repository-wide required checks complete successfully.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The acceptance scope is a focused verification pass following
+    the implementation items.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend integration coverage
+  - renderer workflow coverage
+  - cross-boundary regression confidence
+handoff:
+  review_focus:
+  - Confirm test setup uses real PostgreSQL for persistence semantics and mocked routes
+    only for renderer UI behavior.
+  - Confirm tests cover the specified invariants without expanding feature scope.
+review_feedback: []
+review_result: null

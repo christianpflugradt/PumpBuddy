@@ -1,0 +1,79 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-03
+  title: Add training plans to Configurator navigation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A Configurator Training Plans entry with compact list and create flows.
+  rationale: Users need a discoverable, consistent starting point for managing Training
+    Plans before editing their structure.
+scope:
+  in:
+  - Add one Training Plans navigation entry within the established Configurator hierarchy.
+  - Render loading, empty, error, and populated list states using existing Configurator
+    visual conventions.
+  - Open an existing current plan detail and provide a create flow that collects a
+    plan name and required initial structure.
+  - Use the generated API client and existing renderer state and routing patterns.
+  out:
+  - Create a separate global Training Plans design language or navigation hierarchy.
+  - Add plan ordering, drag-and-drop, or historical-version management UI.
+  - Implement structural edit controls beyond the minimum initial-plan structure needed
+    for creation.
+constraints:
+- Reuse existing Configurator side-menu, list, editor, typography, spacing, dark-theme,
+  and accessible control patterns.
+- Keep user-facing copy in English.
+- Do not reproduce backend business validation in client-side state beyond immediate
+  form usability.
+inputs:
+  required:
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/pb-configurator-overview-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  optional:
+  - renderer/src/pb-create-button.ts
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: Configurator contains exactly one Training Plans destination that lists
+    plans, opens current-plan detail, and presents an understandable empty state.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests and static checks pass for Configurator navigation and
+      list states.
+- id: ac-02
+  statement: The create flow submits a name and valid initial Exercise and Variant
+    structure through the generated API boundary and surfaces server validation errors
+    accessibly.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer interaction coverage passes for successful create and rejected
+      create states.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Existing Configurator precedents provide an implementation
+    path.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator navigation
+  - renderer API client
+  - Training Plan list and creation UI
+handoff:
+  review_focus:
+  - Confirm the new destination reuses rather than forks Configurator patterns.
+  - Confirm client-side validation remains usability-focused and server errors remain
+    visible.
+review_feedback: []
+review_result: null

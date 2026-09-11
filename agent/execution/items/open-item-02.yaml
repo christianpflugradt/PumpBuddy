@@ -1,0 +1,93 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-02
+  title: Persist atomic training plan versions
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Transactional persistence that creates plans and complete immutable next
+    versions without altering historical definitions.
+  rationale: Structural edits must preserve every prior version used by workout history
+    while reliably replacing the latest editable definition.
+scope:
+  in:
+  - Implement the repository writes consumed by the training-plan configurator command
+    contract.
+  - Create a new plan with version number 1 and its complete ordered Exercise and
+    Variant structure.
+  - Persist renames and added Variants in place, while added or removed Exercises
+    and removed Variants atomically create a complete next version.
+  - Preserve positions and copy retained Exercise and Variant guidance into a newly
+    created version.
+  - Add PostgreSQL-backed integration coverage for successful and rejected mutations.
+  out:
+  - Introduce production migration, backfill, or live-upgrade SQL.
+  - Change workout execution, historical browsing, or Exercise and Variant lifecycle
+    behavior.
+  - Build Configurator renderer screens.
+constraints:
+- Use explicit SQL through sqlx and the existing normalized training-plan tables.
+- Treat existing TrainingPlanVersion rows as immutable, including rows referenced
+  by completed or active workouts.
+- Perform version creation and all dependent copied and new rows in one database transaction.
+- Do not add schema redesign or persistence of renderer-only change classifications.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - runtime/database/00-schema.sql
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/mod.rs
+  - backend/tests/persistence_integration.rs
+  optional:
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Creating a plan persists version 1 with every submitted ordered Exercise
+    and at least one allowed Variant per Exercise.
+  verification:
+    type: command
+    command: make check-backend
+    expected: PostgreSQL-backed integration coverage passes for initial plan creation.
+- id: ac-02
+  statement: A structural save creates one complete next version atomically, retains
+    the prior version unchanged, and preserves retained variant-level sets and reps
+    guidance.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Integration coverage passes for atomic copy-on-write version creation
+      and historical read preservation.
+- id: ac-03
+  statement: A rename or Variant addition updates the current version in place, while
+    no plan Exercise can persist with zero allowed Variants.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Integration coverage passes for in-place mutations and final-Variant
+      validation.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The transactional boundary and persistence invariants are
+    explicit.
+  independent_review_required: true
+  independent_review_reason: Atomic immutable-version writes can corrupt historical
+    workout references or partially persist a version if transaction boundaries are
+    wrong.
+  risk_level: high
+  boundary_impact:
+  - PostgreSQL training-plan persistence
+  - training-plan version immutability
+  - workout historical references
+handoff:
+  review_focus:
+  - Inspect transaction boundaries and rollback behavior for every dependent version
+    row.
+  - Verify old versions and their workout references cannot be mutated by structural
+    saves.
+  - Verify guidance copying and position stability for retained Exercises and Variants.
+review_feedback: []
+review_result: null
