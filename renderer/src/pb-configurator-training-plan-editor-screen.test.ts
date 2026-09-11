@@ -16,6 +16,9 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
     expect(el.textContent).toContain("3 sets · 8–10 reps");
+    expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
+    expect(el.querySelector(".configurator-gym-input[data-field=\"plan-name\"]")).toBeTruthy();
+    expect(el.querySelector(".configurator-training-plan-exercise-card")).toBeTruthy();
     expect(el.querySelector('[data-variant-id="variant-1"][data-ui-action="add-plan-variant"]')).toBeNull();
     expect(el.querySelector('[data-variant-id="variant-3"][data-ui-action="add-plan-variant"]')).toBeNull();
     const remove = el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement;

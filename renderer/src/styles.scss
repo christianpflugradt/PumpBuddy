@@ -124,6 +124,8 @@ pb-gym-detail-screen,
 pb-station-detail-screen,
 pb-exercise-variant-detail-screen,
 pb-configurator-exercises-screen,
+pb-configurator-training-plans-screen,
+pb-configurator-training-plan-editor-screen,
 pb-create-button,
 pb-configurator-exercise-editor-screen,
 pb-configurator-exercise-variant-editor-screen,
@@ -396,6 +398,65 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-gym-editor-screen { justify-items: stretch; text-align: left; }
+
+.configurator-training-plan-editor-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
+.configurator-training-plan-editor-card,
+.configurator-training-plan-exercise-card,
+.configurator-training-plan-option-actions,
+.configurator-training-plan-variant-list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.configurator-training-plan-exercise-card {
+  padding: var(--space-xl);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+}
+
+.configurator-training-plan-exercise-heading,
+.configurator-training-plan-variant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.configurator-training-plan-exercise-heading h3,
+.configurator-training-plan-exercise-card h4 {
+  margin: 0;
+}
+
+.configurator-training-plan-variant-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.configurator-training-plan-variant {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-input);
+}
+
+.configurator-training-plan-variant > span {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.configurator-training-plan-variant small {
+  color: var(--text-secondary);
+}
+
+.configurator-training-plan-option-actions {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
 
 .configurator-gym-editor-card,
 .configurator-gym-field,
