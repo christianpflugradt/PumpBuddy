@@ -4,6 +4,7 @@ import {
   createConfiguratorStation,
   createExercise,
   createConfiguratorExerciseVariant,
+  createTrainingPlan,
   createGym,
   createActiveWorkoutApi,
   createFetchJson,
@@ -138,6 +139,7 @@ export const createApp = (
       errorMessage: null,
       hasLoaded: false,
     },
+    configuratorTrainingPlansScreen: { trainingPlans: [], exercises: [], isLoading: false, errorMessage: null, hasLoaded: false },
     configuratorGymDetailScreen: { gymId: null, detail: null, stations: [], isLoading: false, errorMessage: null },
     configuratorStationCompatibilityScreen: { gymId: null, stationId: null, detail: null, isLoading: false, errorMessage: null },
     aboutScreen: {
@@ -308,6 +310,7 @@ export const createApp = (
   const loadConfiguratorGymsScreenData = screenDataController.loadConfiguratorGymsScreenData;
   const loadConfiguratorExercisesScreenData =
     screenDataController.loadConfiguratorExercisesScreenData;
+  const loadConfiguratorTrainingPlansScreenData = screenDataController.loadConfiguratorTrainingPlansScreenData;
   const loadConfiguratorExerciseDetailScreenData = screenDataController.loadConfiguratorExerciseDetailScreenData;
   const loadConfiguratorGymDetailScreenData = screenDataController.loadConfiguratorGymDetailScreenData;
   const loadConfiguratorStationCompatibilityScreenData = screenDataController.loadConfiguratorStationCompatibilityScreenData;
@@ -583,6 +586,7 @@ export const createApp = (
         loadConfiguratorLoadProfilesScreenData,
         loadConfiguratorGymsScreenData,
         loadConfiguratorExercisesScreenData,
+        loadConfiguratorTrainingPlansScreenData,
         loadConfiguratorExerciseDetailScreenData,
         loadConfiguratorGymDetailScreenData,
         loadConfiguratorStationCompatibilityScreenData,
@@ -613,6 +617,23 @@ export const createApp = (
     }
 
     switch (action) {
+      case "save-configurator-training-plan": {
+        if (state.viewState.screen !== "configurator-training-plans") return;
+        const detail = customEvent.detail as { payload?: { request?: unknown }; respond?: (result: { ok: boolean; errorMessage?: string }) => void };
+        if (!detail.respond || !detail.payload?.request || typeof detail.payload.request !== "object") return;
+        void (async () => {
+          try {
+            const saved = await createTrainingPlan(detail.payload!.request as never);
+            state = { ...state, viewState: { screen: "training-plan-detail", trainingPlanId: saved.training_plan_id, selectedGymId: null, selectedVersionNumber: null } };
+            render();
+            detail.respond?.({ ok: true });
+            void loadTrainingPlanDetailScreenData(saved.training_plan_id, null, saved.version_number);
+          } catch (error) {
+            detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to create training plan right now.") });
+          }
+        })();
+        return;
+      }
       case "logout":
         stopSecsTimerOnCurrentExercise();
         closeConfirmDialog();

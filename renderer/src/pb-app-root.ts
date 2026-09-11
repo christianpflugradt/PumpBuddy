@@ -82,6 +82,7 @@ import {
   type ConfiguratorExerciseEditorScreenState,
 } from "./pb-configurator-exercise-editor-screen";
 import { pbConfiguratorExerciseVariantEditorScreenTag, registerPbConfiguratorExerciseVariantEditorScreen, type ConfiguratorExerciseVariantEditorScreenState } from "./pb-configurator-exercise-variant-editor-screen";
+import { pbConfiguratorTrainingPlansScreenTag, registerPbConfiguratorTrainingPlansScreen, type ConfiguratorTrainingPlansScreenState } from "./pb-configurator-training-plans-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -116,6 +117,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorExercisesScreen();
     registerPbConfiguratorExerciseEditorScreen();
     registerPbConfiguratorExerciseVariantEditorScreen();
+    registerPbConfiguratorTrainingPlansScreen();
     this.#render();
   }
 
@@ -249,6 +251,14 @@ class PbAppRootElement extends HTMLElement {
         isLoading: state.configuratorExercisesScreen?.isLoading ?? false,
         errorMessage: state.configuratorExercisesScreen?.errorMessage ?? null,
       };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-training-plans") {
+      const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+      const screen = state.configuratorTrainingPlansScreen;
+      el.state = { mode: "list", trainingPlans: screen?.trainingPlans ?? [], exercises: screen?.exercises ?? [], isLoading: screen?.isLoading ?? false, errorMessage: screen?.errorMessage ?? null };
       container.append(el);
       return;
     }

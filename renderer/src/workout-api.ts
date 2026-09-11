@@ -32,6 +32,8 @@ import type {
   SelectActiveWorkoutExerciseOptionRequest,
   SkipActiveWorkoutExerciseRequest,
   TrainingPlanDetailResponse,
+  TrainingPlanDefinitionRequest,
+  TrainingPlanSaveResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   WorkoutDetailResponse,
@@ -61,6 +63,7 @@ import {
   parseLoadProfileSummary,
   parseLoadProfileSummaries,
   parseTrainingPlanDetailResponse,
+  parseTrainingPlanSaveResponse,
   parseTrainingPlanOptionsResponse,
   parseTrainingPlanSummaries,
   parseWorkoutDetailResponse,
@@ -88,6 +91,7 @@ import {
   serializeSelectActiveWorkoutExerciseOptionRequest,
   serializeSkipActiveWorkoutExerciseRequest,
   serializeUpdateActiveWorkoutRequest,
+  serializeTrainingPlanDefinitionRequest,
 } from "./openapi-contract";
 
 export type FetchJson = <T>(input: string) => Promise<T>;
@@ -269,6 +273,18 @@ export const loadTrainingPlanSummaries = async (
   fetchJson: FetchJson,
 ): Promise<TrainingPlanSummary[]> =>
   parseTrainingPlanSummaries(await fetchJson<unknown>("/api/training-plans"));
+
+export const createTrainingPlan = async (
+  payload: TrainingPlanDefinitionRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TrainingPlanSaveResponse> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    "/api/training-plans",
+    "POST",
+    serializeTrainingPlanDefinitionRequest(payload),
+    parseTrainingPlanSaveResponse,
+  );
 
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];

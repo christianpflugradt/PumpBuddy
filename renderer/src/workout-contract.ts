@@ -248,6 +248,17 @@ export type PlanExerciseOptionSummary = {
 
 export type TrainingPlanExerciseVariantSummary = PlanExerciseOptionSummary;
 
+export type TrainingPlanDefinitionRequest = {
+  name: string;
+  exercises: Array<{ exercise_id: string; allowed_variant_ids: string[] }>;
+};
+
+export type TrainingPlanSaveResponse = {
+  training_plan_id: string;
+  version_number: number;
+  created_new_version: boolean;
+};
+
 export type AboutMetadata = {
   app_version: string;
   commit_hash_short: string;

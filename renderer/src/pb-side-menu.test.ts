@@ -199,6 +199,7 @@ describe("pb-side-menu", () => {
     expect(middleEntryLabels(el)).toEqual([
       "Load Profiles",
       "Exercises",
+      "Training Plans",
       "Gyms",
     ]);
   });

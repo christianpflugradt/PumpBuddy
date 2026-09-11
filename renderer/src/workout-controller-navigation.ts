@@ -12,6 +12,7 @@ type Dependencies = {
   loadConfiguratorLoadProfilesScreenData: () => Promise<void>;
   loadConfiguratorGymsScreenData: () => Promise<void>;
   loadConfiguratorExercisesScreenData: () => Promise<void>;
+  loadConfiguratorTrainingPlansScreenData: () => Promise<void>;
   loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorStationCompatibilityScreenData: (gymId: string, stationId: string) => Promise<void>;
@@ -70,6 +71,7 @@ const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "configurator-load-profile-detail" ||
   state.viewState.screen === "configurator-gyms" ||
   state.viewState.screen === "configurator-exercises" ||
+  state.viewState.screen === "configurator-training-plans" ||
   state.viewState.screen === "configurator-exercise-detail" ||
   state.viewState.screen === "configurator-gym-detail" ||
   state.viewState.screen === "about" ||
@@ -165,6 +167,7 @@ export const handleScreenNavigationAction = (
     loadConfiguratorLoadProfilesScreenData,
     loadConfiguratorGymsScreenData,
     loadConfiguratorExercisesScreenData,
+    loadConfiguratorTrainingPlansScreenData,
     loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
     loadConfiguratorStationCompatibilityScreenData,
@@ -247,6 +250,29 @@ export const handleScreenNavigationAction = (
       render();
       void loadConfiguratorExercisesScreenData();
       return true;
+    }
+    case "navigate-configurator-training-plans": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) return true;
+      setState({ ...state, viewState: { screen: "configurator-training-plans" } });
+      render();
+      void loadConfiguratorTrainingPlansScreenData();
+      return true;
+    }
+    case "navigate-back-from-configurator-training-plan-create": {
+      const state = getState();
+      if (state.viewState.screen !== "configurator-training-plans") return true;
+      setState({ ...state, viewState: { screen: "configurator-training-plans" } });
+      render();
+      return true;
+    }
+    case "open-configurator-training-plan-detail": {
+      const state = getState();
+      const id = (event as CustomEvent<{ payload?: { trainingPlanId?: unknown } }>).detail?.payload?.trainingPlanId;
+      const trainingPlanId = typeof id === "string" ? id.trim() : "";
+      if (state.viewState.screen !== "configurator-training-plans" || !trainingPlanId) return true;
+      setState({ ...state, viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId: null, selectedVersionNumber: null } });
+      render(); void loadTrainingPlanDetailScreenData(trainingPlanId, null, null); return true;
     }
     case "start-configurator-exercise-create": {
       const state = getState();

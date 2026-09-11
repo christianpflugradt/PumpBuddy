@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-068-item-03
   title: Add training plans to Configurator navigation
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
