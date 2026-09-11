@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-067-item-02
+  title: Implement Variant-side compatibility service
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The backend retrieves eligible and selected Stations for one Variant and
+    atomically reconciles its compatibility set.
+  rationale: The reverse UI must use the same durable, user-scoped compatibility relation
+    as the existing Station-side editor.
+scope:
+  in:
+  - Add the smallest repository, application-service, handler, and route support needed
+    for the Variant-side endpoints.
+  - "Return Stations across the user\u2019s eligible Gyms with their Gym association\
+    \ for grouping and search."
+  - Validate user, Variant, Gym, Station, UUID, duplicate, and station-required constraints
+    before persisting a full set.
+  - Preserve existing is_enabled and workout-consumer semantics while reconciling
+    the existing relation.
+  out:
+  - Schema migration or a new compatibility persistence model.
+  - New lifecycle behavior, inactive-specific handling, or changes to historical workout
+    records.
+constraints:
+- Keep business rules in the backend application layer and persistence access in explicit
+  SQLx-backed repositories.
+- Use set reconciliation so Save is atomic and Cancel remains purely client-side.
+inputs:
+  required:
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/mod.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/domain.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/tests/api_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: "A user can retrieve and replace a station-required Variant\u2019s compatibility\
+    \ set through the contract while foreign ownership, malformed identifiers, duplicates,\
+    \ and invalid eligibility are rejected."
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend unit, API, and PostgreSQL-backed integration checks pass.
+- id: ac-02
+  statement: Backend tests prove that complete-set reconciliation preserves existing
+    compatibility persistence behavior and does not alter workout executability consumers.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks complete successfully with the new regression coverage.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The established Station-side service provides a direct implementation
+    reference.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Authenticated backend API
+  - Application service
+  - PostgreSQL persistence
+handoff:
+  review_focus:
+  - Confirm the Variant-side mutation is atomic, user-scoped, and relation-preserving.
+  - Confirm no lifecycle rules or workout semantics are broadened.
+review_feedback: []
+review_result: null

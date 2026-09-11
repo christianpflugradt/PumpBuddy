@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-067-item-05
+  title: Cover reverse compatibility workflow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Targeted automated coverage protects the full Exercise Variant-to-Station
+    compatibility workflow.
+  rationale: This cross-boundary flow changes persistence-backed selection behavior
+    and a critical Configurator interaction.
+scope:
+  in:
+  - Add or extend high-value backend API and PostgreSQL-backed integration coverage
+    for reverse reads and complete-set saves.
+  - Add focused renderer and UI-smoke coverage for grouping, Station navigation, Stationless
+    omission, search, Save, and Cancel.
+  - Run the repository-wide quality gate after the integrated workflow is complete.
+  out:
+  - Broad visual-regression suites, unrelated test refactors, or speculative lifecycle
+    test scenarios.
+constraints:
+- Prefer stable behavior-focused tests over component-internal assertions.
+- Use the existing mocked renderer smoke lane and Testcontainers-backed backend confidence
+  layer.
+inputs:
+  required:
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - backend/tests/api_workouts.rs
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Automated tests cover reverse compatibility retrieval, atomically replacing
+    selections, ownership and duplicate protections, and unchanged workout compatibility
+    semantics.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with the new behavior coverage.
+- id: ac-02
+  statement: Automated renderer coverage exercises the mobile Configurator flow from
+    Variant display through Station navigation and staged picker Save or Cancel behavior.
+  verification:
+    type: command
+    command: make check
+    expected: The complete repository quality gate passes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: "The test scope follows directly from the accepted plan\u2019\
+    s backend and user-visible behavior."
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Backend integration coverage
+  - Renderer unit coverage
+  - Renderer UI smoke coverage
+handoff:
+  review_focus:
+  - Confirm tests cover behavior at the correct backend and renderer boundaries.
+  - Confirm no new test depends on immediate persistence or lifecycle behavior outside
+    the plan.
+review_feedback: []
+review_result: null

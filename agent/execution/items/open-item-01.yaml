@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-067-item-01
+  title: Define reverse compatibility API contract
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Canonical OpenAPI shapes expose a Variant-scoped compatibility read and
+    complete-set reconciliation request.
+  rationale: The reverse Configurator interaction needs a typed contract before backend
+    and renderer work can share one boundary.
+scope:
+  in:
+  - Add only the Variant-to-Station read and set-reconciliation contract shapes required
+    by the accepted plan.
+  - Model Station identity and Gym grouping data needed by the compact list and picker.
+  - Regenerate derived backend and renderer OpenAPI client artifacts through repository
+    tooling.
+  out:
+  - A second compatibility relation or immediate per-selection mutation API.
+  - Lifecycle, status, historical-workout, or unrelated Configurator contract changes.
+constraints:
+- Keep agent/design/api-contract.yaml as the canonical source and change the API surface
+  with its contract.
+- Reuse existing Station-side compatibility naming and set-oriented semantics where
+  they fit cleanly.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/gyms.rs
+  - renderer/src/openapi-contract.ts
+  optional:
+  - renderer/src/workout-contract.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The canonical contract defines authenticated Variant-scoped compatibility
+    retrieval and complete selection persistence with the minimum Station and Gym
+    fields needed by the UI.
+  verification:
+    type: command
+    command: make check
+    expected: The repository quality gate passes with generated client artifacts aligned
+      to the contract.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The contract scope is explicit and bounded by the accepted
+    plan.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - OpenAPI contract
+  - Generated API model boundary
+handoff:
+  review_focus:
+  - Ensure the new shapes represent the existing compatibility relation rather than
+    a duplicate model.
+  - Ensure generated artifacts are reproducible and not manually edited.
+review_feedback: []
+review_result: null

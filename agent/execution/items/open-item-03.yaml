@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-067-item-03
+  title: Wire Variant compatibility renderer data
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Configurator renderer can load, save, and navigate Variant-side Station
+    compatibility data through typed API boundaries.
+  rationale: The detail UI needs state, transport calls, and route actions without
+    embedding business rules in the component.
+scope:
+  in:
+  - Add typed API parsing, serialization, and request helpers for the reverse compatibility
+    endpoints.
+  - Load compatibility data into the existing Exercise Variant Configurator flow and
+    refresh it after a successful save.
+  - Route a selected Station row to the existing Configurator Station detail screen
+    with its Gym context.
+  out:
+  - UI markup, styling, or picker interaction composition.
+  - Direct renderer-to-database access or client-owned compatibility validation.
+constraints:
+- Keep renderer business logic thin and use generated OpenAPI models at the network
+  boundary.
+- "Follow the existing Station editor\u2019s compatibility transport and navigation\
+  \ conventions where appropriate."
+inputs:
+  required:
+  - renderer/src/workout-api.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/workout-contract.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  optional:
+  - renderer/src/pb-configurator-station-editor-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The Exercise Variant Configurator flow loads typed compatibility data,
+    sends a complete selected Station set on Save, refreshes after success, and emits
+    the existing Station-detail navigation action.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer type, unit, and smoke quality checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The renderer integration follows the established controller
+    and OpenAPI boundary patterns.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - Renderer API client
+  - Renderer controller state
+  - Configurator navigation
+handoff:
+  review_focus:
+  - Confirm network-boundary typing and post-save refresh behavior.
+  - Confirm Station navigation carries the existing Gym and Station identity context.
+review_feedback: []
+review_result: null

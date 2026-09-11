@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-067-item-04
+  title: Build Variant-side compatibility editor
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Exercise Variant Configurator detail screen presents and edits compatible
+    Stations in the established compact mobile-first style.
+  rationale: Users need a convenient reverse-direction entry point without a new Configurator
+    destination.
+scope:
+  in:
+  - Render a compact Compatible Stations count and Gym-grouped Station rows only when
+    requires_station is true.
+  - Make each Station row itself navigable to the existing Station detail screen.
+  - Provide a compact edit overlay with local staged selection, search by Station
+    or Gym name, Gym grouping, Cancel, and Save.
+  - Reuse the Station-side picker interaction principles without forcing a universal
+    picker abstraction.
+  out:
+  - Any compatibility section, control, empty state, or explanatory copy for stationless
+    Variants.
+  - Large Station cards, desktop tables, Load Profile duplication, advanced filters,
+    or a new Configurator navigation entry.
+constraints:
+- Keep the primary layout usable at approximately 390 by 800 pixels and preserve the
+  existing Configurator visual language.
+- Do not persist checkbox changes until Save and discard all staged changes on Cancel.
+inputs:
+  required:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+acceptance_criteria:
+- id: ac-01
+  statement: A station-required Variant shows its compatible Stations as lightweight
+    Gym-grouped rows with an edit affordance, while a stationless Variant shows none
+    of this section.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage for the conditional compact display.
+- id: ac-02
+  statement: The overlay filters on Station and Gym names, stages changes locally,
+    saves only the complete selection, and leaves persisted data unchanged when cancelled.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with picker interaction coverage.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The concrete UX is fully specified and anchored to the existing
+    Station-side editor.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - Exercise Variant Configurator UI
+  - Mobile-first styling
+handoff:
+  review_focus:
+  - Confirm the stationless path renders no compatibility UI at all.
+  - Confirm rows remain compact, accessible, and directly navigable.
+  - Confirm Cancel has no persistence side effect.
+review_feedback: []
+review_result: null
