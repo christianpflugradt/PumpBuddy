@@ -30,6 +30,7 @@ node_modules/
 dist/
 build/
 coverage/
+renderer/test-results/
 site/
 .nyc_output/
 *.tsbuildinfo
