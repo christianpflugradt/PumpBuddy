@@ -19,6 +19,7 @@ import {
   updateGym,
   updateConfiguratorStation,
   reconcileConfiguratorStationCompatibilities,
+  reconcileConfiguratorExerciseVariantCompatibilities,
   updateExercise,
   updateConfiguratorExerciseVariant,
 } from "./workout-api";
@@ -310,6 +311,7 @@ export const createApp = (
   const loadConfiguratorExerciseDetailScreenData = screenDataController.loadConfiguratorExerciseDetailScreenData;
   const loadConfiguratorGymDetailScreenData = screenDataController.loadConfiguratorGymDetailScreenData;
   const loadConfiguratorStationCompatibilityScreenData = screenDataController.loadConfiguratorStationCompatibilityScreenData;
+  const loadConfiguratorExerciseVariantCompatibilityScreenData = screenDataController.loadConfiguratorExerciseVariantCompatibilityScreenData;
   const loadConfiguratorLoadProfileDetailScreenData =
     screenDataController.loadConfiguratorLoadProfileDetailScreenData;
   const loadWorkoutDetailScreenData =
@@ -584,6 +586,7 @@ export const createApp = (
         loadConfiguratorExerciseDetailScreenData,
         loadConfiguratorGymDetailScreenData,
         loadConfiguratorStationCompatibilityScreenData,
+        loadConfiguratorExerciseVariantCompatibilityScreenData,
         loadConfiguratorLoadProfileDetailScreenData,
         loadHistoryScreenData,
         loadProgressScreenData,
@@ -895,6 +898,21 @@ export const createApp = (
           state = { ...state, configuratorExercisesScreen: state.configuratorExercisesScreen ? { ...state.configuratorExercisesScreen, exercises: state.configuratorExercisesScreen.exercises.map((exercise) => exercise.id === exerciseId && !payload.variantId ? { ...exercise, variant_count: exercise.variant_count + 1 } : exercise) } : state.configuratorExercisesScreen, configuratorExerciseDetailScreen: current ? { ...current, variants: payload.variantId ? current.variants.map((entry) => entry.id === variant.id ? variant : entry) : [...current.variants, variant] } : current, viewState: { screen: "configurator-exercise-detail", exerciseId } };
           render(); detail.respond?.({ ok: true }); void loadConfiguratorExerciseDetailScreenData(exerciseId);
         } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Variant right now.") }); } })();
+        return;
+      }
+      case "save-configurator-exercise-variant-compatibilities": {
+        const detail = customEvent.detail as { payload?: { exerciseId?: string; variantId?: string; stationIds?: unknown }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const exerciseId = detail.payload?.exerciseId?.trim();
+        const variantId = detail.payload?.variantId?.trim();
+        const stationIds = detail.payload?.stationIds;
+        if (!detail.respond || !exerciseId || !variantId || !Array.isArray(stationIds) || !stationIds.every((id) => typeof id === "string") || state.viewState.screen !== "configurator-exercise-variant-detail") return;
+        void (async () => { try {
+          const compatibility = await reconcileConfiguratorExerciseVariantCompatibilities(exerciseId, variantId, { station_ids: new Set(stationIds) });
+          state = { ...state, configuratorExerciseVariantCompatibilityScreen: { exerciseId, variantId, detail: compatibility, isLoading: false, errorMessage: null } };
+          render();
+          detail.respond?.({ ok: true });
+          void loadConfiguratorExerciseVariantCompatibilityScreenData(exerciseId, variantId);
+        } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save compatible Stations right now.") }); } })();
         return;
       }
       case "delete-configurator-exercise-variant": {

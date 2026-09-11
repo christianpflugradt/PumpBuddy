@@ -13,6 +13,8 @@ import {
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
+  loadConfiguratorExerciseVariantCompatibilities,
+  reconcileConfiguratorExerciseVariantCompatibilities,
   reconcileConfiguratorStationCompatibilities,
   loadStartScreenData,
   loadTrainingPlanDetail,
@@ -104,6 +106,18 @@ describe("workout-api credentials", () => {
         body: JSON.stringify({ exercise_variant_ids: ["variant-1", "variant-2"] }),
       },
     );
+  });
+
+  it("loads Variant compatibility through the generated response boundary", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({ exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [] });
+    await loadConfiguratorExerciseVariantCompatibilities(fetchJson, "exercise-1", "variant-1");
+    expect(fetchJson).toHaveBeenCalledWith("/api/exercises/exercise-1/variants/variant-1/compatibilities");
+  });
+
+  it("reconciles a complete Variant Station selection in one PUT request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [] }) });
+    await reconcileConfiguratorExerciseVariantCompatibilities("exercise-1", "variant-1", { station_ids: new Set(["station-1", "station-2"]) }, fetchMock as unknown as typeof fetch);
+    expect(fetchMock).toHaveBeenCalledWith("/api/exercises/exercise-1/variants/variant-1/compatibilities", { method: "PUT", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ station_ids: ["station-1", "station-2"] }) });
   });
 
   it("loads load profile summaries through generated renderer models", async () => {

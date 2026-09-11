@@ -1,8 +1,8 @@
-import type { ConfiguratorExerciseVariant, ConfiguratorExerciseVariantCreateRequest, ConfiguratorExerciseVariantUpdateRequest } from "./workout-contract";
+import type { ConfiguratorExerciseVariant, ConfiguratorExerciseVariantCompatibilityResponse, ConfiguratorExerciseVariantCreateRequest, ConfiguratorExerciseVariantUpdateRequest } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
 
 export const pbConfiguratorExerciseVariantEditorScreenTag = "pb-configurator-exercise-variant-editor-screen";
-export type ConfiguratorExerciseVariantEditorScreenState = { exerciseId: string; exerciseName: string; variant: ConfiguratorExerciseVariant | null; isLoading: boolean; errorMessage: string | null };
+export type ConfiguratorExerciseVariantEditorScreenState = { exerciseId: string; exerciseName: string; variant: ConfiguratorExerciseVariant | null; isLoading: boolean; errorMessage: string | null; compatibility?: ConfiguratorExerciseVariantCompatibilityResponse | null; isCompatibilityLoading?: boolean; compatibilityError?: string | null };
 type SaveResult = { ok: boolean; errorMessage?: string };
 type SaveDetail = { action: "save-configurator-exercise-variant"; payload: { exerciseId: string; variantId: string | null; request: ConfiguratorExerciseVariantCreateRequest | ConfiguratorExerciseVariantUpdateRequest }; respond: (result: SaveResult) => void };
 type DeleteDetail = { action: "delete-configurator-exercise-variant"; payload: { exerciseId: string; variantId: string }; respond: (result: SaveResult) => void };

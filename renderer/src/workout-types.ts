@@ -229,6 +229,13 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
   };
+  configuratorExerciseVariantCompatibilityScreen?: {
+    exerciseId: string | null;
+    variantId: string | null;
+    detail: import("./workout-contract").ConfiguratorExerciseVariantCompatibilityResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
+  };
   aboutScreen?: {
     metadata: AboutMetadata | null;
     errorMessage: string | null;

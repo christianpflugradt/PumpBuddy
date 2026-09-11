@@ -13,6 +13,8 @@ import { ConfirmActiveWorkoutSetRequestToJSON } from "../generated/openapi/types
 import { ConfiguratorStationResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorStationResponse";
 import { ConfiguratorStationCompatibilityResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCompatibilityResponse";
 import { ConfiguratorStationCompatibilitySelectionRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCompatibilitySelectionRequest";
+import { ConfiguratorExerciseVariantCompatibilityResponseFromJSON } from "../generated/openapi/typescript/models/ConfiguratorExerciseVariantCompatibilityResponse";
+import { ConfiguratorExerciseVariantCompatibilitySelectionRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorExerciseVariantCompatibilitySelectionRequest";
 import { ConfiguratorStationCreateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationCreateRequest";
 import { ConfiguratorStationUpdateRequestToJSON } from "../generated/openapi/typescript/models/ConfiguratorStationUpdateRequest";
 import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } from "../generated/openapi/typescript/models/CreateWorkoutExerciseInput";
@@ -56,6 +58,8 @@ import type {
   ConfiguratorStation,
   ConfiguratorStationCompatibilityResponse,
   ConfiguratorStationCompatibilitySelectionRequest,
+  ConfiguratorExerciseVariantCompatibilityResponse,
+  ConfiguratorExerciseVariantCompatibilitySelectionRequest,
   ConfiguratorStationCreateRequest,
   ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
@@ -201,6 +205,15 @@ export const parseConfiguratorStationCompatibilityResponse = (
 export const serializeConfiguratorStationCompatibilitySelectionRequest = (
   request: ConfiguratorStationCompatibilitySelectionRequest,
 ): unknown => ConfiguratorStationCompatibilitySelectionRequestToJSON(request);
+export const parseConfiguratorExerciseVariantCompatibilityResponse = (
+  json: unknown,
+): ConfiguratorExerciseVariantCompatibilityResponse =>
+  toRendererModel<ConfiguratorExerciseVariantCompatibilityResponse>(
+    ConfiguratorExerciseVariantCompatibilityResponseFromJSON(json),
+  );
+export const serializeConfiguratorExerciseVariantCompatibilitySelectionRequest = (
+  request: ConfiguratorExerciseVariantCompatibilitySelectionRequest,
+): unknown => ConfiguratorExerciseVariantCompatibilitySelectionRequestToJSON(request);
 export const serializeConfiguratorStationCreateRequest = (request: ConfiguratorStationCreateRequest): unknown => ConfiguratorStationCreateRequestToJSON(request);
 export const serializeConfiguratorStationUpdateRequest = (request: ConfiguratorStationUpdateRequest): unknown => ConfiguratorStationUpdateRequestToJSON(request);
 

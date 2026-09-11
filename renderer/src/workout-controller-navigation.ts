@@ -15,6 +15,7 @@ type Dependencies = {
   loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorStationCompatibilityScreenData: (gymId: string, stationId: string) => Promise<void>;
+  loadConfiguratorExerciseVariantCompatibilityScreenData: (exerciseId: string, variantId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -167,6 +168,7 @@ export const handleScreenNavigationAction = (
     loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
     loadConfiguratorStationCompatibilityScreenData,
+    loadConfiguratorExerciseVariantCompatibilityScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,
@@ -281,6 +283,20 @@ export const handleScreenNavigationAction = (
       const state = getState(); const payload = (event as CustomEvent<{ payload?: { exerciseId?: string; variantId?: string } }>).detail?.payload;
       if (state.viewState.screen !== "configurator-exercise-detail" || !payload?.exerciseId || !payload.variantId || !state.configuratorExerciseDetailScreen?.variants.some((variant) => variant.id === payload.variantId)) return true;
       setState({ ...state, viewState: { screen: "configurator-exercise-variant-detail", exerciseId: payload.exerciseId, variantId: payload.variantId } }); render();
+      void loadConfiguratorExerciseVariantCompatibilityScreenData(payload.exerciseId, payload.variantId);
+      return true;
+    }
+    case "open-configurator-exercise-variant-compatible-station": {
+      const state = getState();
+      const payload = (event as CustomEvent<{ payload?: { gymId?: unknown; stationId?: unknown } }>).detail?.payload;
+      const gymId = typeof payload?.gymId === "string" ? payload.gymId.trim() : "";
+      const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
+      if (state.viewState.screen !== "configurator-exercise-variant-detail" || !gymId || !stationId) return true;
+      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: true, errorMessage: null }, viewState: { screen: "configurator-station-detail", gymId, stationId } });
+      render();
+      void loadConfiguratorGymDetailScreenData(gymId);
+      void loadConfiguratorLoadProfilesScreenData();
+      void loadConfiguratorStationCompatibilityScreenData(gymId, stationId);
       return true;
     }
     case "navigate-back-from-configurator-exercise-variant-detail": {

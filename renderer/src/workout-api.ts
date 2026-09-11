@@ -6,6 +6,8 @@ import type {
   ConfiguratorStation,
   ConfiguratorStationCompatibilityResponse,
   ConfiguratorStationCompatibilitySelectionRequest,
+  ConfiguratorExerciseVariantCompatibilityResponse,
+  ConfiguratorExerciseVariantCompatibilitySelectionRequest,
   ConfiguratorStationCreateRequest,
   ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
@@ -45,6 +47,7 @@ import {
   parseConfiguratorStations,
   parseConfiguratorStation,
   parseConfiguratorStationCompatibilityResponse,
+  parseConfiguratorExerciseVariantCompatibilityResponse,
   parseExerciseSummary,
   parseErrorResponsePayload,
   parseExerciseSummaries,
@@ -75,6 +78,7 @@ import {
   serializeGymUpdateRequest,
   serializeConfiguratorStationCreateRequest,
   serializeConfiguratorStationCompatibilitySelectionRequest,
+  serializeConfiguratorExerciseVariantCompatibilitySelectionRequest,
   serializeConfiguratorStationUpdateRequest,
   serializeExerciseCreateRequest,
   serializeExerciseUpdateRequest,
@@ -236,6 +240,17 @@ export const loadConfiguratorStationCompatibilities = async (
   parseConfiguratorStationCompatibilityResponse(
     await fetchJson<unknown>(
       `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}/compatibilities`,
+    ),
+  );
+
+export const loadConfiguratorExerciseVariantCompatibilities = async (
+  fetchJson: FetchJson,
+  exerciseId: string,
+  variantId: string,
+): Promise<ConfiguratorExerciseVariantCompatibilityResponse> =>
+  parseConfiguratorExerciseVariantCompatibilityResponse(
+    await fetchJson<unknown>(
+      `/api/exercises/${encodeURIComponent(exerciseId)}/variants/${encodeURIComponent(variantId)}/compatibilities`,
     ),
   );
 
@@ -665,4 +680,18 @@ export const reconcileConfiguratorStationCompatibilities = async (
     "PUT",
     serializeConfiguratorStationCompatibilitySelectionRequest(payload),
     parseConfiguratorStationCompatibilityResponse,
+  );
+
+export const reconcileConfiguratorExerciseVariantCompatibilities = async (
+  exerciseId: string,
+  variantId: string,
+  payload: ConfiguratorExerciseVariantCompatibilitySelectionRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ConfiguratorExerciseVariantCompatibilityResponse> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/exercises/${encodeURIComponent(exerciseId)}/variants/${encodeURIComponent(variantId)}/compatibilities`,
+    "PUT",
+    serializeConfiguratorExerciseVariantCompatibilitySelectionRequest(payload),
+    parseConfiguratorExerciseVariantCompatibilityResponse,
   );

@@ -275,8 +275,11 @@ class PbAppRootElement extends HTMLElement {
       const { exerciseId, variantId } = state.viewState;
       const exercise = state.configuratorExercisesScreen?.exercises.find((entry) => entry.id === exerciseId);
       const detail = state.configuratorExerciseDetailScreen?.exerciseId === exerciseId ? state.configuratorExerciseDetailScreen : null;
+      const compatibilityState = variantId !== null && state.configuratorExerciseVariantCompatibilityScreen?.exerciseId === exerciseId && state.configuratorExerciseVariantCompatibilityScreen.variantId === variantId
+        ? state.configuratorExerciseVariantCompatibilityScreen
+        : null;
       const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
-      el.state = { exerciseId, exerciseName: exercise?.name ?? "Exercise", variant: variantId === null ? null : detail?.variants.find((entry) => entry.id === variantId) ?? null, isLoading: detail?.isLoading ?? false, errorMessage: detail?.errorMessage ?? null };
+      el.state = { exerciseId, exerciseName: exercise?.name ?? "Exercise", variant: variantId === null ? null : detail?.variants.find((entry) => entry.id === variantId) ?? null, isLoading: detail?.isLoading ?? false, errorMessage: detail?.errorMessage ?? null, compatibility: compatibilityState?.detail ?? null, isCompatibilityLoading: compatibilityState?.isLoading ?? false, compatibilityError: compatibilityState?.errorMessage ?? null };
       container.append(el);
       return;
     }

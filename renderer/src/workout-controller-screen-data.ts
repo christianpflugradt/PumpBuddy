@@ -2,6 +2,7 @@ import {
   loadAboutMetadata,
   loadConfiguratorStations,
   loadConfiguratorStationCompatibilities,
+  loadConfiguratorExerciseVariantCompatibilities,
   loadConfiguratorExerciseVariants,
   loadExerciseSummaries,
   loadGymDetail,
@@ -38,6 +39,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadConfiguratorExerciseDetailScreenData: (exerciseId: string) => Promise<void>;
   loadConfiguratorGymDetailScreenData: (gymId: string) => Promise<void>;
   loadConfiguratorStationCompatibilityScreenData: (gymId: string, stationId: string) => Promise<void>;
+  loadConfiguratorExerciseVariantCompatibilityScreenData: (exerciseId: string, variantId: string) => Promise<void>;
   loadConfiguratorLoadProfileDetailScreenData: (
     loadProfileId: string,
   ) => Promise<void>;
@@ -64,6 +66,7 @@ export const createScreenDataController = (deps: Dependencies): {
   let configuratorExerciseDetailToken = 0;
   let configuratorGymDetailToken = 0;
   let configuratorStationCompatibilityToken = 0;
+  let configuratorExerciseVariantCompatibilityToken = 0;
   let configuratorLoadProfileDetailToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
@@ -422,6 +425,25 @@ export const createScreenDataController = (deps: Dependencies): {
     } catch {
       if (requestToken !== configuratorStationCompatibilityToken) return;
       setState({ ...getState(), configuratorStationCompatibilityScreen: { gymId, stationId, detail: null, isLoading: false, errorMessage: "Unable to load compatible Exercise Variants right now." } });
+    }
+    render();
+  };
+
+  const loadConfiguratorExerciseVariantCompatibilityScreenData = async (
+    exerciseId: string,
+    variantId: string,
+  ): Promise<void> => {
+    if (!exerciseId.trim() || !variantId.trim()) return;
+    const requestToken = ++configuratorExerciseVariantCompatibilityToken;
+    setState({ ...getState(), configuratorExerciseVariantCompatibilityScreen: { exerciseId, variantId, detail: null, isLoading: true, errorMessage: null } });
+    render();
+    try {
+      const detail = await loadConfiguratorExerciseVariantCompatibilities(fetchJson, exerciseId, variantId);
+      if (requestToken !== configuratorExerciseVariantCompatibilityToken) return;
+      setState({ ...getState(), configuratorExerciseVariantCompatibilityScreen: { exerciseId, variantId, detail, isLoading: false, errorMessage: null } });
+    } catch {
+      if (requestToken !== configuratorExerciseVariantCompatibilityToken) return;
+      setState({ ...getState(), configuratorExerciseVariantCompatibilityScreen: { exerciseId, variantId, detail: null, isLoading: false, errorMessage: "Unable to load compatible Stations right now." } });
     }
     render();
   };
@@ -919,7 +941,8 @@ export const createScreenDataController = (deps: Dependencies): {
     loadConfiguratorExercisesScreenData,
     loadConfiguratorExerciseDetailScreenData,
     loadConfiguratorGymDetailScreenData,
-    loadConfiguratorStationCompatibilityScreenData,
+  loadConfiguratorStationCompatibilityScreenData,
+  loadConfiguratorExerciseVariantCompatibilityScreenData,
     loadConfiguratorLoadProfileDetailScreenData,
     loadHistoryScreenData,
     loadProgressScreenData,

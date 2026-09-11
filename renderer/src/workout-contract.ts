@@ -157,6 +157,24 @@ export type ConfiguratorStationCompatibilitySelectionRequest = {
   exercise_variant_ids: string[];
 };
 
+export type ConfiguratorExerciseVariantCompatibilityStation = {
+  gym_id: string;
+  gym_name: string;
+  station_id: string;
+  station_name: string;
+};
+
+export type ConfiguratorExerciseVariantCompatibilityResponse = {
+  exercise_id: string;
+  variant_id: string;
+  enabled_stations: ConfiguratorExerciseVariantCompatibilityStation[];
+  eligible_stations: ConfiguratorExerciseVariantCompatibilityStation[];
+};
+
+export type ConfiguratorExerciseVariantCompatibilitySelectionRequest = {
+  station_ids: Set<string>;
+};
+
 export type GymDetailResponse = {
   id: string;
   name: string;
