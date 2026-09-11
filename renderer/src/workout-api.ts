@@ -5,6 +5,7 @@ import type {
   ConfirmActiveWorkoutSetRequest,
   ConfiguratorStation,
   ConfiguratorStationCompatibilityResponse,
+  ConfiguratorStationCompatibilitySelectionRequest,
   ConfiguratorStationCreateRequest,
   ConfiguratorStationUpdateRequest,
   CreateActiveWorkoutRequest,
@@ -73,6 +74,7 @@ import {
   serializeGymCreateRequest,
   serializeGymUpdateRequest,
   serializeConfiguratorStationCreateRequest,
+  serializeConfiguratorStationCompatibilitySelectionRequest,
   serializeConfiguratorStationUpdateRequest,
   serializeExerciseCreateRequest,
   serializeExerciseUpdateRequest,
@@ -651,3 +653,16 @@ export const deleteConfiguratorStation = async (gymId: string, stationId: string
   const response = await fetchImpl(`/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}`, { method: "DELETE", credentials: "same-origin" });
   if (!response.ok) { if (response.status === 401) dispatchUnauthorized(); throw new RequestError(response.status, await parseErrorResponse(response)); }
 };
+export const reconcileConfiguratorStationCompatibilities = async (
+  gymId: string,
+  stationId: string,
+  payload: ConfiguratorStationCompatibilitySelectionRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ConfiguratorStationCompatibilityResponse> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/gyms/${encodeURIComponent(gymId)}/configurator-stations/${encodeURIComponent(stationId)}/compatibilities`,
+    "PUT",
+    serializeConfiguratorStationCompatibilitySelectionRequest(payload),
+    parseConfiguratorStationCompatibilityResponse,
+  );

@@ -13,6 +13,7 @@ import {
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
+  reconcileConfiguratorStationCompatibilities,
   loadStartScreenData,
   loadTrainingPlanDetail,
   loadTrainingPlanOptions,
@@ -73,6 +74,36 @@ describe("workout-api credentials", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/training-plans", {
       credentials: "same-origin",
     });
+  });
+
+  it("reconciles a complete Station compatibility selection in one PUT request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        gym_id: "gym-1",
+        station_id: "station-1",
+        enabled_variants: [],
+        eligible_variants: [],
+      }),
+    });
+
+    await reconcileConfiguratorStationCompatibilities(
+      "gym-1",
+      "station-1",
+      { exercise_variant_ids: ["variant-1", "variant-2"] },
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/gyms/gym-1/configurator-stations/station-1/compatibilities",
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ exercise_variant_ids: ["variant-1", "variant-2"] }),
+      },
+    );
   });
 
   it("loads load profile summaries through generated renderer models", async () => {

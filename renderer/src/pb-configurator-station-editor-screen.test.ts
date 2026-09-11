@@ -104,13 +104,64 @@ describe("pb-configurator-station-editor-screen", () => {
     expect(el.textContent).toContain("Cable");
   });
 
-  it("renders an explicit empty compatibility state and exposes the picker entry action", () => {
+  it("renders an explicit empty compatibility state and opens the picker", () => {
     const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
     document.body.append(el); el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", eligible_variants: [], enabled_variants: [] } };
-    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     expect(el.textContent).toContain("No compatible Exercise Variants are enabled.");
     (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail).toEqual({ action: "open-configurator-station-compatibility-picker" });
+    expect(el.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(el.textContent).toContain("0 selected");
+  });
+
+  it("filters eligible variants and stages multi-selection without persisting toggles", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }, { exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    search.value = "row"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    const options = el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement;
+    expect(options.textContent).toContain("Seated Row");
+    expect(options.textContent).not.toContain("Chest Press");
+    (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("2 selected");
+    expect(handler).not.toHaveBeenCalled();
+    expect(el.querySelector('.configurator-station-compatibility-picker')).toBeTruthy();
+  });
+
+  it("saves one completed selection and discards staged changes on Cancel or Escape", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }, { exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    const handler = vi.fn((event: Event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-station-compatibilities") detail.respond({ ok: true }); });
+    el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="dismiss-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(handler).not.toHaveBeenCalled();
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("1 selected");
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(handler).not.toHaveBeenCalled();
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1", exerciseVariantIds: ["variant-1", "variant-2"] });
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("retains staged selection after a compatibility save failure", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [{ exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-station-compatibilities") detail.respond({ ok: false, errorMessage: "Selection is no longer eligible." }); });
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Selection is no longer eligible.");
+    expect(el.textContent).toContain("1 selected");
+    expect((el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).getAttribute("aria-checked")).toBe("true");
   });
 
   it("keeps the summary failure-safe while compatibility data is loading or unavailable", () => {

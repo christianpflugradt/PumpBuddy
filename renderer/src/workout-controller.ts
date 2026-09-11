@@ -18,6 +18,7 @@ import {
   updateLoadProfile,
   updateGym,
   updateConfiguratorStation,
+  reconcileConfiguratorStationCompatibilities,
   updateExercise,
   updateConfiguratorExerciseVariant,
 } from "./workout-api";
@@ -866,6 +867,21 @@ export const createApp = (
         const payload = detail.payload; const gymId = payload?.gymId;
         if (!detail.respond || !gymId || !payload?.request || state.viewState.screen !== "configurator-station-detail") return;
         void (async () => { try { const station = payload.stationId ? await updateConfiguratorStation(gymId, payload.stationId, payload.request as never) : await createConfiguratorStation(gymId, payload.request as never); state = { ...state, configuratorGymDetailScreen: state.configuratorGymDetailScreen ? { ...state.configuratorGymDetailScreen, stations: payload.stationId ? state.configuratorGymDetailScreen.stations?.map((entry) => entry.id === station.id ? station : entry) : [...(state.configuratorGymDetailScreen.stations ?? []), station] } : state.configuratorGymDetailScreen, viewState: { screen: "configurator-gym-detail", gymId } }; render(); detail.respond?.({ ok: true }); } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Station right now.") }); } })(); return;
+      }
+      case "save-configurator-station-compatibilities": {
+        const detail = customEvent.detail as { payload?: { gymId?: string; stationId?: string; exerciseVariantIds?: unknown }; respond?: ((result: { ok: boolean; errorMessage?: string }) => void) };
+        const gymId = detail.payload?.gymId;
+        const stationId = detail.payload?.stationId;
+        const exerciseVariantIds = detail.payload?.exerciseVariantIds;
+        if (!detail.respond || !gymId || !stationId || !Array.isArray(exerciseVariantIds) || !exerciseVariantIds.every((id) => typeof id === "string") || state.viewState.screen !== "configurator-station-detail") return;
+        void (async () => { try {
+          const compatibility = await reconcileConfiguratorStationCompatibilities(gymId, stationId, { exercise_variant_ids: exerciseVariantIds });
+          state = { ...state, configuratorStationCompatibilityScreen: { gymId, stationId, detail: compatibility, isLoading: false, errorMessage: null } };
+          render();
+          detail.respond?.({ ok: true });
+          void loadConfiguratorStationCompatibilityScreenData(gymId, stationId);
+        } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save compatible Exercise Variants right now.") }); } })();
+        return;
       }
       case "save-configurator-exercise-variant": {
         if (state.viewState.screen !== "configurator-exercise-variant-detail") return;

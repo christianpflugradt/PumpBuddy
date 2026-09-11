@@ -409,6 +409,14 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
 .configurator-station-compatibility-edit { min-height: var(--action-target-min-height); }
 .configurator-station-compatibility-list { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
 .configurator-station-compatibility-list li { display: flex; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); }
+.configurator-station-compatibility-picker { max-height: min(82vh, 36rem); grid-template-rows: auto minmax(0, 1fr) auto; }
+.configurator-station-compatibility-picker-count { margin: var(--space-2xs) 0 0; color: var(--text-secondary); font-size: var(--font-size-label); }
+.configurator-station-compatibility-picker-options { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: var(--space-sm); padding-right: var(--space-2xs); }
+.configurator-station-compatibility-picker-option { min-height: var(--action-target-min-height); display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
+.configurator-station-compatibility-picker-option strong, .configurator-station-compatibility-picker-option small { display: block; }
+.configurator-station-compatibility-picker-option small { margin-top: var(--space-2xs); color: var(--text-secondary); font-size: var(--font-size-label); }
+.configurator-station-compatibility-picker-option--selected { border-color: var(--brand-strong); background: color-mix(in srgb, var(--brand-strong) 20%, var(--surface-input) 80%); }
+.configurator-station-compatibility-picker-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
 .configurator-exercise-variants > .configurator-gym-editor-actions { margin-bottom: var(--space-md); }
 .configurator-exercise-variants,
 .configurator-exercise-variants > .configurator-gym-editor-actions,
