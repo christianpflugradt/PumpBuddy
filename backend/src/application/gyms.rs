@@ -1,7 +1,8 @@
 use crate::{
     domain::{
-        ConfiguratorStation, ConfiguratorStationCompatibilitySelection, ConfiguratorStationUpdate,
-        GymDetail, GymStationDetail, GymSummary, GymUpdate, NewConfiguratorStation, NewGym,
+        ConfiguratorExerciseVariantCompatibilitySelection, ConfiguratorStation,
+        ConfiguratorStationCompatibilitySelection, ConfiguratorStationUpdate, GymDetail,
+        GymStationDetail, GymSummary, GymUpdate, NewConfiguratorStation, NewGym,
     },
     persistence::{GymRepository, PersistenceError},
 };
@@ -241,6 +242,56 @@ pub(crate) async fn reconcile_configurator_station_compatibilities(
     get_configurator_station_compatibilities(repository, gym_id, station_id, user_id).await
 }
 
+pub(crate) async fn get_configurator_exercise_variant_compatibilities(
+    repository: &(impl GymRepository + ?Sized),
+    exercise_id: &str,
+    variant_id: &str,
+    user_id: &str,
+) -> Result<ConfiguratorExerciseVariantCompatibilitySelection, GymServiceError> {
+    repository
+        .fetch_configurator_exercise_variant_compatibilities_for_user(
+            exercise_id,
+            variant_id,
+            user_id,
+        )
+        .await
+        .map_err(GymServiceError::Persistence)?
+        .ok_or_else(|| GymServiceError::NotFound("Exercise variant not found".to_owned()))
+}
+
+pub(crate) async fn reconcile_configurator_exercise_variant_compatibilities(
+    repository: &(impl GymRepository + ?Sized),
+    exercise_id: &str,
+    variant_id: &str,
+    user_id: &str,
+    station_ids: Vec<String>,
+) -> Result<ConfiguratorExerciseVariantCompatibilitySelection, GymServiceError> {
+    let parsed_station_ids = station_ids
+        .iter()
+        .map(|id| {
+            Uuid::parse_str(id).map_err(|_| {
+                GymServiceError::Validation("station_ids must contain UUIDs".to_owned())
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if parsed_station_ids.iter().collect::<HashSet<_>>().len() != parsed_station_ids.len() {
+        return Err(GymServiceError::Validation(
+            "station_ids must not contain duplicates".to_owned(),
+        ));
+    }
+    repository
+        .reconcile_configurator_exercise_variant_compatibilities_for_user(
+            exercise_id,
+            variant_id,
+            user_id,
+            &parsed_station_ids,
+        )
+        .await
+        .map_err(map_persistence_error)?;
+    get_configurator_exercise_variant_compatibilities(repository, exercise_id, variant_id, user_id)
+        .await
+}
+
 #[allow(dead_code)]
 fn map_persistence_error(error: PersistenceError) -> GymServiceError {
     match error {
@@ -421,6 +472,26 @@ mod tests {
             _station_id: &str,
             _user_id: &str,
             _variant_ids: &[uuid::Uuid],
+        ) -> Result<(), PersistenceError> {
+            Ok(())
+        }
+        async fn fetch_configurator_exercise_variant_compatibilities_for_user(
+            &self,
+            _exercise_id: &str,
+            _variant_id: &str,
+            _user_id: &str,
+        ) -> Result<
+            Option<crate::domain::ConfiguratorExerciseVariantCompatibilitySelection>,
+            PersistenceError,
+        > {
+            Ok(None)
+        }
+        async fn reconcile_configurator_exercise_variant_compatibilities_for_user(
+            &self,
+            _exercise_id: &str,
+            _variant_id: &str,
+            _user_id: &str,
+            _station_ids: &[uuid::Uuid],
         ) -> Result<(), PersistenceError> {
             Ok(())
         }

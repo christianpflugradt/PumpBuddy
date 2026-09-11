@@ -13,8 +13,9 @@ pub(crate) use exercises::{
 };
 pub(crate) use gyms::{
     create_configurator_station, create_gym, delete_configurator_station, delete_gym,
-    get_configurator_station, get_configurator_station_compatibilities, get_gym_detail,
-    get_gym_station_detail, list_configurator_stations, list_gyms,
+    get_configurator_exercise_variant_compatibilities, get_configurator_station,
+    get_configurator_station_compatibilities, get_gym_detail, get_gym_station_detail,
+    list_configurator_stations, list_gyms, reconcile_configurator_exercise_variant_compatibilities,
     reconcile_configurator_station_compatibilities, update_configurator_station, update_gym,
 };
 pub(crate) use load_profiles::{

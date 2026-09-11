@@ -3749,3 +3749,105 @@ async fn active_workout_secs_variant_serializes_repetition_kind_and_value() {
         json!(86)
     );
 }
+
+#[tokio::test]
+async fn configurator_exercise_variant_compatibility_routes_reconcile_complete_station_selection() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let exercise_id = "10000000-0000-0000-0000-000000000001";
+    let variant_id = "20000000-0000-0000-0000-000000000001";
+    let station_id = "50000000-0000-0000-0000-000000000001";
+
+    let (status, initial) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(format!(
+                "/api/exercises/{exercise_id}/variants/{variant_id}/compatibilities"
+            ))
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(initial["exercise_id"], json!(exercise_id));
+    assert!(initial["eligible_stations"]
+        .as_array()
+        .expect("eligible stations should be an array")
+        .iter()
+        .any(|station| station["station_id"] == json!(station_id)));
+
+    let (status, reconciled) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(format!(
+                "/api/exercises/{exercise_id}/variants/{variant_id}/compatibilities"
+            ))
+            .header("cookie", cookie.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "station_ids": [station_id] }).to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        reconciled["enabled_stations"]
+            .as_array()
+            .expect("enabled stations should be an array")
+            .iter()
+            .map(|station| station["station_id"].clone())
+            .collect::<Vec<_>>(),
+        vec![json!(station_id)]
+    );
+
+    for payload in [
+        json!({ "station_ids": ["not-a-uuid"] }),
+        json!({ "station_ids": [station_id, station_id] }),
+        json!({ "station_ids": [USER_B_STATION_ID] }),
+    ] {
+        let (status, _) = json_response(
+            app.clone(),
+            Request::builder()
+                .method("PUT")
+                .uri(format!(
+                    "/api/exercises/{exercise_id}/variants/{variant_id}/compatibilities"
+                ))
+                .header("cookie", cookie.clone())
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request should build"),
+        )
+        .await;
+        assert!(matches!(
+            status,
+            StatusCode::BAD_REQUEST | StatusCode::CONFLICT
+        ));
+    }
+
+    let (status, unchanged) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri(format!(
+                "/api/exercises/{exercise_id}/variants/{variant_id}/compatibilities"
+            ))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        unchanged["enabled_stations"],
+        reconciled["enabled_stations"]
+    );
+}

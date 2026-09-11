@@ -240,6 +240,28 @@ pub mod configurator_station_compatibility_selection_request {
 }
 pub use configurator_station_compatibility_selection_request::ConfiguratorStationCompatibilitySelectionRequest;
 
+pub mod configurator_exercise_variant_compatibility_station {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_exercise_variant_compatibility_station.rs"
+    ));
+}
+pub use configurator_exercise_variant_compatibility_station::ConfiguratorExerciseVariantCompatibilityStation;
+pub mod configurator_exercise_variant_compatibility_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_exercise_variant_compatibility_response.rs"
+    ));
+}
+pub use configurator_exercise_variant_compatibility_response::ConfiguratorExerciseVariantCompatibilityResponse;
+pub mod configurator_exercise_variant_compatibility_selection_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/configurator_exercise_variant_compatibility_selection_request.rs"
+    ));
+}
+pub use configurator_exercise_variant_compatibility_selection_request::ConfiguratorExerciseVariantCompatibilitySelectionRequest;
+
 pub mod confirm_active_workout_set_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

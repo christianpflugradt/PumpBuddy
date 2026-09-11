@@ -119,6 +119,22 @@ pub struct ConfiguratorStationCompatibilitySelection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorExerciseVariantCompatibilityStation {
+    pub gym_id: String,
+    pub gym_name: String,
+    pub station_id: String,
+    pub station_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfiguratorExerciseVariantCompatibilitySelection {
+    pub exercise_id: String,
+    pub variant_id: String,
+    pub enabled_stations: Vec<ConfiguratorExerciseVariantCompatibilityStation>,
+    pub eligible_stations: Vec<ConfiguratorExerciseVariantCompatibilityStation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoadProfileSummary {
     pub id: String,
     pub name: String,

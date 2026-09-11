@@ -9,6 +9,9 @@ use crate::api::boundary::{
     RepetitionKind, SetTrackingMode,
 };
 use crate::api::models::{
+    ConfiguratorExerciseVariantCompatibilityResponse,
+    ConfiguratorExerciseVariantCompatibilitySelectionRequest,
+    ConfiguratorExerciseVariantCompatibilityStationResponse,
     ConfiguratorStationCompatibilityResponse, ConfiguratorStationCompatibilitySelectionRequest,
     ConfiguratorStationCompatibilityVariantResponse, ConfiguratorStationCreateRequest,
     ConfiguratorStationLoadProfileResponse, ConfiguratorStationResponse,
@@ -24,21 +27,25 @@ use crate::application::gyms::{
     create_configurator_station as create_configurator_station_service,
     create_gym as create_gym_service,
     delete_configurator_station as delete_configurator_station_service,
-    delete_gym as delete_gym_service, get_configurator_station as get_configurator_station_service,
+    delete_gym as delete_gym_service,
+    get_configurator_exercise_variant_compatibilities as get_configurator_exercise_variant_compatibilities_service,
+    get_configurator_station as get_configurator_station_service,
     get_configurator_station_compatibilities as get_configurator_station_compatibilities_service,
     get_gym_detail as get_gym_detail_service,
     get_gym_station_detail as get_gym_station_detail_service,
     list_configurator_stations as list_configurator_stations_service,
     list_gyms as list_gyms_service,
+    reconcile_configurator_exercise_variant_compatibilities as reconcile_configurator_exercise_variant_compatibilities_service,
     reconcile_configurator_station_compatibilities as reconcile_configurator_station_compatibilities_service,
     update_configurator_station as update_configurator_station_service,
     update_gym as update_gym_service, GymServiceError,
 };
 use crate::domain::{
-    ConfiguratorStation, ConfiguratorStationCompatibilitySelection,
-    ConfiguratorStationCompatibilityVariant, GymDetail, GymExerciseGroup,
-    GymExerciseVariantSummary, GymLoadProfileSummary, GymStationAvailability, GymStationDetail,
-    GymStationExerciseGroup, GymStationExerciseVariantSummary, GymSummary,
+    ConfiguratorExerciseVariantCompatibilitySelection,
+    ConfiguratorExerciseVariantCompatibilityStation, ConfiguratorStation,
+    ConfiguratorStationCompatibilitySelection, ConfiguratorStationCompatibilityVariant, GymDetail,
+    GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary, GymStationAvailability,
+    GymStationDetail, GymStationExerciseGroup, GymStationExerciseVariantSummary, GymSummary,
 };
 
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
@@ -333,6 +340,36 @@ fn configurator_station_compatibility_response(
             .map(configurator_station_compatibility_variant_response)
             .collect::<Result<Vec<_>, _>>()?,
     })
+}
+
+fn configurator_exercise_variant_compatibility_station_response(
+    station: ConfiguratorExerciseVariantCompatibilityStation,
+) -> ConfiguratorExerciseVariantCompatibilityStationResponse {
+    ConfiguratorExerciseVariantCompatibilityStationResponse {
+        gym_id: station.gym_id,
+        gym_name: station.gym_name,
+        station_id: station.station_id,
+        station_name: station.station_name,
+    }
+}
+
+fn configurator_exercise_variant_compatibility_response(
+    selection: ConfiguratorExerciseVariantCompatibilitySelection,
+) -> ConfiguratorExerciseVariantCompatibilityResponse {
+    ConfiguratorExerciseVariantCompatibilityResponse {
+        exercise_id: selection.exercise_id,
+        variant_id: selection.variant_id,
+        enabled_stations: selection
+            .enabled_stations
+            .into_iter()
+            .map(configurator_exercise_variant_compatibility_station_response)
+            .collect(),
+        eligible_stations: selection
+            .eligible_stations
+            .into_iter()
+            .map(configurator_exercise_variant_compatibility_station_response)
+            .collect(),
+    }
 }
 
 fn gym_load_profile_response(
@@ -654,4 +691,47 @@ pub(crate) async fn reconcile_configurator_station_compatibilities(
         configurator_station_compatibility_response(selection)
             .map_err(map_enum_translation_error)?,
     ))
+}
+
+pub(crate) async fn get_configurator_exercise_variant_compatibilities(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((exercise_id, variant_id)): Path<(String, String)>,
+) -> Result<Json<ConfiguratorExerciseVariantCompatibilityResponse>, ApiError> {
+    let selection = get_configurator_exercise_variant_compatibilities_service(
+        &state.repository,
+        &exercise_id,
+        &variant_id,
+        &session.user_id,
+    )
+    .await
+    .map_err(map_gym_service_error)?;
+    Ok(Json(configurator_exercise_variant_compatibility_response(
+        selection,
+    )))
+}
+
+pub(crate) async fn reconcile_configurator_exercise_variant_compatibilities(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((exercise_id, variant_id)): Path<(String, String)>,
+    payload: Result<Json<ConfiguratorExerciseVariantCompatibilitySelectionRequest>, JsonRejection>,
+) -> Result<Json<ConfiguratorExerciseVariantCompatibilityResponse>, ApiError> {
+    let payload = payload
+        .map_err(|_| {
+            ApiError::Validation("Invalid exercise variant compatibility payload".to_owned())
+        })?
+        .0;
+    let selection = reconcile_configurator_exercise_variant_compatibilities_service(
+        &state.repository,
+        &exercise_id,
+        &variant_id,
+        &session.user_id,
+        payload.station_ids,
+    )
+    .await
+    .map_err(map_gym_service_error)?;
+    Ok(Json(configurator_exercise_variant_compatibility_response(
+        selection,
+    )))
 }
