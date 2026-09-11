@@ -194,6 +194,18 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   text-align: center;
 }
 
+pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header::before {
+  content: "";
+  display: block;
+  width: 100%;
+  aspect-ratio: 48 / 7;
+  background: url("/images/banner.png?v=20260401-2") center / contain no-repeat;
+}
+
+pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header > p {
+  display: none;
+}
+
 .app-kicker {
   margin: 0;
   color: var(--brand-accent);
