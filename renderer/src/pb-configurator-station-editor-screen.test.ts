@@ -122,6 +122,11 @@ describe("pb-configurator-station-editor-screen", () => {
     el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }, { exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
     const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    const initialOptions = el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement;
+    expect(initialOptions.textContent).toContain("Chest Press");
+    expect(initialOptions.textContent).toContain("Machine");
+    expect(initialOptions.textContent).not.toContain("REPS");
+    expect(initialOptions.textContent).not.toContain("TOTAL");
     const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
     search.value = "row"; search.dispatchEvent(new Event("input", { bubbles: true }));
     const options = el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement;
