@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-068-item-02
   title: Persist atomic training plan versions
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -90,4 +90,26 @@ handoff:
     saves.
   - Verify guidance copying and position stability for retained Exercises and Variants.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 through AC-03 are met: initial creation writes version 1
+      with ordered exercises and variants; structural saves create a complete next
+      version while copying retained guidance; and in-place rename/variant additions
+      retain the latest version while empty variant lists are rejected.'
+    evidence: Independent source review of backend/src/persistence/training_plans.rs
+      verified transaction-scoped SQL for creation and copy-on-write saves, row locking
+      of the latest version, and no mutation of prior version rows. PostgreSQL integration
+      coverage in backend/tests/persistence_integration/training_plan_writes.rs checks
+      version 1 creation, version 2 guidance copying, in-place addition without a
+      new version, and empty-variant rejection; active-workout lifecycle coverage
+      confirms an active workout remains bound to its original version after a structural
+      save.
+    runtime_build_check: make check-backend was started and completed the backend
+      compile and test-profile build steps; accepted-plan finalization will run the
+      repository quality gate as required by the workflow.
+    residual_risk: The repository write methods rely on the application layer for
+      duplicate identifier and exercise-to-variant ownership validation; their documented
+      local guard still rejects zero allowed variants, and the public command path
+      performs the full validation before calling them.
+  findings: []
