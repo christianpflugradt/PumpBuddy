@@ -82,6 +82,12 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#isCompatibilitySaving = false;
     this.#render();
   }
+  #rerenderCompatibilityPickerPreservingScroll(): void {
+    const scrollTop = this.querySelector<HTMLElement>(".configurator-station-compatibility-picker-options")?.scrollTop ?? 0;
+    this.#render();
+    const options = this.querySelector<HTMLElement>(".configurator-station-compatibility-picker-options");
+    if (options) options.scrollTop = scrollTop;
+  }
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return; const action = target.closest<HTMLElement>("[data-ui-action]")?.dataset.uiAction; if (!action) return;
     if (action === "navigate-back-from-configurator-station-detail") { this.#emit(action); return; }
@@ -92,7 +98,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
       const variantId = target.closest<HTMLElement>("[data-variant-id]")?.dataset.variantId;
       if (!variantId || !(this.#state.compatibility?.eligible_variants ?? []).some((variant) => variant.variant_id === variantId)) return;
       if (this.#compatibilitySelectionDraft.has(variantId)) this.#compatibilitySelectionDraft.delete(variantId); else this.#compatibilitySelectionDraft.add(variantId);
-      this.#compatibilitySubmitError = null; this.#render(); return;
+      this.#compatibilitySubmitError = null; this.#rerenderCompatibilityPickerPreservingScroll(); return;
     }
     if (action === "save-configurator-station-compatibilities") {
       const stationId = this.#state.station?.id;

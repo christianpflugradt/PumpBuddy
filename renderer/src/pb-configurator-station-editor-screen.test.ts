@@ -132,7 +132,9 @@ describe("pb-configurator-station-editor-screen", () => {
     const options = el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement;
     expect(options.textContent).toContain("Seated Row");
     expect(options.textContent).not.toContain("Chest Press");
+    options.scrollTop = 96;
     (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    expect((el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement).scrollTop).toBe(96);
     expect(el.textContent).toContain("2 selected");
     expect(handler).not.toHaveBeenCalled();
     expect(el.querySelector('.configurator-station-compatibility-picker')).toBeTruthy();
