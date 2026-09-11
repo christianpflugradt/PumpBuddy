@@ -21,19 +21,37 @@ async fn active_workout_update_and_completion_remain_immutable_when_newer_plan_v
     .expect("initial version query should succeed")
     .get("training_plan_version_id");
 
-    let newer_version_id = "00000000-0000-0000-0000-000000009211";
-    sqlx::query(
-        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
-         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
-    )
-    .bind(newer_version_id)
-    .bind(&initial.training_plan_id)
-    .bind(2_i32)
-    .bind("00000000-0000-0000-0000-000000000001")
-    .execute(&db.pool)
-    .await
-    .expect("new plan version insert should succeed");
-    assert_ne!(initial_version, newer_version_id);
+    let structural_save = repository
+        .save_training_plan_for_user(
+            &initial.training_plan_id,
+            DEV_USER_ID,
+            &pumpbuddy_backend::domain::TrainingPlanDefinition {
+                name: "Push Day (revised)".to_owned(),
+                exercises: vec![
+                    pumpbuddy_backend::domain::TrainingPlanExerciseDefinition {
+                        exercise_id: "10000000-0000-0000-0000-00000000000c".to_owned(),
+                        allowed_variant_ids: vec!["20000000-0000-0000-0000-00000000000e".to_owned()],
+                    },
+                    pumpbuddy_backend::domain::TrainingPlanExerciseDefinition {
+                        exercise_id: "10000000-0000-0000-0000-00000000000d".to_owned(),
+                        allowed_variant_ids: vec!["20000000-0000-0000-0000-00000000000f".to_owned()],
+                    },
+                    pumpbuddy_backend::domain::TrainingPlanExerciseDefinition {
+                        exercise_id: "10000000-0000-0000-0000-00000000000e".to_owned(),
+                        allowed_variant_ids: vec!["20000000-0000-0000-0000-000000000010".to_owned()],
+                    },
+                    pumpbuddy_backend::domain::TrainingPlanExerciseDefinition {
+                        exercise_id: "10000000-0000-0000-0000-00000000000f".to_owned(),
+                        allowed_variant_ids: vec!["20000000-0000-0000-0000-000000000012".to_owned()],
+                    },
+                ],
+            },
+            true,
+        )
+        .await
+        .expect("structural save should create a complete newer version");
+    assert!(structural_save.created_new_version);
+    assert_eq!(structural_save.version_number, 2);
 
     // Negative path: even when a newer training plan version exists, active-workout
     // update must keep the immutable original training_plan_version_id binding.

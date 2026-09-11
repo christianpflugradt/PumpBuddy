@@ -26,4 +26,53 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     expect((el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).disabled).toBe(false);
     el.remove();
   });
+
+  it("saves an additive Variant change directly with the complete definition", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
+    el.addEventListener("pb-ui-action", (event) => actions.push((event as CustomEvent).detail));
+
+    (el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({
+      action: "save-configurator-training-plan",
+      payload: {
+        trainingPlanId: "plan-1",
+        request: {
+          name: "Upper",
+          exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1", "variant-2"] }],
+        },
+      },
+    });
+    el.remove();
+  });
+
+  it("requires confirmation before saving a structural edit", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    let confirm: (() => void) | undefined;
+    const saved: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.action === "confirm-configurator-training-plan-save") confirm = detail.respond;
+      if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request);
+    });
+
+    (el.querySelector('[data-ui-action="remove-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="add-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-3"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+
+    expect(confirm).toBeTypeOf("function");
+    expect(saved).toEqual([]);
+    confirm?.();
+    expect(saved).toEqual([{
+      name: "Upper",
+      exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }],
+    }]);
+    el.remove();
+  });
 });
