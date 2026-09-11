@@ -142,6 +142,9 @@ info:
     handoff headers for login throttling; internet-facing client identity, rate
     limiting, and ban policy belong to the external reverse proxy or tools such
     as fail2ban.
+    Note: the 2026-09-11 reverse Configurator compatibility contract adds
+    Variant-scoped retrieval and complete-set Station reconciliation using the
+    existing Exercise Variant to Equipment Station compatibility relation.
 paths:
   /auth/login:
     post:
@@ -995,6 +998,82 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '409':
           description: One or more submitted Exercise Variants are not eligible for this user's Station selection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/exercises/{exerciseId}/variants/{variantId}/compatibilities:
+    get:
+      summary: Retrieve a Configurator Exercise Variant's compatible Station selection
+      description: |
+        Retrieves the authenticated user's enabled compatibility mappings for one
+        station-required Exercise Variant together with the complete eligible set
+        of that user's Stations. Both lists include compact Gym context so the
+        renderer can group, display, and stage one completed selection.
+      operationId: getConfiguratorExerciseVariantCompatibilities
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: variantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Exercise Variant compatibility selection retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorExerciseVariantCompatibilityResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Exercise Variant not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    put:
+      summary: Reconcile a Configurator Exercise Variant's complete compatible Station selection
+      description: |
+        Replaces the Exercise Variant's enabled compatibility selection atomically.
+        Submitted identifiers are the complete final selection: omitted existing
+        mappings are disabled, while selected mappings are enabled or created. An
+        empty array clears every enabled mapping for the Exercise Variant.
+      operationId: reconcileConfiguratorExerciseVariantCompatibilities
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: variantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfiguratorExerciseVariantCompatibilitySelectionRequest' }
+      responses:
+        '200':
+          description: Exercise Variant compatibility selection reconciled successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguratorExerciseVariantCompatibilityResponse' }
+        '400':
+          description: Malformed request or duplicate Station identifier
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Exercise Variant not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: The Exercise Variant does not require a Station or one or more submitted Stations are not eligible for this user's selection
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -2308,6 +2387,42 @@ components:
           type: array
           uniqueItems: true
           description: Complete selected set of eligible station-required Exercise Variant identifiers. An empty array clears the selection.
+          items: { type: string, format: uuid }
+    ConfiguratorExerciseVariantCompatibilityStation:
+      type: object
+      description: Compact Station and Gym context for Exercise Variant compatibility selection.
+      required: [gym_id, gym_name, station_id, station_name]
+      properties:
+        gym_id: { type: string, format: uuid }
+        gym_name: { type: string }
+        station_id: { type: string, format: uuid }
+        station_name: { type: string }
+    ConfiguratorExerciseVariantCompatibilityResponse:
+      type: object
+      description: |
+        One authenticated user's compatibility-selection state for one Exercise
+        Variant. enabled_stations contains only enabled mappings; eligible_stations
+        contains every user-owned Station that may be selected.
+      required: [exercise_id, variant_id, enabled_stations, eligible_stations]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        variant_id: { type: string, format: uuid }
+        enabled_stations:
+          type: array
+          items: { $ref: '#/components/schemas/ConfiguratorExerciseVariantCompatibilityStation' }
+        eligible_stations:
+          type: array
+          items: { $ref: '#/components/schemas/ConfiguratorExerciseVariantCompatibilityStation' }
+    ConfiguratorExerciseVariantCompatibilitySelectionRequest:
+      type: object
+      additionalProperties: false
+      description: Complete final selection for one Exercise Variant; individual picker toggles are never persisted.
+      required: [station_ids]
+      properties:
+        station_ids:
+          type: array
+          uniqueItems: true
+          description: Complete selected set of eligible Station identifiers. An empty array clears the selection.
           items: { type: string, format: uuid }
     GymExerciseGroup:
       type: object
