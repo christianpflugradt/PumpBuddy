@@ -131,7 +131,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     if (this.#state.isCompatibilityLoading) return `<section class="configurator-station-compatibility" aria-labelledby="compatible-exercise-variants-title"><div class="configurator-station-compatibility-header"><h2 id="compatible-exercise-variants-title">Compatible Exercise Variants</h2></div><p class="start-copy" role="status">Loading compatible Exercise Variants…</p></section>`;
     if (this.#state.compatibilityError) return `<section class="configurator-station-compatibility" aria-labelledby="compatible-exercise-variants-title"><div class="configurator-station-compatibility-header"><h2 id="compatible-exercise-variants-title">Compatible Exercise Variants</h2></div><p class="start-error" role="alert">${escapeHtml(this.#state.compatibilityError)}</p></section>`;
     const variants = this.#state.compatibility?.enabled_variants ?? [];
-    const edit = `<button type="button" class="nav-button configurator-station-compatibility-edit" data-ui-action="open-configurator-station-compatibility-picker">Edit</button>`;
+    const edit = `<button type="button" class="nav-button nav-button-secondary configurator-station-compatibility-edit" data-ui-action="open-configurator-station-compatibility-picker">Edit</button>`;
     const content = variants.length === 0
       ? `<p class="start-copy">No compatible Exercise Variants are enabled.</p>`
       : `<ul class="configurator-station-compatibility-list">${variants.map((variant) => `<li><span>${escapeHtml(variant.exercise_name)}</span><small>${escapeHtml(variant.variant_name)}</small></li>`).join("")}</ul>`;

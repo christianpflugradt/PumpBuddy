@@ -108,7 +108,10 @@ describe("pb-configurator-station-editor-screen", () => {
     const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
     document.body.append(el); el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", eligible_variants: [], enabled_variants: [] } };
     expect(el.textContent).toContain("No compatible Exercise Variants are enabled.");
-    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    const editButton = el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement;
+    expect(editButton.classList).toContain("nav-button-secondary");
+    expect(editButton.classList).toContain("configurator-station-compatibility-edit");
+    editButton.click();
     expect(el.querySelector('[role="dialog"]')).toBeTruthy();
     expect(el.textContent).toContain("0 selected");
   });
