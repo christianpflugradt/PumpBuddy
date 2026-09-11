@@ -57,8 +57,9 @@ verify_backend_docker_toolchain_lockstep() {
 cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
   if [ -n "$container_ids" ]; then
-    # Remove testcontainers-owned leftovers without touching compose-managed app containers.
-    printf '%s\n' "$container_ids" | xargs docker rm -f >/dev/null 2>&1 || true
+    # Remove Testcontainers-owned leftovers and their anonymous database volumes
+    # without touching compose-managed app containers.
+    printf '%s\n' "$container_ids" | xargs docker rm --force --volumes >/dev/null 2>&1 || true
   fi
 }
 
@@ -158,6 +159,11 @@ renderer_install_deps_if_needed() {
 }
 
 run_backend_quality() {
+  # Testcontainers normally removes itself, but retain a scoped fallback for
+  # process failures and async teardown races. Docker only deletes the
+  # PostgreSQL image's anonymous data volume when removal includes --volumes.
+  trap cleanup_testcontainers 0
+
   backend_toolchain="$(resolve_backend_rust_toolchain)"
   verify_backend_docker_toolchain_lockstep "$backend_toolchain"
   export RUSTUP_TOOLCHAIN="$backend_toolchain"
@@ -178,7 +184,6 @@ run_backend_quality() {
   else
     TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$repo_root/backend/Cargo.toml"
   fi
-  cleanup_testcontainers
 }
 
 run_renderer_quality() {
