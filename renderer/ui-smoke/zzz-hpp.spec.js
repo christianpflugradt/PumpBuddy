@@ -1071,3 +1071,70 @@ test('UI smoke configurator exercises > navigation, search, lifecycle, loading, 
   await page.getByRole('button', { name: 'Exercises' }).click();
   await expect(screen).toContainText('Unable to load exercises right now.');
 });
+
+test('UI smoke configurator Variant compatibility opens its Station and saves staged selections', async ({ page }) => {
+  let isLoggedIn = false;
+  let enabledVariantIds = ['variant-press'];
+  const stationCompatibility = () => ({
+    gym_id: 'gym-1',
+    station_id: 'station-1',
+    enabled_variants: [
+      { exercise_id: 'exercise-1', exercise_name: 'Chest Press', variant_id: 'variant-press', variant_name: 'Machine Press', repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL' },
+      { exercise_id: 'exercise-2', exercise_name: 'Cable Fly', variant_id: 'variant-cable', variant_name: 'Cable Press', repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL' },
+    ].filter((variant) => enabledVariantIds.includes(variant.variant_id)),
+    eligible_variants: [
+      { exercise_id: 'exercise-1', exercise_name: 'Chest Press', variant_id: 'variant-press', variant_name: 'Machine Press', repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL' },
+      { exercise_id: 'exercise-2', exercise_name: 'Cable Fly', variant_id: 'variant-cable', variant_name: 'Cable Press', repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL' },
+    ],
+  });
+
+  await page.route('**/auth/session', async (route) => route.fulfill({ status: isLoggedIn ? 200 : 401, contentType: 'application/json', body: isLoggedIn ? JSON.stringify({ user: { name: 'Dev User' } }) : '{}' }));
+  await page.route('**/auth/login', async (route) => { isLoggedIn = true; await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
+  await page.route('**/api/training-plans', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+  await page.route('**/api/gyms', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+  await page.route('**/api/load-profiles', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'profile-1', name: 'Selector Stack', status: 'active', definition_kind: 'fixed_list', weight_unit: 'KG', station_count: 1 }]) }));
+  await page.route('**/api/exercises/exercise-1/variants/variant-press/compatibilities', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ exercise_id: 'exercise-1', variant_id: 'variant-press', enabled_stations: [{ gym_id: 'gym-1', gym_name: 'North Gym', station_id: 'station-1', station_name: 'Chest Press Rack' }], eligible_stations: [{ gym_id: 'gym-1', gym_name: 'North Gym', station_id: 'station-1', station_name: 'Chest Press Rack' }] }) }));
+  await page.route('**/api/gyms/gym-1/configurator-stations/station-1/compatibilities', async (route) => {
+    if (route.request().method() === 'PUT') enabledVariantIds = JSON.parse(route.request().postData() ?? '{}').exercise_variant_ids;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stationCompatibility()) });
+  });
+  await page.route('**/api/gyms/gym-1/configurator-stations', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'station-1', gym_id: 'gym-1', name: 'Chest Press Rack', load_profile: { id: 'profile-1', name: 'Selector Stack', status: 'active' }, status: 'active' }]) }));
+  await page.route('**/api/gyms/gym-1', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'gym-1', name: 'North Gym', status: 'active', station_count: 1, last_visited_at: null, stations: [], exercise_groups: [] }) }));
+  await page.route('**/api/exercises/exercise-1/variants', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'variant-press', exercise_id: 'exercise-1', name: 'Machine Press', status: 'active', requires_station: true, load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', repetition_kind: 'REPS' }, { id: 'variant-stationless', exercise_id: 'exercise-1', name: 'Floor Press', status: 'active', requires_station: false, load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', repetition_kind: 'REPS' }]) }));
+  await page.route('**/api/exercises', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'exercise-1', name: 'Chest Press', status: 'active', variant_count: 2 }]) }));
+
+  await page.goto('/');
+  await page.getByLabel('Login').fill('main');
+  await page.getByLabel('Password', { exact: true }).fill('test-api-key');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Configurator' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Exercises' }).click();
+  await page.getByRole('button', { name: 'Chest Press' }).click();
+  await page.getByRole('button', { name: 'Machine Press' }).click();
+
+  const variantScreen = page.getByRole('region', { name: 'Variant editor' });
+  await expect(variantScreen).toContainText('Compatible Stations');
+  await expect(variantScreen).toContainText('Chest Press Rack');
+  await expect(variantScreen).not.toContainText('Floor Press');
+  await variantScreen.locator('[data-station-id="station-1"]').click();
+
+  const stationScreen = page.getByRole('region', { name: 'Station editor' });
+  await expect(stationScreen).toContainText('Machine Press');
+  await stationScreen.getByRole('button', { name: 'Edit' }).click();
+  const picker = page.getByRole('dialog', { name: 'Compatible Exercise Variants' });
+  await picker.getByRole('searchbox', { name: 'Search Exercise Variants' }).fill('cable');
+  await expect(picker).toContainText('Cable Press');
+  await expect(picker).not.toContainText('Machine Press');
+  await picker.getByRole('checkbox', { name: /Cable Fly.*Cable Press/ }).click();
+  await picker.getByRole('button', { name: 'Cancel' }).click();
+
+  await stationScreen.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('dialog', { name: 'Compatible Exercise Variants' })).toContainText('1 selected');
+  const savedPicker = page.getByRole('dialog', { name: 'Compatible Exercise Variants' });
+  await savedPicker.getByRole('checkbox', { name: /Cable Fly.*Cable Press/ }).click();
+  await savedPicker.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(stationScreen).toContainText('2 enabled');
+  await expect(stationScreen).toContainText('Cable Press');
+});
