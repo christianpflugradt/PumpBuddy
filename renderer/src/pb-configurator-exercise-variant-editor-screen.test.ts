@@ -72,7 +72,9 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     search.value = "south"; search.dispatchEvent(new Event("input", { bubbles: true }));
     const options = el.querySelector(".configurator-exercise-variant-compatibility-picker-options")!;
     expect(options.textContent).toContain("Leg Press"); expect(options.textContent).not.toContain("Cable Tower");
+    options.scrollTop = 96;
     (el.querySelector('[data-station-id="station-2"]') as HTMLButtonElement).click();
+    expect((el.querySelector(".configurator-exercise-variant-compatibility-picker-options") as HTMLElement).scrollTop).toBe(96);
     (el.querySelector('[data-ui-action="dismiss-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
     expect(handler).not.toHaveBeenCalled();
     (el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
