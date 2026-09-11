@@ -286,6 +286,13 @@ export const createTrainingPlan = async (
     parseTrainingPlanSaveResponse,
   );
 
+export const updateTrainingPlan = async (
+  trainingPlanId: string,
+  payload: TrainingPlanDefinitionRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TrainingPlanSaveResponse> =>
+  submitLoadProfileRequest(fetchImpl, `/api/training-plans/${encodeURIComponent(trainingPlanId)}`, "PUT", serializeTrainingPlanDefinitionRequest(payload), parseTrainingPlanSaveResponse);
+
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];
   gyms: GymSummary[];

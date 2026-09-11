@@ -81,6 +81,7 @@ export type ViewState =
   | { screen: "configurator-gyms" }
   | { screen: "configurator-exercises" }
   | { screen: "configurator-training-plans" }
+  | { screen: "configurator-training-plan-detail"; trainingPlanId: string }
   | { screen: "configurator-exercise-detail"; exerciseId: string | null }
   | { screen: "configurator-exercise-variant-detail"; exerciseId: string; variantId: string | null }
   | { screen: "configurator-gym-detail"; gymId: string | null }

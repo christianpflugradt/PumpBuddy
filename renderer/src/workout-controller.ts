@@ -23,6 +23,7 @@ import {
   reconcileConfiguratorExerciseVariantCompatibilities,
   updateExercise,
   updateConfiguratorExerciseVariant,
+  updateTrainingPlan,
 } from "./workout-api";
 import {
   canReopenFallbackOptionSelection,
@@ -618,13 +619,14 @@ export const createApp = (
 
     switch (action) {
       case "save-configurator-training-plan": {
-        if (state.viewState.screen !== "configurator-training-plans") return;
+        if (state.viewState.screen !== "configurator-training-plans" && state.viewState.screen !== "configurator-training-plan-detail") return;
         const detail = customEvent.detail as { payload?: { request?: unknown }; respond?: (result: { ok: boolean; errorMessage?: string }) => void };
         if (!detail.respond || !detail.payload?.request || typeof detail.payload.request !== "object") return;
         void (async () => {
           try {
-            const saved = await createTrainingPlan(detail.payload!.request as never);
-            state = { ...state, viewState: { screen: "training-plan-detail", trainingPlanId: saved.training_plan_id, selectedGymId: null, selectedVersionNumber: null } };
+            const existingId = state.viewState.screen === "configurator-training-plan-detail" ? state.viewState.trainingPlanId : null;
+            const saved = existingId ? await updateTrainingPlan(existingId, detail.payload!.request as never) : await createTrainingPlan(detail.payload!.request as never);
+            state = { ...state, viewState: existingId ? { screen: "configurator-training-plan-detail", trainingPlanId: saved.training_plan_id } : { screen: "training-plan-detail", trainingPlanId: saved.training_plan_id, selectedGymId: null, selectedVersionNumber: null } };
             render();
             detail.respond?.({ ok: true });
             void loadTrainingPlanDetailScreenData(saved.training_plan_id, null, saved.version_number);
@@ -632,6 +634,13 @@ export const createApp = (
             detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to create training plan right now.") });
           }
         })();
+        return;
+      }
+      case "confirm-configurator-training-plan-save": {
+        const detail = customEvent.detail as { payload?: { message?: unknown }; respond?: unknown };
+        if (typeof detail.payload?.message !== "string" || typeof detail.respond !== "function") return;
+        openConfirmDialog(detail.payload.message, "Save Changes", detail.respond as () => void);
+        render();
         return;
       }
       case "logout":

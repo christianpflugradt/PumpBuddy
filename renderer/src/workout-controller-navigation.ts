@@ -271,8 +271,12 @@ export const handleScreenNavigationAction = (
       const id = (event as CustomEvent<{ payload?: { trainingPlanId?: unknown } }>).detail?.payload?.trainingPlanId;
       const trainingPlanId = typeof id === "string" ? id.trim() : "";
       if (state.viewState.screen !== "configurator-training-plans" || !trainingPlanId) return true;
-      setState({ ...state, viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId: null, selectedVersionNumber: null } });
+      setState({ ...state, viewState: { screen: "configurator-training-plan-detail", trainingPlanId } });
       render(); void loadTrainingPlanDetailScreenData(trainingPlanId, null, null); return true;
+    }
+    case "navigate-back-from-configurator-training-plan-detail": {
+      const state = getState(); if (state.viewState.screen !== "configurator-training-plan-detail") return true;
+      setState({ ...state, viewState: { screen: "configurator-training-plans" } }); render(); return true;
     }
     case "start-configurator-exercise-create": {
       const state = getState();

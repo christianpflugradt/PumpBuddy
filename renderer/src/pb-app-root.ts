@@ -83,6 +83,7 @@ import {
 } from "./pb-configurator-exercise-editor-screen";
 import { pbConfiguratorExerciseVariantEditorScreenTag, registerPbConfiguratorExerciseVariantEditorScreen, type ConfiguratorExerciseVariantEditorScreenState } from "./pb-configurator-exercise-variant-editor-screen";
 import { pbConfiguratorTrainingPlansScreenTag, registerPbConfiguratorTrainingPlansScreen, type ConfiguratorTrainingPlansScreenState } from "./pb-configurator-training-plans-screen";
+import { pbConfiguratorTrainingPlanEditorScreenTag, registerPbConfiguratorTrainingPlanEditorScreen, type ConfiguratorTrainingPlanEditorScreenState } from "./pb-configurator-training-plan-editor-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -118,6 +119,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbConfiguratorExerciseEditorScreen();
     registerPbConfiguratorExerciseVariantEditorScreen();
     registerPbConfiguratorTrainingPlansScreen();
+    registerPbConfiguratorTrainingPlanEditorScreen();
     this.#render();
   }
 
@@ -261,6 +263,12 @@ class PbAppRootElement extends HTMLElement {
       el.state = { mode: "list", trainingPlans: screen?.trainingPlans ?? [], exercises: screen?.exercises ?? [], isLoading: screen?.isLoading ?? false, errorMessage: screen?.errorMessage ?? null };
       container.append(el);
       return;
+    }
+    if (state.viewState.screen === "configurator-training-plan-detail") {
+      const detailState = state.trainingPlanDetailScreen.trainingPlanId === state.viewState.trainingPlanId ? state.trainingPlanDetailScreen : null;
+      const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+      el.state = { trainingPlanId: state.viewState.trainingPlanId, detail: detailState?.detail ?? null, exercises: state.configuratorTrainingPlansScreen?.exercises ?? [], isLoading: detailState?.isLoading ?? false, errorMessage: detailState?.errorMessage ?? null };
+      container.append(el); return;
     }
 
     if (state.viewState.screen === "configurator-exercise-detail") {
