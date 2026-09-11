@@ -1,64 +1,23 @@
 version: 1
 kind: plan
-id: pb-067
-name: Exercise Variant Station Compatibility
-goal: >
-  Let a user view and manage the complete Station compatibility set for a
-  station-required Exercise Variant from its existing Configurator detail flow.
+id: pb-068
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - >
-    Show a compact, Gym-grouped Compatible Stations section with a count and
-    row navigation on the existing Exercise Variant detail screen when
-    requires_station is true.
-  - >
-    Provide a searchable, Gym-grouped, staged multi-select Station picker that
-    saves the complete compatibility set or discards it on cancel.
-  - >
-    Extend the existing compatibility relation, persistence, application, and
-    API layers only where the reverse Variant-to-Station interaction needs it.
-  - >
-    Reuse the Station-to-Exercise-Variant compatibility behavior, Configurator
-    navigation, picker conventions, and set-oriented mutation semantics.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - A new top-level Compatibility screen or navigation entry.
-  - Compatibility UI, controls, or empty-state messaging for variants where
-    requires_station is false.
-  - A second compatibility model, immediate checkbox persistence, advanced
-    filters, Station metadata duplication, or lifecycle/status design.
-  - Changes to historical workout data or existing workout executability
-    semantics.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - >
-    A station-required Variant shows all of its currently compatible Stations,
-    grouped by Gym, with a compact clickable row for each Station.
-  - >
-    A Station row opens the existing Configurator Station detail screen; no
-    extra per-row action is required.
-  - >
-    The picker searches by Station and Gym name, stages changes locally, and
-    persists the complete selected set only on Save; Cancel has no effect.
-  - >
-    The reverse flow preserves ownership boundaries, duplicate prevention, and
-    the existing compatibility persistence and enabled-record behavior.
-  - >
-    The mobile-first UI follows established Configurator search and overlay
-    conventions without large cards, desktop tables, or new visual language.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Preserve the existing Station-to-Exercise-Variant workflow as the primary
-    implementation and UX reference.
-  - Prefer shared primitives and domain-specific composition over a universal
-    picker abstraction.
-  - Use the Stations currently available to the existing Configurator behavior
-    as the eligibility source of truth.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/design/domain-model.yaml
-  - agent/design/persistence-model.yaml
-  - agent/design/api-contract.yaml
-  - backend/src/application/gyms.rs
-  - backend/src/persistence/gyms.rs
-  - backend/src/api/handlers/gyms.rs
-  - renderer/src/pb-configurator-station-editor-screen.ts
-  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
