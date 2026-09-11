@@ -3,8 +3,8 @@ use crate::domain::{
     ConfiguratorStation, ConfiguratorStationCompatibilitySelection, ConfiguratorStationUpdate,
     ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail, GymSummary,
     GymUpdate, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate, NewConfiguratorStation,
-    NewGym, NewLoadProfile, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
-    WorkoutHistorySummary,
+    NewGym, NewLoadProfile, NewWorkout, TrainingPlanDefinition, TrainingPlanDetail,
+    TrainingPlanSaveResult, TrainingPlanSummary, Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -340,6 +340,48 @@ pub trait AuthRepository {
 }
 
 pub(crate) trait TrainingPlanRepository {
+    async fn training_plan_definition_is_valid_for_user(
+        &self,
+        _definition: &TrainingPlanDefinition,
+        _user_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan writes are not available".into(),
+        ))
+    }
+
+    async fn fetch_current_training_plan_definition_for_user(
+        &self,
+        _training_plan_id: &str,
+        _user_id: &str,
+    ) -> Result<Option<TrainingPlanDefinition>, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan writes are not available".into(),
+        ))
+    }
+
+    async fn create_training_plan_for_user(
+        &self,
+        _user_id: &str,
+        _definition: &TrainingPlanDefinition,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan writes are not available".into(),
+        ))
+    }
+
+    async fn save_training_plan_for_user(
+        &self,
+        _training_plan_id: &str,
+        _user_id: &str,
+        _definition: &TrainingPlanDefinition,
+        _create_new_version: bool,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan writes are not available".into(),
+        ))
+    }
+
     async fn fetch_training_plan_summaries_for_user(
         &self,
         user_id: &str,

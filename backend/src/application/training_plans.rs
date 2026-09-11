@@ -1,7 +1,8 @@
 use crate::{
     domain::{
-        ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail,
-        TrainingPlanExecutionStatus, TrainingPlanSummary, TrainingPlanVariantAvailability,
+        ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDefinition, TrainingPlanDetail,
+        TrainingPlanExecutionStatus, TrainingPlanSaveResult, TrainingPlanSummary,
+        TrainingPlanVariantAvailability,
     },
     persistence::{PersistenceError, TrainingPlanRepository},
 };
@@ -10,6 +11,102 @@ use crate::{
 pub enum TrainingPlanServiceError {
     NotFound(String),
     Persistence(PersistenceError),
+    Validation(String),
+}
+
+pub(crate) async fn create_training_plan(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    user_id: &str,
+    definition: TrainingPlanDefinition,
+) -> Result<TrainingPlanSaveResult, TrainingPlanServiceError> {
+    validate_definition(repository, user_id, &definition).await?;
+    repository
+        .create_training_plan_for_user(user_id, &definition)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)
+}
+
+pub(crate) async fn save_training_plan(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    training_plan_id: &str,
+    user_id: &str,
+    definition: TrainingPlanDefinition,
+) -> Result<TrainingPlanSaveResult, TrainingPlanServiceError> {
+    validate_definition(repository, user_id, &definition).await?;
+    let current = repository
+        .fetch_current_training_plan_definition_for_user(training_plan_id, user_id)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)?
+        .ok_or_else(|| TrainingPlanServiceError::NotFound("Training plan not found".into()))?;
+    let create_new_version = is_version_producing_change(&current, &definition);
+    repository
+        .save_training_plan_for_user(training_plan_id, user_id, &definition, create_new_version)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)
+}
+
+async fn validate_definition(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    user_id: &str,
+    definition: &TrainingPlanDefinition,
+) -> Result<(), TrainingPlanServiceError> {
+    let name = definition.name.trim();
+    if name.is_empty() {
+        return Err(TrainingPlanServiceError::Validation(
+            "name is required".into(),
+        ));
+    }
+    let mut exercise_ids = std::collections::HashSet::new();
+    let mut variant_ids = std::collections::HashSet::new();
+    for exercise in &definition.exercises {
+        if exercise.exercise_id.trim().is_empty() || !exercise_ids.insert(&exercise.exercise_id) {
+            return Err(TrainingPlanServiceError::Validation(
+                "each submitted exercise must be unique".into(),
+            ));
+        }
+        if exercise.allowed_variant_ids.is_empty() {
+            return Err(TrainingPlanServiceError::Validation(
+                "each plan exercise requires at least one allowed variant".into(),
+            ));
+        }
+        for variant_id in &exercise.allowed_variant_ids {
+            if variant_id.trim().is_empty() || !variant_ids.insert(variant_id) {
+                return Err(TrainingPlanServiceError::Validation(
+                    "submitted variant identifiers must be unique".into(),
+                ));
+            }
+        }
+    }
+    if !repository
+        .training_plan_definition_is_valid_for_user(definition, user_id)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)?
+    {
+        return Err(TrainingPlanServiceError::Validation(
+            "each allowed variant must belong to its submitted exercise".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn is_version_producing_change(
+    current: &TrainingPlanDefinition,
+    submitted: &TrainingPlanDefinition,
+) -> bool {
+    if current.exercises.len() != submitted.exercises.len() {
+        return true;
+    }
+    current
+        .exercises
+        .iter()
+        .zip(&submitted.exercises)
+        .any(|(current, submitted)| {
+            current.exercise_id != submitted.exercise_id
+                || current
+                    .allowed_variant_ids
+                    .iter()
+                    .any(|variant_id| !submitted.allowed_variant_ids.contains(variant_id))
+        })
 }
 
 pub(crate) async fn list_training_plans(
@@ -220,11 +317,13 @@ fn status_for_counts(executable_count: i32, configured_count: i32) -> TrainingPl
 #[cfg(test)]
 mod tests {
     use super::{
-        get_training_plan, list_training_plan_exercise_variants, TrainingPlanServiceError,
+        create_training_plan, get_training_plan, is_version_producing_change,
+        list_training_plan_exercise_variants, TrainingPlanServiceError,
     };
     use crate::{
         domain::{
-            ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanSummary,
+            ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDefinition,
+            TrainingPlanDetail, TrainingPlanExerciseDefinition, TrainingPlanSummary,
         },
         persistence::{PersistenceError, TrainingPlanRepository},
     };
@@ -254,6 +353,14 @@ mod tests {
     }
 
     impl TrainingPlanRepository for FakeTrainingPlanRepository {
+        async fn training_plan_definition_is_valid_for_user(
+            &self,
+            _definition: &TrainingPlanDefinition,
+            _user_id: &str,
+        ) -> Result<bool, PersistenceError> {
+            Ok(false)
+        }
+
         async fn fetch_training_plan_summaries_for_user(
             &self,
             _user_id: &str,
@@ -367,5 +474,65 @@ mod tests {
             1
         );
         assert_eq!(repository.latest_options_calls.load(Ordering::SeqCst), 0);
+    }
+
+    fn definition(allowed_variant_ids: Vec<&str>) -> TrainingPlanDefinition {
+        TrainingPlanDefinition {
+            name: "Plan".into(),
+            exercises: vec![TrainingPlanExerciseDefinition {
+                exercise_id: "exercise-id".into(),
+                allowed_variant_ids: allowed_variant_ids.into_iter().map(str::to_owned).collect(),
+            }],
+        }
+    }
+
+    #[tokio::test]
+    async fn create_training_plan_rejects_empty_or_duplicate_variant_selections() {
+        let repository = FakeTrainingPlanRepository::new(vec![], None);
+        for definition in [
+            definition(vec![]),
+            definition(vec!["variant-id", "variant-id"]),
+        ] {
+            assert!(matches!(
+                create_training_plan(&repository, "user-id", definition).await,
+                Err(TrainingPlanServiceError::Validation(_))
+            ));
+        }
+    }
+
+    #[tokio::test]
+    async fn create_training_plan_rejects_variant_outside_submitted_exercise() {
+        let repository = FakeTrainingPlanRepository::new(vec![], None);
+        assert!(matches!(
+            create_training_plan(&repository, "user-id", definition(vec!["variant-id"])).await,
+            Err(TrainingPlanServiceError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn only_structural_removals_or_exercise_changes_produce_a_new_version() {
+        let current = definition(vec!["existing"]);
+        assert!(!is_version_producing_change(
+            &current,
+            &definition(vec!["existing", "added"])
+        ));
+        assert!(!is_version_producing_change(
+            &current,
+            &TrainingPlanDefinition {
+                name: "Renamed".into(),
+                ..current.clone()
+            }
+        ));
+        assert!(is_version_producing_change(&current, &definition(vec![])));
+        assert!(is_version_producing_change(
+            &current,
+            &TrainingPlanDefinition {
+                name: "Plan".into(),
+                exercises: vec![TrainingPlanExerciseDefinition {
+                    exercise_id: "other-exercise".into(),
+                    allowed_variant_ids: vec!["existing".into()]
+                }],
+            }
+        ));
     }
 }

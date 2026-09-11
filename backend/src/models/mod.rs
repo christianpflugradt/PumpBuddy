@@ -53,6 +53,30 @@ pub mod exercise_variant_update_request {
 pub use active_workout::ActiveWorkout;
 pub use exercise_variant_update_request::ExerciseVariantUpdateRequest;
 
+pub mod training_plan_definition_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_definition_request.rs"
+    ));
+}
+pub use training_plan_definition_request::TrainingPlanDefinitionRequest;
+
+pub mod training_plan_exercise_definition_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_definition_request.rs"
+    ));
+}
+pub use training_plan_exercise_definition_request::TrainingPlanExerciseDefinitionRequest;
+
+pub mod training_plan_save_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_save_response.rs"
+    ));
+}
+pub use training_plan_save_response::TrainingPlanSaveResponse;
+
 pub mod active_workout_exercise {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

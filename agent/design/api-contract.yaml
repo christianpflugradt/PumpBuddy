@@ -1095,6 +1095,29 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a training plan with its initial current definition
+      operationId: createTrainingPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingPlanDefinitionRequest'
+      responses:
+        '201':
+          description: Training plan created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanSaveResponse'
+        '400':
+          description: Training plan definition validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/training-plans/{trainingPlanId}:
     get:
       summary: Retrieve training plan detail
@@ -1143,6 +1166,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    put:
+      summary: Save the current editable training plan definition
+      operationId: saveTrainingPlan
+      parameters:
+        - name: trainingPlanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingPlanDefinitionRequest'
+      responses:
+        '200':
+          description: Current training plan definition saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanSaveResponse'
+        '400':
+          description: Training plan definition validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Training plan not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/training-plans/{trainingPlanId}/options:
     get:
       summary: List gym-agnostic training plan exercise variants realizable in a selected gym context
@@ -2103,6 +2161,43 @@ components:
           type: integer
           format: int64
           minimum: 0
+    TrainingPlanDefinitionRequest:
+      type: object
+      additionalProperties: false
+      required: [name, exercises]
+      properties:
+        name:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingPlanExerciseDefinitionRequest'
+    TrainingPlanExerciseDefinitionRequest:
+      type: object
+      additionalProperties: false
+      required: [exercise_id, allowed_variant_ids]
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        allowed_variant_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+    TrainingPlanSaveResponse:
+      type: object
+      required: [training_plan_id, version_number, created_new_version]
+      properties:
+        training_plan_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          minimum: 1
+        created_new_version:
+          type: boolean
     ExerciseCreateRequest:
       type: object
       additionalProperties: false

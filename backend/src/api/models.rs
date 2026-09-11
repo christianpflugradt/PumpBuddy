@@ -9,8 +9,9 @@ use crate::domain::{
     CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, ConfiguratorStationUpdate,
     ExerciseUpdate, ExerciseVariantUpdate, GymUpdate, LoadProfileDefinitionInput,
     LoadProfileUpdate, NewConfiguratorStation, NewExercise, NewExerciseVariant, NewGym,
-    NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
-    WorkoutDetail as DomainWorkoutDetail, WorkoutDetailExercise as DomainWorkoutDetailExercise,
+    NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet, TrainingPlanDefinition,
+    TrainingPlanExerciseDefinition, WorkoutDetail as DomainWorkoutDetail,
+    WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
     WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
@@ -92,6 +93,7 @@ pub use crate::models::reopen_active_workout_exercise_request::ReopenActiveWorko
 pub use crate::models::select_active_workout_exercise_option_request::SelectActiveWorkoutExerciseOptionRequest;
 pub use crate::models::side_menu_middle_click_counts::SideMenuMiddleClickCounts as SideMenuMiddleClickCountsResponse;
 pub use crate::models::skip_active_workout_exercise_request::SkipActiveWorkoutExerciseRequest;
+pub use crate::models::training_plan_definition_request::TrainingPlanDefinitionRequest;
 pub use crate::models::training_plan_detail_response::ExecutionStatus as TrainingPlanDetailExecutionStatusResponse;
 pub use crate::models::training_plan_detail_response::TrainingPlanDetailResponse;
 pub use crate::models::training_plan_exercise_detail::ExecutionStatus as TrainingPlanExerciseExecutionStatusResponse;
@@ -103,6 +105,7 @@ pub use crate::models::training_plan_exercise_variant_detail::SetTrackingMode as
 pub use crate::models::training_plan_exercise_variant_detail::TrainingPlanExerciseVariantDetail as TrainingPlanExerciseVariantDetailResponse;
 pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
+pub use crate::models::training_plan_save_response::TrainingPlanSaveResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::training_plan_version_summary::TrainingPlanVersionSummary;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
@@ -142,6 +145,21 @@ pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
 impl ExerciseCreateRequest {
     pub fn into_domain(self) -> NewExercise {
         NewExercise { name: self.name }
+    }
+}
+impl TrainingPlanDefinitionRequest {
+    pub fn into_domain(self) -> TrainingPlanDefinition {
+        TrainingPlanDefinition {
+            name: self.name,
+            exercises: self
+                .exercises
+                .into_iter()
+                .map(|exercise| TrainingPlanExerciseDefinition {
+                    exercise_id: exercise.exercise_id,
+                    allowed_variant_ids: exercise.allowed_variant_ids,
+                })
+                .collect(),
+        }
     }
 }
 impl ExerciseUpdateRequest {

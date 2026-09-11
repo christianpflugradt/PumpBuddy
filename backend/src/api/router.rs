@@ -9,19 +9,20 @@ use axum::{
 use super::handlers::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
     create_active_workout, create_configurator_station, create_exercise, create_exercise_variant,
-    create_gym, create_load_profile, create_workout, delete_configurator_station, delete_exercise,
-    delete_exercise_variant, delete_gym, delete_latest_active_workout_set, delete_load_profile,
-    get_about_metadata, get_active_workout, get_configurator_exercise_variant_compatibilities,
-    get_configurator_station, get_configurator_station_compatibilities, get_exercise,
-    get_exercise_variant, get_gym_detail, get_gym_station_detail, get_load_profile,
-    get_training_plan, get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_configurator_stations, list_exercise_variants, list_exercises,
-    list_gyms, list_load_profiles, list_training_plan_exercise_variants, list_training_plans,
-    list_workouts, reconcile_configurator_exercise_variant_compatibilities,
+    create_gym, create_load_profile, create_training_plan, create_workout,
+    delete_configurator_station, delete_exercise, delete_exercise_variant, delete_gym,
+    delete_latest_active_workout_set, delete_load_profile, get_about_metadata, get_active_workout,
+    get_configurator_exercise_variant_compatibilities, get_configurator_station,
+    get_configurator_station_compatibilities, get_exercise, get_exercise_variant, get_gym_detail,
+    get_gym_station_detail, get_load_profile, get_training_plan, get_workout_detail,
+    get_workout_exercises_performance, get_workout_progress, get_workout_summary,
+    list_configurator_stations, list_exercise_variants, list_exercises, list_gyms,
+    list_load_profiles, list_training_plan_exercise_variants, list_training_plans, list_workouts,
+    reconcile_configurator_exercise_variant_compatibilities,
     reconcile_configurator_station_compatibilities, reopen_active_workout_exercise,
-    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
-    update_configurator_station, update_exercise, update_exercise_variant, update_gym,
-    update_load_profile,
+    save_training_plan, select_active_workout_exercise_option, skip_active_workout_exercise,
+    update_active_workout, update_configurator_station, update_exercise, update_exercise_variant,
+    update_gym, update_load_profile,
 };
 
 use super::middleware;
@@ -32,8 +33,8 @@ use super::models::{
     CreateWorkoutRequest, ExerciseCreateRequest, ExerciseUpdateRequest,
     ExerciseVariantCreateRequest, ExerciseVariantUpdateRequest, GymWriteRequest,
     ReopenActiveWorkoutExerciseRequest, SelectActiveWorkoutExerciseOptionRequest,
-    SkipActiveWorkoutExerciseRequest, TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery,
-    UpdateActiveWorkoutRequest,
+    SkipActiveWorkoutExerciseRequest, TrainingPlanDefinitionRequest, TrainingPlanDetailQuery,
+    TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -185,6 +186,10 @@ pub fn app_router(app_state: AppState) -> Router {
                  Extension(session): Extension<AuthenticatedSession>| async move {
                     list_training_plans(State(state), Extension(session)).await
                 },
+            ).post(
+                |State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Json(request): Json<TrainingPlanDefinitionRequest>| async move {
+                    create_training_plan(State(state), Extension(session), Json(request)).await
+                },
             ),
         )
         .route(
@@ -201,6 +206,10 @@ pub fn app_router(app_state: AppState) -> Router {
                         Query(query),
                     )
                     .await
+                },
+            ).put(
+                |State(state): State<AppState>, Extension(session): Extension<AuthenticatedSession>, Path(training_plan_id): Path<String>, Json(request): Json<TrainingPlanDefinitionRequest>| async move {
+                    save_training_plan(State(state), Extension(session), Path(training_plan_id), Json(request)).await
                 },
             ),
         )

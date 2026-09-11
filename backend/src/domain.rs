@@ -323,6 +323,25 @@ pub struct TrainingPlanDetailExercise {
     pub variants: Vec<TrainingPlanExerciseVariantDetail>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanDefinition {
+    pub name: String,
+    pub exercises: Vec<TrainingPlanExerciseDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanExerciseDefinition {
+    pub exercise_id: String,
+    pub allowed_variant_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanSaveResult {
+    pub training_plan_id: String,
+    pub version_number: i32,
+    pub created_new_version: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrainingPlanExecutionStatus {
     Green,
