@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-066-item-02
   title: Implement atomic Station compatibility reconciliation
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -89,5 +89,30 @@ handoff:
     Gym before mutation.
   - Verify invalid input rolls back the entire reconciliation and existing enabled-only
     workout queries remain unchanged.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-11T06:11:53Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02 and ac-03 focused rejection and reconciliation\
+    \ coverage\n  evidence: backend/tests/persistence_integration/options_and_gyms.rs:1316-1401\
+    \ is\n    the only configurator compatibility reconciliation test. It asserts\
+    \ re-enabling/creating\n    two selected mappings and rollback for a stationless\
+    \ variant, but it never leaves\n    an enabled mapping out of a saved selection\
+    \ to prove disable behavior. No backend\n    test covers duplicate identifiers,\
+    \ malformed UUID input, a foreign-user variant,\n    or a foreign-user mutation\
+    \ attempt.\n  risk: Required backend coverage is missing for explicit acceptance\
+    \ cases, so regressions\n    in deselection and boundary validation could ship\
+    \ without detection.\n"
+  findings: &id001
+  - criterion: ac-02 and ac-03 focused rejection and reconciliation coverage
+    evidence: backend/tests/persistence_integration/options_and_gyms.rs:1316-1401
+      is the only configurator compatibility reconciliation test. It asserts re-enabling/creating
+      two selected mappings and rollback for a stationless variant, but it never leaves
+      an enabled mapping out of a saved selection to prove disable behavior. No backend
+      test covers duplicate identifiers, malformed UUID input, a foreign-user variant,
+      or a foreign-user mutation attempt.
+    risk: Required backend coverage is missing for explicit acceptance cases, so regressions
+      in deselection and boundary validation could ship without detection.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
