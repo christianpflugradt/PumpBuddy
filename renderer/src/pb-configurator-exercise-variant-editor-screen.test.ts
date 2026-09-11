@@ -81,4 +81,17 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     (el.querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0][0].detail.payload).toEqual({ exerciseId: "exercise-1", variantId: "variant-1", stationIds: ["station-1", "station-2"] });
   });
+  it("renders a dedicated Gym heading for each picker group", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el);
+    el.state = { ...state(), compatibility: { exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [
+      { gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" },
+      { gym_id: "gym-2", gym_name: "South Gym with a deliberately long name", station_id: "station-2", station_name: "Leg Press" },
+    ] } };
+    (el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    const headings = el.querySelectorAll(".configurator-exercise-variant-compatibility-picker-gym-heading");
+    expect(headings).toHaveLength(2);
+    expect(headings[1].textContent).toBe("South Gym with a deliberately long name");
+    expect(headings[1].nextElementSibling?.getAttribute("data-station-id")).toBe("station-2");
+  });
 });
