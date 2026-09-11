@@ -46,4 +46,39 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0][0].detail.payload.request).toEqual({ name: "Neutral" });
   });
+  it("renders compact gym-grouped Station rows only for station-required variants", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el);
+    el.state = { ...state(), compatibility: { exercise_id: "exercise-1", variant_id: "variant-1", eligible_stations: [], enabled_stations: [
+      { gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" },
+      { gym_id: "gym-1", gym_name: "North Gym", station_id: "station-2", station_name: "Row Station" },
+    ] } };
+    expect(el.textContent).toContain("2 enabled");
+    expect(el.querySelectorAll(".configurator-exercise-variant-station-groups > li")).toHaveLength(1);
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-station-id="station-1"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "open-configurator-exercise-variant-compatible-station", payload: { gymId: "gym-1", stationId: "station-1" } });
+    el.state = { ...state(), variant: { ...state().variant!, requires_station: false }, compatibility: el.state.compatibility };
+    expect(el.textContent).not.toContain("Compatible Stations");
+  });
+  it("filters by Station or Gym and persists only the saved staged selection", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el);
+    const compatibility = { exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }], eligible_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }, { gym_id: "gym-2", gym_name: "South Gym", station_id: "station-2", station_name: "Leg Press" }] };
+    el.state = { ...state(), compatibility };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    search.value = "south"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    const options = el.querySelector(".configurator-exercise-variant-compatibility-picker-options")!;
+    expect(options.textContent).toContain("Leg Press"); expect(options.textContent).not.toContain("Cable Tower");
+    (el.querySelector('[data-station-id="station-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="dismiss-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(handler).not.toHaveBeenCalled();
+    (el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("1 selected");
+    (el.querySelector('[data-station-id="station-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls[0][0].detail.payload).toEqual({ exerciseId: "exercise-1", variantId: "variant-1", stationIds: ["station-1", "station-2"] });
+  });
 });

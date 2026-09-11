@@ -417,6 +417,21 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
 .configurator-station-compatibility-picker-option small { margin-top: var(--space-2xs); color: var(--text-secondary); font-size: var(--font-size-label); }
 .configurator-station-compatibility-picker-option--selected { border-color: var(--brand-strong); background: color-mix(in srgb, var(--brand-strong) 20%, var(--surface-input) 80%); }
 .configurator-station-compatibility-picker-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+.configurator-exercise-variant-compatibility { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--border-input); }
+.configurator-exercise-variant-compatibility-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-md); }
+.configurator-exercise-variant-compatibility h2, .configurator-exercise-variant-compatibility h3, .configurator-exercise-variant-compatibility p { margin: 0; }
+.configurator-exercise-variant-compatibility h2 { font-size: var(--font-size-body); }
+.configurator-exercise-variant-compatibility h3, .configurator-exercise-variant-compatibility p, .configurator-exercise-variant-compatibility-picker-count { color: var(--text-secondary); font-size: var(--font-size-label); }
+.configurator-exercise-variant-compatibility-edit { min-height: var(--action-target-min-height); border-color: var(--brand-strong); }
+.configurator-exercise-variant-station-groups, .configurator-exercise-variant-station-groups ul { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+.configurator-exercise-variant-station-groups > li { display: grid; gap: var(--space-xs); }
+.configurator-exercise-variant-station-row, .configurator-exercise-variant-compatibility-picker-option { width: 100%; min-height: var(--action-target-min-height); display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
+.configurator-exercise-variant-compatibility-picker { max-height: min(82vh, 36rem); grid-template-rows: auto minmax(0, 1fr) auto; }
+.configurator-exercise-variant-compatibility-picker-options { min-height: 0; overflow-y: auto; display: grid; gap: var(--space-md); }
+.configurator-exercise-variant-compatibility-picker-gym { display: grid; gap: var(--space-xs); }
+.configurator-exercise-variant-compatibility-picker-gym h3 { margin: 0; color: var(--text-secondary); font-size: var(--font-size-label); }
+.configurator-exercise-variant-compatibility-picker-option--selected { border-color: var(--brand-strong); background: color-mix(in srgb, var(--brand-strong) 20%, var(--surface-input) 80%); }
+.configurator-exercise-variant-compatibility-picker-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
 .configurator-exercise-variants > .configurator-gym-editor-actions { margin-bottom: var(--space-md); }
 .configurator-exercise-variants,
 .configurator-exercise-variants > .configurator-gym-editor-actions,

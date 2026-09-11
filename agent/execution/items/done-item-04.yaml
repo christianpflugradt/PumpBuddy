@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-067-item-04
   title: Build Variant-side compatibility editor
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
