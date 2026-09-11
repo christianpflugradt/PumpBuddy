@@ -4,7 +4,7 @@ use crate::domain::{
     TrainingPlanDetailExercise, TrainingPlanExerciseVariantDetail, TrainingPlanSummary,
     TrainingPlanVersionSummary,
 };
-use sqlx::{postgres::PgRow, types::JsonValue, Row};
+use sqlx::{postgres::PgRow, types::JsonValue, PgConnection, Row};
 use std::collections::HashSet;
 
 pub(super) async fn fetch_training_plan_detail_for_user(
@@ -178,6 +178,257 @@ pub(super) async fn training_plan_detail_gym_exists_for_user(
     .await?;
 
     Ok(exists)
+}
+
+pub(super) async fn training_plan_definition_is_valid_for_user(
+    repository: &DomainRepository,
+    definition: &crate::domain::TrainingPlanDefinition,
+    user_id: &str,
+) -> Result<bool, PersistenceError> {
+    for exercise in &definition.exercises {
+        let variant_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*)
+             FROM exercise_variants
+             WHERE exercise_id = $1::uuid
+               AND user_id = $2::uuid
+               AND id = ANY($3::uuid[])",
+        )
+        .bind(&exercise.exercise_id)
+        .bind(user_id)
+        .bind(&exercise.allowed_variant_ids)
+        .fetch_one(&repository.pool)
+        .await?;
+        if variant_count != exercise.allowed_variant_ids.len() as i64 {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+pub(super) async fn fetch_current_training_plan_definition_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    user_id: &str,
+) -> Result<Option<crate::domain::TrainingPlanDefinition>, PersistenceError> {
+    let plan =
+        sqlx::query("SELECT name FROM training_plans WHERE id = $1::uuid AND user_id = $2::uuid")
+            .bind(training_plan_id)
+            .bind(user_id)
+            .fetch_optional(&repository.pool)
+            .await?;
+    let Some(plan) = plan else {
+        return Ok(None);
+    };
+    let rows = sqlx::query(
+        "SELECT tpe.exercise_id::text AS exercise_id, peo.exercise_variant_id::text AS variant_id
+         FROM training_plan_exercises tpe
+         JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
+         WHERE tpe.training_plan_version_id = (
+             SELECT id FROM training_plan_versions
+             WHERE training_plan_id = $1::uuid AND user_id = $2::uuid
+             ORDER BY version_number DESC, created_at DESC, id DESC LIMIT 1
+         )
+           AND tpe.user_id = $2::uuid AND peo.user_id = $2::uuid
+         ORDER BY tpe.position, peo.selection_order, peo.id",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+    let mut exercises = Vec::new();
+    for row in rows {
+        let exercise_id: String = row.get("exercise_id");
+        let variant_id: String = row.get("variant_id");
+        if exercises.last().is_none_or(
+            |exercise: &crate::domain::TrainingPlanExerciseDefinition| {
+                exercise.exercise_id != exercise_id
+            },
+        ) {
+            exercises.push(crate::domain::TrainingPlanExerciseDefinition {
+                exercise_id,
+                allowed_variant_ids: Vec::new(),
+            });
+        }
+        exercises
+            .last_mut()
+            .expect("exercise was just inserted")
+            .allowed_variant_ids
+            .push(variant_id);
+    }
+    Ok(Some(crate::domain::TrainingPlanDefinition {
+        name: plan.get("name"),
+        exercises,
+    }))
+}
+
+pub(super) async fn create_training_plan_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+    definition: &crate::domain::TrainingPlanDefinition,
+) -> Result<crate::domain::TrainingPlanSaveResult, PersistenceError> {
+    ensure_every_exercise_has_variant(definition)?;
+    let mut transaction = repository.pool.begin().await?;
+    let training_plan_id: String = sqlx::query_scalar(
+        "INSERT INTO training_plans (name, user_id) VALUES ($1, $2::uuid) RETURNING id::text",
+    )
+    .bind(&definition.name)
+    .bind(user_id)
+    .fetch_one(&mut *transaction)
+    .await?;
+    let version_id: String = sqlx::query_scalar(
+        "INSERT INTO training_plan_versions (training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, 1, $2::uuid) RETURNING id::text",
+    )
+    .bind(&training_plan_id)
+    .bind(user_id)
+    .fetch_one(&mut *transaction)
+    .await?;
+    insert_complete_version(&mut transaction, &version_id, user_id, definition, None).await?;
+    transaction.commit().await?;
+    Ok(crate::domain::TrainingPlanSaveResult {
+        training_plan_id,
+        version_number: 1,
+        created_new_version: true,
+    })
+}
+
+pub(super) async fn save_training_plan_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    user_id: &str,
+    definition: &crate::domain::TrainingPlanDefinition,
+    create_new_version: bool,
+) -> Result<crate::domain::TrainingPlanSaveResult, PersistenceError> {
+    ensure_every_exercise_has_variant(definition)?;
+    let mut transaction = repository.pool.begin().await?;
+    let plan_exists = sqlx::query(
+        "UPDATE training_plans SET name = $3 WHERE id = $1::uuid AND user_id = $2::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .bind(&definition.name)
+    .execute(&mut *transaction)
+    .await?;
+    if plan_exists.rows_affected() == 0 {
+        return Err(PersistenceError::NotFound("Training plan not found".into()));
+    }
+    let latest = sqlx::query(
+        "SELECT id::text AS id, version_number FROM training_plan_versions
+         WHERE training_plan_id = $1::uuid AND user_id = $2::uuid
+         ORDER BY version_number DESC, created_at DESC, id DESC LIMIT 1 FOR UPDATE",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_optional(&mut *transaction)
+    .await?;
+    let Some(latest) = latest else {
+        return Err(PersistenceError::NotFound(
+            "Training plan version not found".into(),
+        ));
+    };
+    let latest_id: String = latest.get("id");
+    let latest_number: i32 = latest.get("version_number");
+    if create_new_version {
+        let version_id: String = sqlx::query_scalar(
+            "INSERT INTO training_plan_versions (training_plan_id, version_number, user_id)
+             VALUES ($1::uuid, $2, $3::uuid) RETURNING id::text",
+        )
+        .bind(training_plan_id)
+        .bind(latest_number + 1)
+        .bind(user_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+        insert_complete_version(
+            &mut transaction,
+            &version_id,
+            user_id,
+            definition,
+            Some(&latest_id),
+        )
+        .await?;
+        transaction.commit().await?;
+        return Ok(crate::domain::TrainingPlanSaveResult {
+            training_plan_id: training_plan_id.to_owned(),
+            version_number: latest_number + 1,
+            created_new_version: true,
+        });
+    }
+    for exercise in &definition.exercises {
+        let exercise_id: Option<String> = sqlx::query_scalar(
+            "SELECT id::text FROM training_plan_exercises WHERE training_plan_version_id = $1::uuid AND exercise_id = $2::uuid AND user_id = $3::uuid",
+        ).bind(&latest_id).bind(&exercise.exercise_id).bind(user_id).fetch_optional(&mut *transaction).await?;
+        let Some(exercise_id) = exercise_id else {
+            return Err(PersistenceError::Conflict(
+                "In-place plan save cannot alter exercises".into(),
+            ));
+        };
+        for (selection_order, variant_id) in exercise.allowed_variant_ids.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO training_plan_exercise_variants (training_plan_exercise_id, exercise_variant_id, selection_order, user_id)
+                 SELECT $1::uuid, $2::uuid, $3, $4::uuid
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM training_plan_exercise_variants
+                     WHERE training_plan_exercise_id = $1::uuid AND exercise_variant_id = $2::uuid AND user_id = $4::uuid
+                 )",
+            ).bind(&exercise_id).bind(variant_id).bind(selection_order as i32 + 1).bind(user_id).execute(&mut *transaction).await?;
+        }
+    }
+    transaction.commit().await?;
+    Ok(crate::domain::TrainingPlanSaveResult {
+        training_plan_id: training_plan_id.to_owned(),
+        version_number: latest_number,
+        created_new_version: false,
+    })
+}
+
+fn ensure_every_exercise_has_variant(
+    definition: &crate::domain::TrainingPlanDefinition,
+) -> Result<(), PersistenceError> {
+    if definition
+        .exercises
+        .iter()
+        .any(|exercise| exercise.allowed_variant_ids.is_empty())
+    {
+        return Err(PersistenceError::Conflict(
+            "Each plan exercise requires at least one allowed variant".into(),
+        ));
+    }
+    Ok(())
+}
+
+async fn insert_complete_version(
+    connection: &mut PgConnection,
+    version_id: &str,
+    user_id: &str,
+    definition: &crate::domain::TrainingPlanDefinition,
+    prior_version_id: Option<&str>,
+) -> Result<(), PersistenceError> {
+    for (position, exercise) in definition.exercises.iter().enumerate() {
+        let plan_exercise_id: String = sqlx::query_scalar(
+            "INSERT INTO training_plan_exercises (training_plan_version_id, exercise_id, user_id, position)
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4) RETURNING id::text",
+        ).bind(version_id).bind(&exercise.exercise_id).bind(user_id).bind(position as i32 + 1).fetch_one(&mut *connection).await?;
+        for (selection_order, variant_id) in exercise.allowed_variant_ids.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO training_plan_exercise_variants (
+                    training_plan_exercise_id, exercise_variant_id, selection_order, rep_min, rep_max, target_sets, user_id
+                 )
+                 SELECT $1::uuid, $2::uuid, $3,
+                        prior.rep_min, prior.rep_max, prior.target_sets, $4::uuid
+                 FROM (SELECT 1) source
+                 LEFT JOIN LATERAL (
+                    SELECT peo.rep_min, peo.rep_max, peo.target_sets
+                    FROM training_plan_exercises tpe
+                    JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
+                    WHERE tpe.training_plan_version_id = $5::uuid
+                      AND tpe.exercise_id = $6::uuid
+                      AND peo.exercise_variant_id = $2::uuid
+                      AND tpe.user_id = $4::uuid AND peo.user_id = $4::uuid
+                 ) prior ON TRUE",
+            ).bind(&plan_exercise_id).bind(variant_id).bind(selection_order as i32 + 1).bind(user_id).bind(prior_version_id).bind(&exercise.exercise_id).execute(&mut *connection).await?;
+        }
+    }
+    Ok(())
 }
 
 fn group_training_plan_detail_rows(

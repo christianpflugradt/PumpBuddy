@@ -395,3 +395,4 @@ include!("persistence_integration/active_workout_lifecycle.rs");
 include!("persistence_integration/suggestion_engine.rs");
 include!("persistence_integration/progression_and_stationless.rs");
 include!("persistence_integration/durability_and_cancel.rs");
+include!("persistence_integration/training_plan_writes.rs");

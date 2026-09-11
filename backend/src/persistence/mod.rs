@@ -874,6 +874,52 @@ impl AuthRepository for DomainRepository {
 }
 
 impl TrainingPlanRepository for DomainRepository {
+    async fn training_plan_definition_is_valid_for_user(
+        &self,
+        definition: &TrainingPlanDefinition,
+        user_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        training_plans::training_plan_definition_is_valid_for_user(self, definition, user_id).await
+    }
+
+    async fn fetch_current_training_plan_definition_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<Option<TrainingPlanDefinition>, PersistenceError> {
+        training_plans::fetch_current_training_plan_definition_for_user(
+            self,
+            training_plan_id,
+            user_id,
+        )
+        .await
+    }
+
+    async fn create_training_plan_for_user(
+        &self,
+        user_id: &str,
+        definition: &TrainingPlanDefinition,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        training_plans::create_training_plan_for_user(self, user_id, definition).await
+    }
+
+    async fn save_training_plan_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+        definition: &TrainingPlanDefinition,
+        create_new_version: bool,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        training_plans::save_training_plan_for_user(
+            self,
+            training_plan_id,
+            user_id,
+            definition,
+            create_new_version,
+        )
+        .await
+    }
+
     async fn fetch_training_plan_summaries_for_user(
         &self,
         user_id: &str,
@@ -1396,6 +1442,31 @@ impl StationLoadRepository for DomainRepository {
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
+    }
+
+    pub async fn create_training_plan_for_user(
+        &self,
+        user_id: &str,
+        definition: &TrainingPlanDefinition,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        training_plans::create_training_plan_for_user(self, user_id, definition).await
+    }
+
+    pub async fn save_training_plan_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+        definition: &TrainingPlanDefinition,
+        create_new_version: bool,
+    ) -> Result<TrainingPlanSaveResult, PersistenceError> {
+        training_plans::save_training_plan_for_user(
+            self,
+            training_plan_id,
+            user_id,
+            definition,
+            create_new_version,
+        )
+        .await
     }
 
     pub async fn fetch_training_plan_detail_for_user(
