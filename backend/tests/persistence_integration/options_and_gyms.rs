@@ -1323,6 +1323,29 @@ async fn configurator_station_compatibilities_reconcile_complete_selection_atomi
     let deadlift_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000001").unwrap();
     let pallof_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000005").unwrap();
     let stationless_id = uuid::Uuid::parse_str("20000000-0000-0000-0000-000000000004").unwrap();
+    let foreign_exercise_id = "6f000000-0000-0000-0000-000000000001";
+    let foreign_variant_id = uuid::Uuid::parse_str("6f000000-0000-0000-0000-000000000002").unwrap();
+
+    sqlx::query(
+        "INSERT INTO exercises (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, 'Foreign Compatibility Exercise')",
+    )
+    .bind(foreign_exercise_id)
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("foreign exercise fixture should persist");
+    sqlx::query(
+        "INSERT INTO exercise_variants (
+             id, exercise_id, user_id, name, requires_station
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Foreign Compatibility Variant', TRUE)",
+    )
+    .bind(foreign_variant_id)
+    .bind(foreign_exercise_id)
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("foreign variant fixture should persist");
 
     sqlx::query(
         "INSERT INTO exercise_variant_equipment_compatibilities (
@@ -1373,6 +1396,27 @@ async fn configurator_station_compatibilities_reconcile_complete_selection_atomi
         .collect();
     assert_eq!(enabled_ids, vec![deadlift_id.to_string(), pallof_id.to_string()]);
 
+    repository
+        .reconcile_configurator_station_compatibilities_for_user(
+            gym_id,
+            station_id,
+            DEV_USER_ID,
+            &[deadlift_id],
+        )
+        .await
+        .expect("omitted compatibility should be disabled");
+    let after_deselection = repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, DEV_USER_ID)
+        .await
+        .expect("compatibilities should load")
+        .expect("owned station should load");
+    let enabled_ids: Vec<String> = after_deselection
+        .enabled_variants
+        .iter()
+        .map(|variant| variant.variant_id.clone())
+        .collect();
+    assert_eq!(enabled_ids, vec![deadlift_id.to_string()]);
+
     let rejected = repository
         .reconcile_configurator_station_compatibilities_for_user(
             gym_id,
@@ -1392,7 +1436,36 @@ async fn configurator_station_compatibilities_reconcile_complete_selection_atomi
         .iter()
         .map(|variant| variant.variant_id.clone())
         .collect();
-    assert_eq!(unchanged_ids, vec![deadlift_id.to_string(), pallof_id.to_string()]);
+    assert_eq!(unchanged_ids, vec![deadlift_id.to_string()]);
+    let foreign_variant_rejected = repository
+        .reconcile_configurator_station_compatibilities_for_user(
+            gym_id,
+            station_id,
+            DEV_USER_ID,
+            &[deadlift_id, foreign_variant_id],
+        )
+        .await;
+    assert!(matches!(foreign_variant_rejected, Err(PersistenceError::Conflict(_))));
+    let foreign_station_rejected = repository
+        .reconcile_configurator_station_compatibilities_for_user(
+            gym_id,
+            station_id,
+            USER_B_ID,
+            &[foreign_variant_id],
+        )
+        .await;
+    assert!(matches!(foreign_station_rejected, Err(PersistenceError::NotFound(_))));
+    let unchanged = repository
+        .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, DEV_USER_ID)
+        .await
+        .expect("compatibilities should load")
+        .expect("owned station should load");
+    let unchanged_ids: Vec<String> = unchanged
+        .enabled_variants
+        .iter()
+        .map(|variant| variant.variant_id.clone())
+        .collect();
+    assert_eq!(unchanged_ids, vec![deadlift_id.to_string()]);
     assert!(repository
         .fetch_configurator_station_compatibilities_for_user(gym_id, station_id, USER_B_ID)
         .await

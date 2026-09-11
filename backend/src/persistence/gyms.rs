@@ -379,8 +379,8 @@ async fn fetch_configurator_station_compatibility_variants(
                     ev.id::text AS variant_id, ev.name AS variant_name,
                     ev.repetition_kind, ev.load_input_mode, ev.set_tracking_mode
              FROM exercise_variants ev
-             JOIN exercises e ON e.id = ev.exercise_id AND e.user_id = $2::uuid
-             WHERE ev.user_id = $2::uuid AND ev.requires_station = TRUE
+             JOIN exercises e ON e.id = ev.exercise_id AND e.user_id = $1::uuid
+             WHERE ev.user_id = $1::uuid AND ev.requires_station = TRUE
              ORDER BY lower(e.name), e.name, e.id, lower(ev.name), ev.name, ev.id",
         )
         .bind(user_id)

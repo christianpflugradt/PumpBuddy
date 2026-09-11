@@ -261,7 +261,10 @@ fn normalize_name(name: &mut String) -> Result<(), GymServiceError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{create_gym, delete_gym, get_gym_detail, update_gym, GymServiceError};
+    use super::{
+        create_gym, delete_gym, get_gym_detail, reconcile_configurator_station_compatibilities,
+        update_gym, GymServiceError,
+    };
     use crate::{
         domain::{GymDetail, GymStationDetail, GymSummary, GymUpdate, NewGym},
         persistence::{GymRepository, PersistenceError},
@@ -534,6 +537,38 @@ mod tests {
         assert!(matches!(
             delete_gym(&repository, "foreign-gym", "user-a").await,
             Err(GymServiceError::NotFound(message)) if message == "Gym not found"
+        ));
+    }
+
+    #[tokio::test]
+    async fn reconcile_station_compatibilities_rejects_malformed_and_duplicate_variant_ids() {
+        let repository = FakeGymRepository {
+            detail: None,
+            update_status: "new".to_owned(),
+        };
+        let variant_id = "20000000-0000-0000-0000-000000000001".to_owned();
+
+        assert!(matches!(
+            reconcile_configurator_station_compatibilities(
+                &repository,
+                "gym-id",
+                "station-id",
+                "user-id",
+                vec!["not-a-uuid".to_owned()],
+            )
+            .await,
+            Err(GymServiceError::Validation(message)) if message == "exercise_variant_ids must contain UUIDs"
+        ));
+        assert!(matches!(
+            reconcile_configurator_station_compatibilities(
+                &repository,
+                "gym-id",
+                "station-id",
+                "user-id",
+                vec![variant_id.clone(), variant_id],
+            )
+            .await,
+            Err(GymServiceError::Validation(message)) if message == "exercise_variant_ids must not contain duplicates"
         ));
     }
 }
