@@ -1,23 +1,45 @@
 version: 1
 kind: plan
 id: pb-068
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Training Plan Configurator Foundation
+goal: >
+  Add focused Configurator management of Training Plans, including structural
+  editing and domain-authoritative versioning, while preserving historical
+  plan versions.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add one Configurator navigation entry and compact list/detail flows for Training Plans.
+  - Create plans with initial version 1; edit only a plan's latest version.
+  - Rename plans and structurally add or remove plan Exercises and their allowed Variants.
+  - Show existing variant-level sets/reps guidance read-only in the mobile-first plan detail.
+  - Use searchable pickers, constrain Variant choices to their selected Exercise, and prevent duplicate Variant choices.
+  - Centralize version-relevance classification in the backend and atomically create a complete new version for structural saves.
+  - Save renames and Variant additions in place; show one dynamic confirmation dialog for renames and/or version-producing saves.
+  - Require at least one Variant when adding a plan Exercise and prevent removal of its final allowed Variant.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Exercise drag-and-drop, ordering controls, or any reordering behavior.
+  - Editing target sets, rep ranges, exercise-level defaults, or Variant overrides.
+  - Lifecycle transitions, Gym/executability configuration, Station compatibility, and Exercise or Variant management changes.
+  - Historical-version management UI, editing historical versions, or production/live database migration work.
+  - Broad Configurator visual cleanup or a new Training Plan design language.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Users can list, create, open, rename, and structurally edit the current Training Plan through one Configurator hierarchy.
+  - Exercise positions remain visible and stable; each Exercise shows its allowed Variants and any existing guidance without editable guidance controls.
+  - Variant selection is Exercise-scoped and duplicate variants are rejected; a plan Exercise cannot be saved or left with zero Variants.
+  - A save with an added/removed Exercise or removed Variant persists an atomic, complete next version without changing the prior version; all other specified non-versioning saves preserve the version number.
+  - A single PumpBuddy-style confirmation dialog accurately combines name and version-change consequences, and ordinary Variant additions save without confirmation.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Existing normalized Training Plan tables and the backend/domain contract remain authoritative; frontend change detection must not define version semantics independently.
+  - Reuse established Configurator list/detail, searchable picker, dialog, typography, spacing, and dark-theme patterns.
+  - No production migration, backfill, live upgrade SQL, or speculative schema/domain redesign.
+  - Preserve all existing historical Training Plan viewing and workout behavior.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-capabilities.yaml
+  - runtime/database/00-schema.sql
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive approximately 4-8 execution items covering the API/domain write contract,
+  atomic persistence and versioning, Configurator navigation/list/detail, structural pickers and save dialog,
+  and proportionate backend/renderer verification. The final-Variant rule is an explicit stakeholder decision.
+  If a necessary implementation detail remains unclear, refinement must report the gap instead of changing this file.
