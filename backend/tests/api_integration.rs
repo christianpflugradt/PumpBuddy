@@ -653,3 +653,121 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
         .iter()
         .any(|variant| variant["id"] == json!("9f000000-0000-0000-0000-000000000002")));
 }
+
+#[tokio::test]
+async fn training_plan_save_applies_guidance_for_a_newly_added_variant() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let auth_cookie = make_seed_auth_cookie(&pool).await;
+
+    let (create_status, created) = json_response(
+        app.clone(),
+        json_request(
+            "POST",
+            "/api/training-plans",
+            &auth_cookie,
+            json!({
+                "name": "Guidance Save Coverage",
+                "exercises": [{
+                    "exercise_id": "10000000-0000-0000-0000-000000000003",
+                    "allowed_variant_ids": ["20000000-0000-0000-0000-000000000003"]
+                }]
+            }),
+        ),
+    )
+    .await;
+    assert_eq!(create_status, StatusCode::CREATED);
+    let training_plan_id = created["training_plan_id"]
+        .as_str()
+        .expect("created plan id")
+        .to_owned();
+
+    let (save_status, saved) = json_response(
+        app.clone(),
+        json_request(
+            "PUT",
+            &format!("/api/training-plans/{training_plan_id}"),
+            &auth_cookie,
+            json!({
+                "name": "Guidance Save Coverage",
+                "exercises": [{
+                    "exercise_id": "10000000-0000-0000-0000-000000000003",
+                    "allowed_variant_ids": [
+                        "20000000-0000-0000-0000-000000000003",
+                        "20000000-0000-0000-0000-000000000017"
+                    ]
+                }],
+                "guidance": {
+                    "exercises": [{
+                        "exercise_id": "10000000-0000-0000-0000-000000000003",
+                        "defaults": { "rep_min": 8, "rep_max": 12, "target_sets": 3 },
+                        "variant_overrides": [{
+                            "variant_id": "20000000-0000-0000-0000-000000000017",
+                            "guidance": { "rep_min": 6, "rep_max": 10, "target_sets": 4 }
+                        }]
+                    }]
+                }
+            }),
+        ),
+    )
+    .await;
+    assert_eq!(save_status, StatusCode::OK);
+    assert_eq!(saved["created_new_version"], json!(false));
+    assert_eq!(saved["version_number"], json!(1));
+
+    let version_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM training_plan_versions WHERE training_plan_id = $1::uuid",
+    )
+    .bind(&training_plan_id)
+    .fetch_one(&pool)
+    .await
+    .expect("version count should be readable");
+    assert_eq!(version_count, 1);
+
+    let (detail_status, detail) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri(format!("/api/training-plans/{training_plan_id}"))
+            .header("cookie", auth_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(detail_status, StatusCode::OK);
+    let exercise = detail["exercises"]
+        .as_array()
+        .expect("detail exercises")
+        .first()
+        .expect("configured exercise");
+    assert_eq!(
+        exercise["default_guidance"],
+        json!({
+            "rep_min": 8,
+            "rep_max": 12,
+            "target_sets": 3
+        })
+    );
+    let override_variant = exercise["variants"]
+        .as_array()
+        .expect("detail variants")
+        .iter()
+        .find(|variant| variant["variant_id"] == json!("20000000-0000-0000-0000-000000000017"))
+        .expect("newly added variant");
+    assert_eq!(
+        override_variant["guidance_override"],
+        json!({
+            "rep_min": 6,
+            "rep_max": 10,
+            "target_sets": 4
+        })
+    );
+    assert_eq!(
+        override_variant["effective_guidance"],
+        override_variant["guidance_override"]
+    );
+}

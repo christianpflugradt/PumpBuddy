@@ -49,7 +49,7 @@ pub(crate) async fn save_training_plan(
     let impact =
         assess_training_plan_save(repository, training_plan_id, user_id, &request.definition)
             .await?;
-    if let Some(guidance) = request.guidance.as_ref() {
+    if request.guidance.is_some() {
         confirm_guidance_override_replacement(
             repository,
             training_plan_id,
@@ -57,12 +57,8 @@ pub(crate) async fn save_training_plan(
             request.replace_existing_variant_override_count,
         )
         .await?;
-        repository
-            .replace_training_plan_guidance_for_user(training_plan_id, user_id, guidance)
-            .await
-            .map_err(TrainingPlanServiceError::Persistence)?;
     }
-    repository
+    let result = repository
         .save_training_plan_for_user(
             training_plan_id,
             user_id,
@@ -70,7 +66,14 @@ pub(crate) async fn save_training_plan(
             impact.creates_new_version,
         )
         .await
-        .map_err(TrainingPlanServiceError::Persistence)
+        .map_err(TrainingPlanServiceError::Persistence)?;
+    if let Some(guidance) = request.guidance {
+        repository
+            .replace_training_plan_guidance_for_user(training_plan_id, user_id, &guidance)
+            .await
+            .map_err(TrainingPlanServiceError::Persistence)?;
+    }
+    Ok(result)
 }
 
 fn validate_guidance(

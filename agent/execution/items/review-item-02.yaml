@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-02
   title: Expose guidance through training-plan saves
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
