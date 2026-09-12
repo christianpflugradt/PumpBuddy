@@ -260,19 +260,52 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   min-height: 3.25rem;
   padding: 0 var(--space-sm);
   border-bottom: 1px solid var(--border-card);
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.configurator-overview-row dt {
+.configurator-overview-row-label {
   color: var(--text-primary);
   font-weight: 650;
 }
 
-.configurator-overview-row dd {
-  margin: 0;
+.configurator-overview-row-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.configurator-overview-row-count {
   color: var(--text-secondary);
   font-size: 1.1rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+.configurator-overview-row-chevron {
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.configurator-overview-row:not(:disabled):hover,
+.configurator-overview-row:not(:disabled):active {
+  background: var(--surface-interactive);
+}
+
+.configurator-overview-row:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: -2px;
+}
+
+.configurator-overview-configure-button {
+  margin-top: var(--space-lg);
 }
 
 .configurator-exercises-screen {
