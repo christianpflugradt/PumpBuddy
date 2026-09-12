@@ -1,0 +1,84 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-03
+  title: Add compact guidance editor overlays
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Training Plan editor lets users edit default guidance and optional
+    variant exceptions in compact local-state overlays.
+  rationale: Guidance needs a focused mobile-first interaction that does not inflate
+    the main plan editor or persist partial edits.
+scope:
+  in:
+  - Add an exercise guidance overlay for optional target sets and repetition bounds.
+  - Add a variant guidance overlay that clearly shows inherited guidance, creates
+    or clears an exception, and confirms replacement of existing overrides with the
+    exact affected count.
+  - Keep overlay edits in the editor draft and include them only in the existing Save
+    Training Plan request.
+  - Use existing validation and error presentation patterns for positive values and
+    ordered repetition bounds.
+  - Keep the 390 by 800 main editor compact by showing default guidance as secondary
+    detail and avoiding repeated inherited guidance on variants.
+  out:
+  - A broad Configurator redesign, inline editing of every variant row, or an autosave
+    workflow.
+  - Changes to exercise, variant, station, or gym configuration screens outside Training
+    Plan editing.
+constraints:
+- Use the established Web Components overlay and accessibility patterns, including
+  keyboard dismissal and labelled dialogs.
+- Do not call save-impact or save until the user activates Save Training Plan.
+- Inherited guidance must be visually distinct from a variant exception without duplicating
+  default values as variant-owned data.
+inputs:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-contract.ts
+  optional:
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+acceptance_criteria:
+- id: ac-01
+  statement: Users can stage, validate, edit, clear, and replace default or variant
+    guidance through accessible overlays without any network save before Save Training
+    Plan.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer unit and UI smoke coverage passes for local overlay drafts,
+      validation errors, and save dispatch.
+- id: ac-02
+  statement: The main Training Plan editor presents default guidance secondarily,
+    suppresses repeated inherited values, and labels variant exceptions legibly at
+    the mobile target viewport.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer UI smoke and component assertions pass for compact guidance
+      presentation.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Training Plan editor Web Component
+  - renderer controller action flow
+  - mobile overlay interaction
+handoff:
+  review_focus:
+  - Verify no overlay interaction can persist guidance independently of Save Training
+    Plan.
+  - Verify inherited and override states remain unambiguous with a screen-reader accessible
+    label.
+  - Verify count-specific override replacement confirmation follows the backend contract.
+review_feedback: []
+review_result: null

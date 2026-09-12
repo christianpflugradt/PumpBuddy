@@ -1,0 +1,82 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-04
+  title: Resolve guidance for workout execution
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout option and active-workout projections consume centrally resolved
+    effective guidance as advisory targets.
+  rationale: Execution must consistently use the same default-or-override result without
+    turning guidance into an enforcement rule or a historical snapshot.
+scope:
+  in:
+  - Resolve effective guidance centrally in workout-facing projections using variant
+    override, then exercise default, then no guidance.
+  - Display advisory repetition and target-set guidance in workout execution while
+    retaining existing recommendation and target-set completion behavior.
+  - Ensure active-workout and normal option loading apply the same effective-guidance
+    resolution.
+  out:
+  - Blocking set confirmation, enforcing rep ranges, or requiring target-set completion.
+  - Changing workout persistence, workout-version bindings, configured-gym realizability,
+    or free-mode rules.
+constraints:
+- Guidance must remain live mutable Training Plan state rather than being copied into
+  Workout or Training Plan Version records.
+- Existing selected-variant repetition-kind, station, load, and set-tracking behavior
+  remains authoritative.
+- The single-active-workout assumption remains unchanged.
+inputs:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-contract-state.ts
+  optional:
+  - backend/tests/api_workouts.rs
+  - renderer/src/workout-state.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Workout-facing option projections resolve override, default, and no-guidance
+    cases identically for normal and active-workout loading.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend workout and API coverage passes for all effective-guidance precedence
+      cases.
+- id: ac-02
+  statement: Workout UI presents guidance as a recommendation while preserving existing
+    set entry and target-set completion behavior without blocking completion for guidance
+    deviations.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior coverage passes for advisory guidance display and
+      unchanged set-flow controls.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: true
+  independent_review_reason: Live plan guidance is read during active workout execution,
+    so independent review must ensure it does not alter workout lifecycle, persistence,
+    or advisory-only semantics.
+  risk_level: high
+  boundary_impact:
+  - backend workout projection
+  - active-workout execution flow
+  - renderer set-flow presentation
+handoff:
+  review_focus:
+  - Verify effective-guidance precedence is centralized rather than duplicated across
+    workout paths.
+  - Verify no guidance value is persisted into workout records or used as a confirmation
+    gate.
+  - Verify target-set behavior remains compatible with existing unilateral and bilateral
+    logical-set semantics.
+review_feedback: []
+review_result: null

@@ -1,0 +1,81 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-01
+  title: Persist live plan guidance
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A persisted mutable plan-level guidance model with exercise defaults and
+    sparse variant overrides.
+  rationale: Guidance must be editable without copying inherited values into every
+    variant or changing immutable plan-version snapshots.
+scope:
+  in:
+  - Add backend domain and PostgreSQL persistence for nullable exercise default guidance
+    and optional variant override guidance.
+  - Store an override only when it differs from inheritance, and remove it when the
+    variant returns to inherited guidance.
+  - Validate positive target sets and repetition bounds with a lower bound no greater
+    than the upper bound.
+  - Update the canonical domain and persistence design artifacts to document live
+    guidance ownership separately from versioned plan structure.
+  out:
+  - Production database migration, ALTER, backfill, or historical data transformation
+    instructions.
+  - Training Plan Version snapshot changes or historical guidance preservation.
+constraints:
+- Guidance is advisory mutable state associated with the current Training Plan, not
+  with a Training Plan Version.
+- Use explicit SQLx persistence and preserve authenticated user scoping.
+- An unset override must remain distinguishable from an override whose guidance fields
+  are null.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/domain.rs
+  - backend/src/persistence/training_plans.rs
+  optional:
+  - backend/tests/persistence_integration
+acceptance_criteria:
+- id: ac-01
+  statement: Persistence can round-trip an exercise default and a sparse variant override
+    without materializing inherited values on unrelated variants.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend unit and PostgreSQL-backed integration tests pass, including
+      guidance persistence and inheritance-state cases.
+- id: ac-02
+  statement: Invalid non-positive target sets or unordered repetition bounds are rejected
+    at the backend boundary.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend validation coverage passes for invalid guidance inputs.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: true
+  independent_review_reason: The item changes durable guidance ownership while deliberately
+    excluding immutable version snapshots, so a separate review must verify lifecycle
+    and user-scope boundaries.
+  risk_level: high
+  boundary_impact:
+  - backend domain and SQLx persistence
+  - PostgreSQL schema
+  - training-plan version snapshot boundary
+handoff:
+  review_focus:
+  - Verify that inherited guidance is represented by absent override state rather
+    than copied values.
+  - Verify no guidance fields are added to immutable Training Plan Version snapshot
+    writes or historical reads.
+  - Verify user-scoped foreign keys and cleanup behavior match existing training-plan
+    persistence.
+review_feedback: []
+review_result: null

@@ -1,0 +1,86 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-02
+  title: Expose guidance through training-plan saves
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The Training Plan detail and save contract carries editable guidance while
+    treating guidance-only changes as non-versioning updates.
+  rationale: The existing editor and backend need one authoritative contract for local
+    guidance drafts and safe live-state saves.
+scope:
+  in:
+  - Extend the OpenAPI-first Training Plan detail, definition request, and generated
+    adapters with default guidance and optional variant overrides.
+  - Return resolved effective guidance plus enough state for the editor to distinguish
+    inherited variants from explicit overrides.
+  - Apply guidance changes in the existing Training Plan save flow without creating
+    a Training Plan Version or reporting version impact when structure and name are
+    unchanged.
+  - Require a count-specific confirmation signal before replacing existing variant
+    overrides.
+  out:
+  - Changing structural versioning rules, rename warning behavior, or historical-version
+    browsing semantics.
+  - Adding a new public endpoint or a separate guidance save action.
+constraints:
+- OpenAPI YAML remains the canonical contract and generated clients must be refreshed
+  through repository tooling.
+- The backend remains authoritative for validation, override replacement confirmation,
+  and version-impact calculation.
+- Guidance-only saves use the existing Save Training Plan contract.
+inputs:
+  required:
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/application/training_plans.rs
+  - backend/src/api/router.rs
+  - renderer/src/workout-contract.ts
+  optional:
+  - backend/tests/api_integration.rs
+  - renderer/src/workout-api.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Training Plan detail and save requests expose default guidance, optional
+    overrides, and resolved effective guidance consistently through generated contract
+    adapters.
+  verification:
+    type: command
+    command: make check
+    expected: Backend and renderer contract checks pass after generated API clients
+      are refreshed.
+- id: ac-02
+  statement: A guidance-only save persists live guidance without a version-change
+    warning or a new Training Plan Version, while replacement of one or more existing
+    overrides requires the submitted count-specific confirmation.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend service and API coverage passes for save impact, no-version
+      guidance saves, and override-replacement confirmation.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: true
+  independent_review_reason: The item changes a public save contract and version-impact
+    behavior, requiring an independent check that live guidance cannot accidentally
+    version or rewrite historical structure.
+  risk_level: high
+  boundary_impact:
+  - OpenAPI contract and generated clients
+  - training-plan API boundary
+  - save-impact and versioning policy
+handoff:
+  review_focus:
+  - Compare save-impact and persisted-save decisions for identical guidance-only and
+    structural requests.
+  - Verify override confirmation is count-specific and cannot silently replace existing
+    overrides.
+  - Verify historical detail remains structurally versioned but guidance is read from
+    mutable current-plan state only where intended.
+review_feedback: []
+review_result: null

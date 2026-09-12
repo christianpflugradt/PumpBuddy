@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-05
+  title: Verify end-to-end guidance workflows
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Focused cross-boundary regression coverage for guidance editing, saving,
+    resolution, and workout presentation.
+  rationale: The feature crosses persistence, version-impact, generated contract,
+    editor, and workout boundaries that need one concise confidence lane.
+scope:
+  in:
+  - Add or refine a targeted mocked renderer UI smoke scenario for editing default
+    guidance, adding a variant exception, saving, and seeing advisory workout guidance.
+  - Exercise inherited, override, clear-override, invalid-input, and guidance-only
+    save paths across existing backend and renderer test layers.
+  - Run the repository-wide checks after the complete feature sequence.
+  out:
+  - Broad visual-regression infrastructure, production database migration rehearsal,
+    or exhaustive permutation testing.
+  - New product behavior beyond the approved guidance editing and advisory workout
+    scope.
+constraints:
+- Keep UI smoke mocked and targeted; PostgreSQL-backed backend integration remains
+  the primary persistence confidence layer.
+- Assert user-observable behavior and contract outcomes rather than private implementation
+  details.
+- Preserve existing test coverage for structural Training Plan versioning.
+inputs:
+  required:
+  - agent/execution/items/open-item-01.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/execution/items/open-item-04.yaml
+  - agent/design/workout-ui-smoke-test.yaml
+  optional:
+  - renderer/ui-smoke/zzz-hpp.spec.js
+  - backend/tests/persistence_integration
+acceptance_criteria:
+- id: ac-01
+  statement: Focused regression scenarios cover default inheritance, explicit override,
+    cleared override, invalid guidance, count-confirmed override replacement, and
+    guidance-only saves without a new plan version.
+  verification:
+    type: command
+    command: make check
+    expected: Repository backend and renderer quality suites pass with the targeted
+      guidance regression cases.
+- id: ac-02
+  statement: A targeted renderer smoke workflow confirms that guidance edits remain
+    local until Save Training Plan and appear as advisory workout guidance after save.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer UI smoke passes the guidance editing and workout presentation
+      workflow.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: null
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend persistence and API regression tests
+  - renderer component and UI smoke tests
+  - cross-boundary save workflow
+handoff:
+  review_focus:
+  - Verify each success criterion from the active plan has direct executable evidence.
+  - Verify test cases distinguish inherited guidance from copied variant data.
+  - Verify tests retain the no-version guarantee for guidance-only changes.
+review_feedback: []
+review_result: null
