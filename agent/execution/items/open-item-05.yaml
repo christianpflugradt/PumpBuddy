@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-069-item-05
+  title: Correct downward Training Plan reorder insertion
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Dragging an exercise downward places it at the visually indicated insertion
+    position.
+  rationale: The current drag handler calculates the target index before removing
+    the source row, so a downward move across a non-final target is inserted one row
+    too late. This violates the plan's reliable indicated-position sorting outcome.
+scope:
+  in:
+  - Adjust the Training Plan reorder drag-index calculation for downward moves after
+    removing the source row.
+  - Add renderer regression coverage for moving an exercise downward across at least
+    one intervening row.
+  out:
+  - Changing Training Plan save semantics, versioning policy, API contracts, or introducing
+    a generic sortable abstraction.
+constraints:
+- Keep handle-only pointer initiation and local-draft-only behavior unchanged.
+- Preserve the existing upward-move behavior and current drag feedback.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional:
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: A handle-initiated downward drag moves the source exercise to the row
+    indicated by the insertion feedback, without skipping an additional row.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer suite passes with regression coverage for a downward move
+      across multiple rows and the resulting local draft order.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer Training Plan reorder interaction
+handoff:
+  review_focus:
+  - Verify the destination index is adjusted only when source removal shifts a downward
+    target.
+  - Verify Done and subsequent save retain the corrected local order without new persistence
+    actions.
