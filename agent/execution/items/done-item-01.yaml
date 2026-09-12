@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-069-item-01
   title: Add Training Plan Reorder Mode Presentation
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

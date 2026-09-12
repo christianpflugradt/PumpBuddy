@@ -51,6 +51,36 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("switches between normal editing and a compact reorder view without saving or losing the local draft", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    const originalExercise = editorState.detail!.exercises[0];
+    editorState.detail!.exercises.push({ ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] });
+    document.body.append(el); el.state = editorState;
+    const actions: string[] = [];
+    el.addEventListener("pb-ui-action", (event) => actions.push((event as CustomEvent).detail.action));
+
+    expect(el.textContent).toContain("Exercises · 2");
+    expect(el.querySelector('[data-ui-action="start-plan-exercise-reorder"]')).toBeTruthy();
+    (el.querySelector('[data-ui-action="start-plan-exercise-reorder"]') as HTMLButtonElement).click();
+
+    expect(el.textContent).toContain("Reorder Exercises · 2");
+    expect(el.querySelectorAll(".configurator-training-plan-reorder-row")).toHaveLength(2);
+    expect(el.textContent).toContain("Squat");
+    expect(el.textContent).toContain("Bench");
+    expect(el.querySelector(".configurator-training-plan-variant-list")).toBeNull();
+    expect(el.querySelector('[data-ui-action="open-plan-exercise-picker"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="remove-plan-exercise"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="save-configurator-training-plan"]')).toBeNull();
+    expect(actions).toEqual([]);
+
+    (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Exercises · 2");
+    expect(el.textContent).toContain("2. Bench");
+    expect(actions).toEqual([]);
+    el.remove();
+  });
+
   it("saves an additive Variant change directly with the complete definition", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
