@@ -152,6 +152,39 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("inserts a downward drag at the indicated row without skipping an intervening Exercise", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    const originalExercise = editorState.detail!.exercises[0];
+    editorState.exercises.push(
+      { id: "exercise-3", name: "Deadlift", status: "active", variant_count: 1, variants: [{ ...editorState.exercises[0].variants[0], id: "variant-4", exercise_id: "exercise-3", name: "Conventional deadlift" }] },
+      { id: "exercise-4", name: "Row", status: "active", variant_count: 1, variants: [{ ...editorState.exercises[0].variants[0], id: "variant-5", exercise_id: "exercise-4", name: "Barbell row" }] },
+    );
+    editorState.detail!.exercises.push(
+      { ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] },
+      { ...originalExercise, id: "plan-exercise-3", exercise_name: "Deadlift", exercise_position: 3, variants: [{ ...originalExercise.variants[0], id: "configured-4", training_plan_exercise_id: "plan-exercise-3", variant_id: "variant-4", variant_name: "Conventional deadlift" }] },
+      { ...originalExercise, id: "plan-exercise-4", exercise_name: "Row", exercise_position: 4, variants: [{ ...originalExercise.variants[0], id: "configured-5", training_plan_exercise_id: "plan-exercise-4", variant_id: "variant-5", variant_name: "Barbell row" }] },
+    );
+    document.body.append(el); el.state = editorState;
+    (el.querySelector('[data-ui-action="start-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    const pointer = (type: string, y: number) => Object.assign(new Event(type, { bubbles: true, cancelable: true }), { clientY: y, pointerId: 1 });
+    const rows = () => [...el.querySelectorAll<HTMLElement>(".configurator-training-plan-reorder-row")];
+    rows().forEach((row, index) => { row.getBoundingClientRect = () => new DOMRect(0, index * 48, 300, 48); });
+    (el.querySelector(".configurator-training-plan-reorder-list") as HTMLElement).getBoundingClientRect = () => new DOMRect(0, 0, 300, 192);
+
+    (el.querySelector('[data-reorder-handle][data-exercise-id="exercise-1"]') as HTMLButtonElement).dispatchEvent(pointer("pointerdown", 10));
+    document.dispatchEvent(pointer("pointermove", 104));
+    expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-2", "exercise-1", "exercise-3", "exercise-4"]);
+    document.dispatchEvent(pointer("pointerup", 104));
+
+    (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("1. Bench");
+    expect(el.textContent).toContain("2. Squat");
+    expect(el.textContent).toContain("3. Deadlift");
+    expect(el.textContent).toContain("4. Row");
+    el.remove();
+  });
+
   it("saves an additive Variant change directly with the complete definition", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
