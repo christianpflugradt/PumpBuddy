@@ -38,7 +38,7 @@ class PbConfiguratorTrainingPlanEditorScreenElement extends HTMLElement {
     if (action === "confirm-training-plan-save") { const request = this.#pendingSave; this.#saveConfirmation = null; this.#pendingSave = null; if (request) this.#save(request); else this.#render(); return; }
     if (action !== "save-configurator-training-plan" || this.#saving || this.#assessingSave) return;
     if (!this.#name.trim() || this.#draft.length === 0 || this.#draft.some((item) => item.variantIds.length === 0)) { this.#error = !this.#name.trim() ? "Plan name is required." : this.#draft.length === 0 ? "Add at least one Exercise." : "Choose at least one Variant for every Exercise."; this.#render(); return; }
-    const request: TrainingPlanDefinitionRequest = { name: this.#name.trim(), exercises: this.#draft.map((item) => ({ exercise_id: item.exerciseId, allowed_variant_ids: item.variantIds })) };
+    const request: TrainingPlanDefinitionRequest = { name: this.#name, exercises: this.#draft.map((item) => ({ exercise_id: item.exerciseId, allowed_variant_ids: item.variantIds })) };
     this.#assessSave(request);
   };
   #guidance(variant: { target_sets: number | null; rep_min: number | null; rep_max: number | null }): string { const sets = variant.target_sets === null ? "Sets not set" : `${variant.target_sets} sets`; const reps = variant.rep_min === null || variant.rep_max === null ? "reps not set" : variant.rep_min === variant.rep_max ? `${variant.rep_min} reps` : `${variant.rep_min}–${variant.rep_max} reps`; return `${sets} · ${reps}`; }
