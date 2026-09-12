@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-04
   title: Resolve guidance for workout execution
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,5 +78,33 @@ handoff:
     gate.
   - Verify target-set behavior remains compatible with existing unilateral and bilateral
     logical-set semantics.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-12T20:58:48Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: backend/tests/api_workouts.rs\
+    \ adds one assertion for effective_guidance\n    in the existing free-mode active-workout\
+    \ scenario, but it does not create or assert\n    the variant-override, exercise-default\
+    \ fallback, and no-guidance cases for both\n    GET /api/training-plans/{id}/options\
+    \ and active-workout creation/resume. The implementation\n    has separate SQL\
+    \ projections for options (backend/src/persistence/training_plans.rs)\n    and\
+    \ active workouts (backend/src/persistence/active_workouts.rs), so one default-like\n\
+    \    active response does not verify they resolve precedence identically.\n  risk:\
+    \ A future edit can drift one of the separate projections or mishandle an all-null\n\
+    \    override without detection, violating the required consistent precedence\
+    \ for normal\n    and active-workout loading.\n"
+  findings: &id001
+  - criterion: ac-01
+    evidence: backend/tests/api_workouts.rs adds one assertion for effective_guidance
+      in the existing free-mode active-workout scenario, but it does not create or
+      assert the variant-override, exercise-default fallback, and no-guidance cases
+      for both GET /api/training-plans/{id}/options and active-workout creation/resume.
+      The implementation has separate SQL projections for options (backend/src/persistence/training_plans.rs)
+      and active workouts (backend/src/persistence/active_workouts.rs), so one default-like
+      active response does not verify they resolve precedence identically.
+    risk: A future edit can drift one of the separate projections or mishandle an
+      all-null override without detection, violating the required consistent precedence
+      for normal and active-workout loading.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
