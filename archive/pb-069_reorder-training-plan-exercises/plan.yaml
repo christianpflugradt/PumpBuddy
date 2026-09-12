@@ -1,0 +1,38 @@
+version: 1
+kind: plan
+id: pb-069
+name: Reorder Training Plan Exercises
+goal: Let users reorder existing Training Plan Exercises in a focused, touch-friendly temporary mode, with changes remaining local until the existing Save Training Plan flow persists a version-relevant order change.
+scope:
+  - Add a compact Exercises section header, divider, count, and secondary Reorder action to the normal Training Plan editor.
+  - Add an in-place Reorder mode that replaces exercise details with compact, handle-only sortable rows and a Done action.
+  - Support reliable handle-initiated touch drag, scrolling, and restrained drag feedback at the 390 x 800 reference viewport.
+  - Keep reordered Exercise state local through Done and reuse the existing Save Training Plan assessment, warning, persistence, and version-creation flow.
+  - Extend focused renderer and backend regression coverage for reorder interaction and order-sensitive version detection.
+out_of_scope:
+  - Training Plan versioning semantics, save semantics, API shape, or backend domain rules beyond recognizing order as a structural change.
+  - Exercise or Variant add/remove behavior, sets/reps or guidance editing, lifecycle transitions, and unrelated Configurator cleanup.
+  - New routes, modals, a second editor, a reorder-specific confirmation, or a general-purpose sortable framework.
+success_criteria:
+  - The normal editor shows a subtle divider and "EXERCISES · N" heading with a right-aligned Reorder action and no drag grip beside that action.
+  - Reorder mode shows only a touch-accessible drag handle, current position, and Exercise name per compact row; a typical six-Exercise plan remains understandable in a 390 x 800 viewport.
+  - Dragging starts only from a row handle, supports sensible scrolling near list edges, and provides clear but restrained moving and insertion feedback.
+  - Done returns to normal editing with the selected local order, does not save, and re-entering Reorder mode preserves that unsaved order.
+  - Saving a changed order invokes the existing version warning and creates a new version whose Exercise order is changed while prior versions retain their original order; unchanged order does not create a version.
+constraints:
+  - Preserve the existing Training Plan detail structure except for the minimal normal-mode section-header adjustment; hide variants, guidance, add/remove controls, and Add Exercise only while reordering.
+  - Use a maintained touch-capable drag-and-drop dependency only if it fits the existing TypeScript web-component stack; do not introduce a frontend framework.
+  - Reuse the current Save Training Plan action and confirmation wording; Done means only exit reorder mode.
+  - Maintain the renderer-public/backend-internal topology and keep persistence through the established backend repository flow.
+inputs:
+  - agent/execution/plan.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/styles.scss
+  - backend/src/application/training_plans.rs
+  - backend/src/persistence/training_plans.rs
+refinement_note: |
+  Refinement should derive a focused implementation sequence that first establishes the renderer reorder-mode state and responsive presentation, then integrates a suitable handle-only touch-sort mechanism, verifies the existing ordered request reaches the current save assessment, and proves order-sensitive version creation and historical-order preservation. Use existing make targets for validation. No API-contract change is expected.
