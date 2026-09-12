@@ -81,6 +81,40 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("sorts only from a reorder handle and retains the reordered local draft", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    const originalExercise = editorState.detail!.exercises[0];
+    editorState.detail!.exercises.push({ ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] });
+    document.body.append(el); el.state = editorState;
+    (el.querySelector('[data-ui-action="start-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    const pointer = (type: string, y: number, pointerId = 1) => Object.assign(new Event(type, { bubbles: true, cancelable: true }), { clientY: y, pointerId });
+    const rows = () => [...el.querySelectorAll<HTMLElement>(".configurator-training-plan-reorder-row")];
+    rows()[0].getBoundingClientRect = () => new DOMRect(0, 0, 300, 48);
+    rows()[1].getBoundingClientRect = () => new DOMRect(0, 48, 300, 48);
+    (el.querySelector(".configurator-training-plan-reorder-list") as HTMLElement).getBoundingClientRect = () => new DOMRect(0, 0, 300, 96);
+
+    rows()[0].dispatchEvent(pointer("pointerdown", 10));
+    document.dispatchEvent(pointer("pointermove", 80));
+    expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-1", "exercise-2"]);
+
+    (el.querySelector('[data-reorder-handle][data-exercise-id="exercise-1"]') as HTMLButtonElement).dispatchEvent(pointer("pointerdown", 10));
+    document.dispatchEvent(pointer("pointermove", 80));
+    document.dispatchEvent(pointer("pointerup", 80));
+    expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-2", "exercise-1"]);
+    expect(el.querySelector(".configurator-training-plan-reorder-row--moving")).toBeNull();
+
+    (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("1. Bench");
+    expect(el.textContent).toContain("2. Squat");
+    respondToSaveImpact(el, false);
+    const saved: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(saved).toEqual([{ name: "Upper", exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }, { exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    el.remove();
+  });
+
   it("saves an additive Variant change directly with the complete definition", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();

@@ -512,6 +512,9 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   margin: 0;
   padding: 0;
   list-style: none;
+  max-height: min(65vh, 30rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .configurator-training-plan-reorder-row {
@@ -524,11 +527,16 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
   background: var(--surface-input);
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .configurator-training-plan-reorder-handle,
 .configurator-training-plan-reorder-position { color: var(--text-secondary); }
-.configurator-training-plan-reorder-handle { font-size: 1.25rem; line-height: 1; }
+.configurator-training-plan-reorder-handle { width: 1.5rem; min-height: 2.25rem; padding: 0; border: 0; background: transparent; font-size: 1.25rem; line-height: 1; cursor: grab; touch-action: none; }
+.configurator-training-plan-reorder-handle:active { cursor: grabbing; }
+.configurator-training-plan-reorder-handle:focus-visible { outline: 2px solid var(--brand-strong); outline-offset: 2px; border-radius: var(--radius-sm); }
+.configurator-training-plan-reorder-row--moving { border-color: var(--brand-strong); box-shadow: 0 0.35rem 0.8rem rgba(34, 197, 94, 0.18); transform: scale(1.01); }
+.configurator-training-plan-reorder-row--insertion { border-top: 2px solid var(--brand-accent); }
 .configurator-training-plan-reorder-position { font-variant-numeric: tabular-nums; }
 .configurator-training-plan-reorder-name { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
 
