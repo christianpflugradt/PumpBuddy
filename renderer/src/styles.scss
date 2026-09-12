@@ -563,6 +563,55 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   padding: var(--space-2xs) 0;
 }
 
+.configurator-training-plan-guidance,
+.configurator-training-plan-variant-actions,
+.configurator-guidance-fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.configurator-training-plan-guidance {
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.configurator-training-plan-guidance--exception {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.configurator-training-plan-guidance-action {
+  min-height: 2.25rem;
+  padding: 0 var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--brand-strong);
+  font: inherit;
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.configurator-training-plan-guidance-action:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
+}
+
+.configurator-guidance-overlay .confirm-dialog-actions {
+  flex-wrap: wrap;
+}
+
+.configurator-guidance-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.configurator-guidance-fields > :first-child {
+  grid-column: 1 / -1;
+}
+
 .configurator-training-plan-variant > span {
   display: grid;
   gap: var(--space-2xs);

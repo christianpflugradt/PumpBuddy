@@ -7,7 +7,7 @@ const state = (): ConfiguratorTrainingPlanEditorScreenState => ({
     { id: "exercise-1", name: "Squat", status: "active", variant_count: 2, variants: [{ id: "variant-1", exercise_id: "exercise-1", name: "Back squat", status: "active", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }, { id: "variant-2", exercise_id: "exercise-1", name: "Front squat", status: "active", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }] },
     { id: "exercise-2", name: "Bench", status: "active", variant_count: 1, variants: [{ id: "variant-3", exercise_id: "exercise-2", name: "Barbell bench", status: "active", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }] },
   ],
-  detail: { id: "plan-1", name: "Upper", selected_version_number: 1, versions: [{ version_number: 1, is_current: true }], selected_gym_id: null, is_executable: null, execution_status: null, execution_summary: null, exercises: [{ training_plan_exercise_id: "plan-exercise-1", exercise_name: "Squat", exercise_position: 1, configured_variant_count: 1, executable_variant_count: null, execution_status: null, variants: [{ id: "configured-1", training_plan_exercise_id: "plan-exercise-1", variant_id: "variant-1", variant_name: "Back squat", requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", availability: null, compatible_stations: [] }] }] },
+  detail: { id: "plan-1", name: "Upper", selected_version_number: 1, versions: [{ version_number: 1, is_current: true }], selected_gym_id: null, is_executable: null, execution_status: null, execution_summary: null, exercises: [{ training_plan_exercise_id: "plan-exercise-1", exercise_name: "Squat", exercise_position: 1, configured_variant_count: 1, executable_variant_count: null, execution_status: null, default_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 }, variants: [{ id: "configured-1", training_plan_exercise_id: "plan-exercise-1", variant_id: "variant-1", variant_name: "Back squat", requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", availability: null, compatible_stations: [], guidance_override: null, effective_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 } }] }] },
 });
 
 const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void => {
@@ -21,6 +21,41 @@ const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void 
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
+  it("stages validated default guidance locally and includes it only in Save Training Plan", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state(); respondToSaveImpact(el, false);
+    const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") actions.push(detail); });
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Exercise guidance");
+    const min = el.querySelector('[data-field="guidance-repMin"]') as HTMLInputElement;
+    min.value = "12"; min.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain("Minimum repetitions cannot exceed maximum repetitions.");
+    const correctedMin = el.querySelector('[data-field="guidance-repMin"]') as HTMLInputElement;
+    correctedMin.value = "6"; correctedMin.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(actions).toEqual([]);
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(actions[0].payload?.request).toMatchObject({ guidance: { exercises: [{ exercise_id: "exercise-1", defaults: { target_sets: 3, rep_min: 6, rep_max: 10 }, variant_overrides: [] }] } });
+    el.remove();
+  });
+
+  it("labels an exception, can clear it, and confirms replacement using the existing count", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    editorState.detail!.exercises[0].variants[0].guidance_override = { target_sets: 4, rep_min: 5, rep_max: 7 };
+    document.body.append(el); el.state = editorState; respondToSaveImpact(el, false);
+    expect(el.textContent).toContain("Exception: 4 sets · 5–7 reps");
+    (el.querySelector('[data-ui-action="open-variant-guidance"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherits: 3 sets · 8–10 reps");
+    (el.querySelector('[data-ui-action="clear-variant-guidance"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("Inherits exercise guidance");
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("replace 1 existing variant exception");
+    el.remove();
+  });
+
   it("uses compact Variant rows, counts variants in the Exercise heading, and hides a spent add action", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
