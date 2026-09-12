@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-02
   title: Expose guidance through training-plan saves
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -82,5 +82,34 @@ handoff:
     overrides.
   - Verify historical detail remains structurally versioned but guidance is read from
     mutable current-plan state only where intended.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-09-12T20:40:36Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/src/application/training_plans.rs\
+    \ calls replace_training_plan_guidance_for_user\n    before save_training_plan_for_user.\
+    \ The former only accepts guidance exercises\n    and variants configured in the\
+    \ current persisted version, while the latter is\n    responsible for adding submitted\
+    \ variants in-place or creating a submitted structural\n    version. A single\
+    \ Save Training Plan request that adds an exercise or variant\n    and supplies\
+    \ its default or override guidance therefore fails with a conflict\n    before\
+    \ the structure is written.\n  risk: Users cannot save a structurally edited plan\
+    \ together with the guidance draft\n    carried by the advertised shared save\
+    \ contract; they must split one local save\n    into two requests, and new guidance\
+    \ cannot be applied atomically with its structure.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: backend/src/application/training_plans.rs calls replace_training_plan_guidance_for_user
+      before save_training_plan_for_user. The former only accepts guidance exercises
+      and variants configured in the current persisted version, while the latter is
+      responsible for adding submitted variants in-place or creating a submitted structural
+      version. A single Save Training Plan request that adds an exercise or variant
+      and supplies its default or override guidance therefore fails with a conflict
+      before the structure is written.
+    risk: Users cannot save a structurally edited plan together with the guidance
+      draft carried by the advertised shared save contract; they must split one local
+      save into two requests, and new guidance cannot be applied atomically with its
+      structure.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
