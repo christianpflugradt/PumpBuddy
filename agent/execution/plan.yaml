@@ -1,23 +1,38 @@
 version: 1
 kind: plan
 id: pb-070
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Training Plan guidance editing
+goal: Enable compact, local-first editing of advisory training guidance with exercise defaults and optional variant overrides.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - "Represent mutable plan-level exercise guidance and optional variant overrides without copying inherited values."
+  - "Resolve effective guidance centrally: variant override, then exercise default, then no guidance."
+  - "Expose the guidance model through the existing Training Plan detail and save contract while preserving structural edit and versioning behavior."
+  - "Add compact, mobile-first exercise and variant guidance overlays that update local editor state and save only through Save Training Plan."
+  - "Continue workout guidance presentation and target-set behavior from the centrally resolved effective guidance."
+  - "Cover persistence, resolution, save-impact, renderer interaction, and workout behavior with proportionate automated tests."
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - "New Training Plan versioning rules, lifecycle transitions, inactive behavior, station compatibility changes, gym configuration, or broad Configurator redesign."
+  - "Production/live database migrations, ALTER or backfill instructions, historical guidance snapshots, concurrent Configurator edits during an active workout, or guidance enforcement."
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - "An exercise can have optional target sets and repetition bounds; its variants inherit them unless a variant stores a custom override."
+  - "The persistence model distinguishes inheritance from an override, and exercise guidance updates replace existing overrides only after a count-specific confirmation."
+  - "Guidance edits remain local until Save Training Plan, validate positive values and ordered repetition bounds, and do not trigger the version-change warning or create a version when they are the only change."
+  - "The main 390 × 800 Training Plan view remains compact: default guidance is secondary to the exercise, inherited guidance is not repeated per variant, and exceptions are legible."
+  - "Workout execution consistently uses the effective guidance without enforcing it, preserving its existing recommendation and target-set completion behavior."
 constraints:
-  - constraint 1
-  - constraint 2
+  - "Guidance is advisory, mutable plan-level live state and intentionally excluded from immutable Training Plan Version snapshots and historical-version preservation."
+  - "Only one active workout may exist per user and the product does not support concurrent Configurator editing during an active workout; reconsider live resolution if either constraint changes."
+  - "Use the established PumpBuddy overlays, validation/error patterns, compact edit affordances, Rust/SQLx backend, Web Components renderer, PostgreSQL persistence, and OpenAPI-first contract workflow."
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refine into a bounded sequence of persistence/domain-contract, backend resolution and save behavior,
+  compact editor overlays, workout integration, and focused verification items. Guidance must remain mutable
+  plan-level live state; do not create a version or historical snapshot solely for a guidance change.
