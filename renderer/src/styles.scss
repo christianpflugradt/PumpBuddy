@@ -406,17 +406,14 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 
 .configurator-training-plan-editor-card,
 .configurator-training-plan-exercise-card,
-.configurator-training-plan-option-actions,
 .configurator-training-plan-variant-list {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .configurator-training-plan-exercise-card {
-  padding: var(--space-xl);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
-  background: var(--surface-card);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--border-card);
 }
 
 .configurator-training-plan-exercise-heading,
@@ -428,9 +425,13 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-training-plan-exercise-heading h3,
-.configurator-training-plan-exercise-card h4 {
+.configurator-training-plan-variants-heading {
   margin: 0;
 }
+
+.configurator-training-plan-exercise-heading h3 { min-width: 0; font-size: var(--font-size-body); }
+
+.configurator-training-plan-variants-heading { color: var(--text-secondary); font-size: var(--font-size-label); }
 
 .configurator-training-plan-variant-list {
   margin: 0;
@@ -439,9 +440,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-training-plan-variant {
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
-  background: var(--surface-input);
+  padding: var(--space-sm) 0;
 }
 
 .configurator-training-plan-variant > span {
@@ -450,12 +449,41 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   min-width: 0;
 }
 
+.configurator-training-plan-variant strong { font-weight: 650; overflow-wrap: anywhere; }
+
 .configurator-training-plan-variant small {
   color: var(--text-secondary);
 }
 
-.configurator-training-plan-option-actions {
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+.configurator-training-plan-remove {
+  flex: 0 0 auto;
+  width: var(--action-target-min-height);
+  min-height: var(--action-target-min-height);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--status-danger-text);
+  font-size: 1.55rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.configurator-training-plan-remove:disabled { color: var(--text-secondary); cursor: not-allowed; opacity: 0.55; }
+
+.configurator-training-plan-add-action {
+  justify-self: start;
+  min-height: var(--action-target-min-height);
+  padding: 0 var(--space-sm);
+  border: 0;
+  background: transparent;
+  color: var(--brand-strong);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
 }
 
 .configurator-gym-editor-card,

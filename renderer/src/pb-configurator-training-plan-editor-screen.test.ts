@@ -12,19 +12,27 @@ const state = (): ConfiguratorTrainingPlanEditorScreenState => ({
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
-  it("scopes variant choices, prevents duplicates, and protects the final variant", () => {
+  it("uses compact Variant rows and a searchable picker that prevents duplicates", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
     expect(el.textContent).toContain("3 sets · 8–10 reps");
     expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
     expect(el.querySelector(".configurator-gym-input[data-field=\"plan-name\"]")).toBeTruthy();
     expect(el.querySelector(".configurator-training-plan-exercise-card")).toBeTruthy();
+    expect(el.textContent).toContain("Allowed Variants · 1");
+    expect(el.textContent).not.toContain("Find Variant");
+    expect(el.textContent).not.toContain("Remove Exercise");
     expect(el.querySelector('[data-variant-id="variant-1"][data-ui-action="add-plan-variant"]')).toBeNull();
-    expect(el.querySelector('[data-variant-id="variant-3"][data-ui-action="add-plan-variant"]')).toBeNull();
     const remove = el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement;
     expect(remove.disabled).toBe(true);
+    expect(el.querySelectorAll(".configurator-training-plan-remove")).toHaveLength(2);
+    (el.querySelector('[data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
+    const options = el.querySelector('[role="listbox"]');
+    expect(options?.textContent).toContain("Front squat");
+    expect(options?.textContent).not.toContain("Back squat");
     const add = el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]') as HTMLButtonElement;
     add.click();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
     expect(el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]')).toBeNull();
     expect((el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).disabled).toBe(false);
     el.remove();
@@ -36,6 +44,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
     el.addEventListener("pb-ui-action", (event) => actions.push((event as CustomEvent).detail));
 
+    (el.querySelector('[data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
 
@@ -53,6 +62,30 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("adds one searchable Exercise through a picker and closes it immediately", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+
+    expect(el.textContent).toContain("+ Add Exercise");
+    expect(el.querySelector('[data-ui-action="add-plan-exercise"]')).toBeNull();
+    (el.querySelector('[data-ui-action="open-plan-exercise-picker"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).toBeTruthy();
+    const options = el.querySelector('[role="listbox"]');
+    expect(options?.textContent).toContain("Bench");
+    expect(options?.textContent).not.toContain("Squat");
+
+    const search = el.querySelector('[data-field="exercise-search"]') as HTMLInputElement;
+    search.value = "bench";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(el.textContent).toContain("Bench");
+
+    (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="add-plan-exercise"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+    expect(el.textContent).toContain("2. Bench");
+    expect(el.querySelector('[data-ui-action="add-plan-exercise"]')).toBeNull();
+    el.remove();
+  });
+
   it("requires confirmation before saving a structural edit", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
@@ -65,7 +98,9 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     });
 
     (el.querySelector('[data-ui-action="remove-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-plan-exercise-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="add-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-3"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
 
