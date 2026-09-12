@@ -986,8 +986,8 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await expect(page.getByLabel('Workout completion metrics')).toHaveCount(0);
 });
 
-test.skip('UI smoke configurator exercises > navigation, search, lifecycle, loading, and error states', async ({ page }) => {
-  // TODO: Re-enable after the follow-up task scopes the ambiguous Exercises locator.
+test('UI smoke configurator exercises > navigation, search, lifecycle, loading, and error states', async ({ page }) => {
+  // TODO: Add exercise create/detail lifecycle coverage when those editor flows have stable UI smoke fixtures.
   let isLoggedIn = false;
   let holdNextExerciseResponse = false;
   let failNextExerciseResponse = false;
@@ -1042,7 +1042,7 @@ test.skip('UI smoke configurator exercises > navigation, search, lifecycle, load
     await page.getByRole('button', { name: 'Open navigation menu' }).click();
     await page.getByRole('button', { name: 'Configurator' }).click();
     await page.getByRole('button', { name: 'Open navigation menu' }).click();
-    await page.getByRole('button', { name: 'Exercises' }).click();
+    await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Exercises' }).click();
   };
 
   await signInAndOpenExercises();
@@ -1060,7 +1060,7 @@ test.skip('UI smoke configurator exercises > navigation, search, lifecycle, load
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Load Profiles' }).click();
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
-  await page.getByRole('button', { name: 'Exercises' }).click();
+  await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Exercises' }).click();
   await expect(screen).toContainText('Loading exercises...');
   releaseSecondExerciseRequest();
   await expect(screen).toContainText('Barbell Squat');
@@ -1069,12 +1069,12 @@ test.skip('UI smoke configurator exercises > navigation, search, lifecycle, load
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Load Profiles' }).click();
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
-  await page.getByRole('button', { name: 'Exercises' }).click();
+  await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Exercises' }).click();
   await expect(screen).toContainText('Unable to load exercises right now.');
 });
 
-test.skip('UI smoke configurator Variant compatibility opens its Station and saves staged selections', async ({ page }) => {
-  // TODO: Re-enable after the follow-up task scopes the ambiguous Exercises locator.
+test('UI smoke configurator Variant compatibility opens its Station and saves staged selections', async ({ page }) => {
+  // TODO: Add a second compatible station fixture to cover multi-station selection and removal.
   let isLoggedIn = false;
   let enabledVariantIds = ['variant-press'];
   const stationCompatibility = () => ({
@@ -1112,7 +1112,7 @@ test.skip('UI smoke configurator Variant compatibility opens its Station and sav
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.getByRole('button', { name: 'Configurator' }).click();
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
-  await page.getByRole('button', { name: 'Exercises' }).click();
+  await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Exercises' }).click();
   await page.getByRole('button', { name: 'Chest Press' }).click();
   await page.getByRole('button', { name: 'Machine Press' }).click();
 
