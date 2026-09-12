@@ -79,19 +79,19 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
-  it("confirms a rename without a version warning, then saves it", () => {
+  it("confirms a case-only rename without a version warning, then saves it", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
     respondToSaveImpact(el, false);
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
     const name = el.querySelector('[data-field="plan-name"]') as HTMLInputElement;
-    name.value = "Renamed Upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    name.value = "upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("historical workouts");
     expect(el.textContent).not.toContain("new Training Plan Version");
     (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
-    expect(saved).toEqual([{ name: "Renamed Upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    expect(saved).toEqual([{ name: "upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
     el.remove();
   });
 
