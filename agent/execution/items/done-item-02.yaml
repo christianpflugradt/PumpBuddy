@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-02
   title: Expose guidance through training-plan saves
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -96,7 +96,7 @@ review_feedback:
     \ together with the guidance draft\n    carried by the advertised shared save\
     \ contract; they must split one local save\n    into two requests, and new guidance\
     \ cannot be applied atomically with its structure.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: backend/src/application/training_plans.rs calls replace_training_plan_guidance_for_user
       before save_training_plan_for_user. The former only accepts guidance exercises
@@ -110,6 +110,27 @@ review_feedback:
       save into two requests, and new guidance cannot be applied atomically with its
       structure.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 and AC-02 are met: the canonical save/detail contract exposes
+      nullable default guidance, sparse variant overrides, and resolved effective
+      guidance; guidance-only state is excluded from version-impact calculation, while
+      override replacement requires the exact persisted count.'
+    evidence: Independent review of agent/design/api-contract.yaml, backend/src/api/models.rs,
+      backend/src/api/handlers/training_plans.rs, backend/src/application/training_plans.rs,
+      backend/src/persistence/training_plans.rs, renderer/src/workout-contract.ts,
+      backend/tests/api_integration.rs, and renderer/src/workout-api.test.ts confirmed
+      generated-adapter mappings, current-plan live-guidance projection including
+      historical detail, count-specific confirmation, and structural-save-before-guidance
+      handling for newly added variants.
+    runtime_build_check: make check-backend reached successful compile and began the
+      Rust unit/API suites, but this execution surface terminated the command at its
+      30-second tool boundary before it emitted a final result. Static review and
+      the targeted integration coverage are consistent; the prescribed finalization
+      quality gate remains authoritative.
+    residual_risk: Guidance replacement remains a separate persistence transaction
+      after the structural save, so an unexpected database failure during the second
+      write can leave structure saved without the requested guidance. This is outside
+      the stated versioning/contract acceptance boundary but should be considered
+      if all-or-nothing save semantics are later required.
+  findings: []
