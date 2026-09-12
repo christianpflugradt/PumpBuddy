@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-08
+  title: Use searchable pickers for initial plan structure
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: The new-plan flow provides searchable Exercise and Exercise-scoped Variant
+    pickers consistent with the structural editor.
+  rationale: The current creation form uses a native Exercise select and static Variant
+    checkboxes, which does not satisfy the plan-wide searchable-picker requirement.
+scope:
+  in:
+  - Replace native initial Exercise selection with a searchable picker.
+  - Provide searchable, Exercise-scoped Variant selection while requiring at least
+    one selection.
+  - Preserve duplicate prevention and accessible server-validation errors.
+  out:
+  - Adding multi-Exercise creation beyond the existing initial structure.
+  - Changing Exercise or Variant management.
+constraints:
+- Variants must be restricted to the selected Exercise.
+- Reuse established searchable-picker and dialog conventions.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  optional:
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: New Training Plan creation offers searchable Exercise and selected-Exercise
+    Variant pickers, blocks duplicate Variant choices, and rejects a zero-Variant
+    submission.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with searchable creation-picker interaction coverage.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Configurator new-plan UI
+  - accessible picker interaction
+handoff:
+  review_focus:
+  - Verify initial plan creation follows the same picker affordances and Variant scoping
+    as structural editing.

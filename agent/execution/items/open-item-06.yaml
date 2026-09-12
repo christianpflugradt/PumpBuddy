@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-06
+  title: Make backend version authority drive save confirmation
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: The Configurator uses one backend-owned version-relevance decision for
+    both confirmation copy and the persisted save result.
+  rationale: The editor currently reimplements structural-change classification in
+    the renderer, violating the plan constraint that the backend/domain contract is
+    authoritative.
+scope:
+  in:
+  - Expose or consume a backend-owned pre-save version-impact result suitable for
+    confirmation.
+  - Remove renderer structural version classification while retaining the combined
+    rename/version confirmation behavior.
+  - Add focused backend and renderer coverage proving the renderer does not define
+    version semantics.
+  out:
+  - Changing the specified version-producing rules.
+  - Historical-version management UI.
+constraints:
+- The backend application layer remains the sole source of version-relevance classification.
+- Ordinary Variant additions save without confirmation.
+inputs:
+  required:
+  - backend/src/application/training_plans.rs
+  - agent/design/api-contract.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/workout-api.ts
+  optional:
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The renderer obtains structural version-impact information from a backend-owned
+    contract and contains no independent structural version classifier.
+  verification:
+    type: command
+    command: make check
+    expected: Backend and renderer checks pass with coverage of backend-authoritative
+      confirmation behavior.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - training-plan API contract
+  - training-plan application service
+  - Configurator confirmation workflow
+handoff:
+  review_focus:
+  - Confirm pre-save confirmation semantics and final persisted version semantics
+    share one backend classification policy.

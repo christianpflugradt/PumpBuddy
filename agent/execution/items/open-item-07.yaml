@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-07
+  title: Keep successful plan creation in Configurator
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Creating a Training Plan opens its Configurator current-plan editor and
+    refreshes it through the Configurator flow.
+  rationale: The create handler currently changes state to the workout Training Plan
+    detail, so a user leaves the promised Configurator hierarchy immediately after
+    creation.
+scope:
+  in:
+  - Route successful Configurator plan creation to configurator-training-plan-detail.
+  - Load the created plan through the Configurator detail state and preserve the Configurator
+    back path.
+  - Add controller-level regression coverage for the successful create destination.
+  out:
+  - Changing the workout Training Plan browsing flow.
+  - Adding historical-version management.
+constraints:
+- Existing plan detail opening from the Configurator list remains unchanged.
+- The created plan loads the saved current version.
+inputs:
+  required:
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  optional:
+  - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: After a successful Configurator create request, the visible destination
+    is the created plan's Configurator detail editor and its back action returns to
+    the Configurator plan list.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with successful-create navigation coverage.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Configurator navigation
+  - renderer create-save controller
+handoff:
+  review_focus:
+  - Verify creation cannot fall through to the workout-facing plan detail state.
