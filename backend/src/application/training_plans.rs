@@ -1,8 +1,8 @@
 use crate::{
     domain::{
         ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDefinition, TrainingPlanDetail,
-        TrainingPlanExecutionStatus, TrainingPlanSaveResult, TrainingPlanSummary,
-        TrainingPlanVariantAvailability,
+        TrainingPlanExecutionStatus, TrainingPlanGuidance, TrainingPlanSaveRequest,
+        TrainingPlanSaveResult, TrainingPlanSummary, TrainingPlanVariantAvailability,
     },
     persistence::{PersistenceError, TrainingPlanRepository},
 };
@@ -22,32 +22,83 @@ pub(crate) struct TrainingPlanSaveImpact {
 pub(crate) async fn create_training_plan(
     repository: &(impl TrainingPlanRepository + ?Sized),
     user_id: &str,
-    definition: TrainingPlanDefinition,
+    request: TrainingPlanSaveRequest,
 ) -> Result<TrainingPlanSaveResult, TrainingPlanServiceError> {
-    validate_definition(repository, user_id, &definition).await?;
-    repository
-        .create_training_plan_for_user(user_id, &definition)
+    validate_definition(repository, user_id, &request.definition).await?;
+    validate_guidance(request.guidance.as_ref())?;
+    let result = repository
+        .create_training_plan_for_user(user_id, &request.definition)
         .await
-        .map_err(TrainingPlanServiceError::Persistence)
+        .map_err(TrainingPlanServiceError::Persistence)?;
+    if let Some(guidance) = request.guidance {
+        repository
+            .replace_training_plan_guidance_for_user(&result.training_plan_id, user_id, &guidance)
+            .await
+            .map_err(TrainingPlanServiceError::Persistence)?;
+    }
+    Ok(result)
 }
 
 pub(crate) async fn save_training_plan(
     repository: &(impl TrainingPlanRepository + ?Sized),
     training_plan_id: &str,
     user_id: &str,
-    definition: TrainingPlanDefinition,
+    request: TrainingPlanSaveRequest,
 ) -> Result<TrainingPlanSaveResult, TrainingPlanServiceError> {
+    validate_guidance(request.guidance.as_ref())?;
     let impact =
-        assess_training_plan_save(repository, training_plan_id, user_id, &definition).await?;
+        assess_training_plan_save(repository, training_plan_id, user_id, &request.definition)
+            .await?;
+    if let Some(guidance) = request.guidance.as_ref() {
+        confirm_guidance_override_replacement(
+            repository,
+            training_plan_id,
+            user_id,
+            request.replace_existing_variant_override_count,
+        )
+        .await?;
+        repository
+            .replace_training_plan_guidance_for_user(training_plan_id, user_id, guidance)
+            .await
+            .map_err(TrainingPlanServiceError::Persistence)?;
+    }
     repository
         .save_training_plan_for_user(
             training_plan_id,
             user_id,
-            &definition,
+            &request.definition,
             impact.creates_new_version,
         )
         .await
         .map_err(TrainingPlanServiceError::Persistence)
+}
+
+fn validate_guidance(
+    guidance: Option<&TrainingPlanGuidance>,
+) -> Result<(), TrainingPlanServiceError> {
+    guidance
+        .map(TrainingPlanGuidance::validate)
+        .transpose()
+        .map_err(TrainingPlanServiceError::Validation)
+        .map(|_| ())
+}
+
+async fn confirm_guidance_override_replacement(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    training_plan_id: &str,
+    user_id: &str,
+    submitted_count: Option<i32>,
+) -> Result<(), TrainingPlanServiceError> {
+    let existing_count = repository
+        .count_training_plan_guidance_overrides_for_user(training_plan_id, user_id)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)?;
+    if existing_count > 0 && submitted_count != i32::try_from(existing_count).ok() {
+        return Err(TrainingPlanServiceError::Validation(format!(
+            "replace_existing_variant_override_count must equal the {existing_count} existing variant overrides"
+        )));
+    }
+    Ok(())
 }
 
 pub(crate) async fn assess_training_plan_save(
@@ -228,7 +279,43 @@ pub(crate) async fn get_training_plan(
         }
     }
 
-    Ok(apply_training_plan_execution_metadata(plan))
+    let guidance = repository
+        .fetch_training_plan_guidance_for_user(training_plan_id, user_id)
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)?
+        .unwrap_or_default();
+    Ok(apply_training_plan_execution_metadata(apply_live_guidance(
+        plan, &guidance,
+    )))
+}
+
+fn apply_live_guidance(
+    mut plan: TrainingPlanDetail,
+    guidance: &TrainingPlanGuidance,
+) -> TrainingPlanDetail {
+    for exercise in &mut plan.exercises {
+        let stored = guidance
+            .exercises
+            .iter()
+            .find(|item| item.exercise_id == exercise.exercise_id);
+        exercise.default_guidance = stored.map(|item| item.defaults.clone()).unwrap_or_default();
+        for variant in &mut exercise.variants {
+            variant.guidance_override = stored.and_then(|item| {
+                item.variant_overrides
+                    .iter()
+                    .find(|override_| override_.variant_id == variant.variant_id)
+                    .map(|override_| override_.guidance.clone())
+            });
+            variant.effective_guidance = variant
+                .guidance_override
+                .clone()
+                .unwrap_or_else(|| exercise.default_guidance.clone());
+            variant.rep_min = variant.effective_guidance.rep_min;
+            variant.rep_max = variant.effective_guidance.rep_max;
+            variant.target_sets = variant.effective_guidance.target_sets;
+        }
+    }
+    plan
 }
 
 fn apply_training_plan_execution_metadata(mut plan: TrainingPlanDetail) -> TrainingPlanDetail {
@@ -346,7 +433,8 @@ mod tests {
     use crate::{
         domain::{
             ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDefinition,
-            TrainingPlanDetail, TrainingPlanExerciseDefinition, TrainingPlanSummary,
+            TrainingPlanDetail, TrainingPlanExerciseDefinition, TrainingPlanGuidance,
+            TrainingPlanSaveRequest, TrainingPlanSummary,
         },
         persistence::{PersistenceError, TrainingPlanRepository},
     };
@@ -420,6 +508,14 @@ mod tests {
         ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
             self.detail_calls.fetch_add(1, Ordering::SeqCst);
             Ok(self.detail.clone())
+        }
+
+        async fn fetch_training_plan_guidance_for_user(
+            &self,
+            _training_plan_id: &str,
+            _user_id: &str,
+        ) -> Result<Option<TrainingPlanGuidance>, PersistenceError> {
+            Ok(Some(TrainingPlanGuidance::default()))
         }
 
         async fn training_plan_detail_gym_exists_for_user(
@@ -529,6 +625,14 @@ mod tests {
         }
     }
 
+    fn save_request(definition: TrainingPlanDefinition) -> TrainingPlanSaveRequest {
+        TrainingPlanSaveRequest {
+            definition,
+            guidance: None,
+            replace_existing_variant_override_count: None,
+        }
+    }
+
     #[tokio::test]
     async fn create_training_plan_rejects_empty_or_duplicate_variant_selections() {
         let repository = FakeTrainingPlanRepository::new(vec![], None);
@@ -537,7 +641,7 @@ mod tests {
             definition(vec!["variant-id", "variant-id"]),
         ] {
             assert!(matches!(
-                create_training_plan(&repository, "user-id", definition).await,
+                create_training_plan(&repository, "user-id", save_request(definition)).await,
                 Err(TrainingPlanServiceError::Validation(_))
             ));
         }
@@ -547,7 +651,12 @@ mod tests {
     async fn create_training_plan_rejects_variant_outside_submitted_exercise() {
         let repository = FakeTrainingPlanRepository::new(vec![], None);
         assert!(matches!(
-            create_training_plan(&repository, "user-id", definition(vec!["variant-id"])).await,
+            create_training_plan(
+                &repository,
+                "user-id",
+                save_request(definition(vec!["variant-id"])),
+            )
+            .await,
             Err(TrainingPlanServiceError::Validation(_))
         ));
     }

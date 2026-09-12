@@ -36,11 +36,13 @@ impl FakeRepository {
             let exercises = (1..=5)
                 .map(|i| crate::domain::TrainingPlanDetailExercise {
                     id: format!("e{i}"),
+                    exercise_id: format!("exercise-{i}"),
                     exercise_name: format!("Exercise {i}"),
                     position: i,
                     configured_variant_count: 0,
                     executable_variant_count: None,
                     execution_status: None,
+                    default_guidance: crate::domain::TrainingPlanGuidanceValues::default(),
                     variants: Vec::new(),
                 })
                 .collect();

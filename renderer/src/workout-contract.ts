@@ -251,6 +251,29 @@ export type TrainingPlanExerciseVariantSummary = PlanExerciseOptionSummary;
 export type TrainingPlanDefinitionRequest = {
   name: string;
   exercises: Array<{ exercise_id: string; allowed_variant_ids: string[] }>;
+  guidance?: TrainingPlanGuidance;
+  replace_existing_variant_override_count?: number;
+};
+
+export type TrainingPlanGuidanceValues = {
+  rep_min: number | null;
+  rep_max: number | null;
+  target_sets: number | null;
+};
+
+export type TrainingPlanExerciseVariantGuidanceOverride = {
+  variant_id: string;
+  guidance: TrainingPlanGuidanceValues;
+};
+
+export type TrainingPlanExerciseGuidance = {
+  exercise_id: string;
+  defaults: TrainingPlanGuidanceValues;
+  variant_overrides: TrainingPlanExerciseVariantGuidanceOverride[];
+};
+
+export type TrainingPlanGuidance = {
+  exercises: TrainingPlanExerciseGuidance[];
 };
 
 export type TrainingPlanSaveResponse = {
@@ -594,6 +617,8 @@ export type TrainingPlanExerciseVariantDetail = {
   set_tracking_mode: SetTrackingMode;
   availability: TrainingPlanVariantAvailability | null;
   compatible_stations: GymStationOption[];
+  guidance_override: TrainingPlanGuidanceValues | null;
+  effective_guidance: TrainingPlanGuidanceValues;
 };
 
 export type TrainingPlanExerciseDetail = {
@@ -603,6 +628,7 @@ export type TrainingPlanExerciseDetail = {
   configured_variant_count: number;
   executable_variant_count: number | null;
   execution_status: TrainingPlanExecutionStatus | null;
+  default_guidance: TrainingPlanGuidanceValues;
   variants: TrainingPlanExerciseVariantDetail[];
 };
 

@@ -2208,6 +2208,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrainingPlanExerciseDefinitionRequest'
+        guidance:
+          $ref: '#/components/schemas/TrainingPlanGuidance'
+        replace_existing_variant_override_count:
+          type: integer
+          format: int32
+          minimum: 0
+          description: |
+            Required when replacing one or more persisted variant guidance
+            overrides. Its value must equal the backend-observed override count
+            at save time, preventing an editor from silently replacing a
+            changed set of overrides.
     TrainingPlanExerciseDefinitionRequest:
       type: object
       additionalProperties: false
@@ -2222,6 +2233,59 @@ components:
           items:
             type: string
             format: uuid
+    TrainingPlanGuidanceValues:
+      type: object
+      additionalProperties: false
+      required: [rep_min, rep_max, target_sets]
+      properties:
+        rep_min:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        rep_max:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        target_sets:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+    TrainingPlanExerciseVariantGuidanceOverride:
+      type: object
+      additionalProperties: false
+      required: [variant_id, guidance]
+      properties:
+        variant_id:
+          type: string
+          format: uuid
+        guidance:
+          $ref: '#/components/schemas/TrainingPlanGuidanceValues'
+    TrainingPlanExerciseGuidance:
+      type: object
+      additionalProperties: false
+      required: [exercise_id, defaults, variant_overrides]
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        defaults:
+          $ref: '#/components/schemas/TrainingPlanGuidanceValues'
+        variant_overrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingPlanExerciseVariantGuidanceOverride'
+    TrainingPlanGuidance:
+      type: object
+      additionalProperties: false
+      required: [exercises]
+      properties:
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingPlanExerciseGuidance'
     TrainingPlanSaveResponse:
       type: object
       required: [training_plan_id, version_number, created_new_version]
@@ -3418,6 +3482,7 @@ components:
         - configured_variant_count
         - executable_variant_count
         - execution_status
+        - default_guidance
         - variants
       properties:
         training_plan_exercise_id:
@@ -3454,6 +3519,8 @@ components:
             YELLOW means at least one but not all configured variants are available.
             RED means no configured variants are available.
             Null when no gym context is selected.
+        default_guidance:
+          $ref: '#/components/schemas/TrainingPlanGuidanceValues'
         variants:
           type: array
           items:
@@ -3478,6 +3545,8 @@ components:
         - set_tracking_mode
         - availability
         - compatible_stations
+        - guidance_override
+        - effective_guidance
       properties:
         id:
           type: string
@@ -3530,6 +3599,13 @@ components:
             Empty for stationless variants, unavailable variants, and no-gym responses.
           items:
             $ref: '#/components/schemas/GymStationOption'
+        guidance_override:
+          allOf:
+            - $ref: '#/components/schemas/TrainingPlanGuidanceValues'
+          nullable: true
+          description: Null when this variant inherits the exercise default.
+        effective_guidance:
+          $ref: '#/components/schemas/TrainingPlanGuidanceValues'
     TrainingPlanDetailResponse:
       type: object
       required:

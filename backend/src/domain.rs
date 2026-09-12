@@ -315,11 +315,13 @@ pub struct GymStationOption {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrainingPlanDetailExercise {
     pub id: String,
+    pub exercise_id: String,
     pub exercise_name: String,
     pub position: i32,
     pub configured_variant_count: i32,
     pub executable_variant_count: Option<i32>,
     pub execution_status: Option<TrainingPlanExecutionStatus>,
+    pub default_guidance: TrainingPlanGuidanceValues,
     pub variants: Vec<TrainingPlanExerciseVariantDetail>,
 }
 
@@ -327,6 +329,13 @@ pub struct TrainingPlanDetailExercise {
 pub struct TrainingPlanDefinition {
     pub name: String,
     pub exercises: Vec<TrainingPlanExerciseDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanSaveRequest {
+    pub definition: TrainingPlanDefinition,
+    pub guidance: Option<TrainingPlanGuidance>,
+    pub replace_existing_variant_override_count: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -441,6 +450,8 @@ pub struct TrainingPlanExerciseVariantDetail {
     pub set_tracking_mode: String,
     pub availability: Option<TrainingPlanVariantAvailability>,
     pub compatible_stations: Vec<GymStationOption>,
+    pub guidance_override: Option<TrainingPlanGuidanceValues>,
+    pub effective_guidance: TrainingPlanGuidanceValues,
 }
 
 /// Read projection for a training-plan exercise variant resolved for one configured gym.

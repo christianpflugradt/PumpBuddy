@@ -8,14 +8,15 @@ use crate::api::boundary::{
     RepetitionKind, SetTrackingMode,
 };
 use crate::api::models::{
-    GymStationOptionResponse, TrainingPlanDefinitionRequest,
-    TrainingPlanDetailExecutionStatusResponse, TrainingPlanDetailQuery, TrainingPlanDetailResponse,
-    TrainingPlanExerciseDetailResponse, TrainingPlanExerciseExecutionStatusResponse,
-    TrainingPlanExerciseVariantDetailResponse, TrainingPlanExerciseVariantSummaryResponse,
-    TrainingPlanExerciseVariantsQuery, TrainingPlanExerciseVariantsResponse,
-    TrainingPlanSaveImpactResponse, TrainingPlanSaveResponse, TrainingPlanSummaryResponse,
-    TrainingPlanVariantAvailabilityResponse, TrainingPlanVariantLoadInputModeResponse,
-    TrainingPlanVariantRepetitionKindResponse, TrainingPlanVariantSetTrackingModeResponse,
+    training_plan_guidance_values_response, GymStationOptionResponse,
+    TrainingPlanDefinitionRequest, TrainingPlanDetailExecutionStatusResponse,
+    TrainingPlanDetailQuery, TrainingPlanDetailResponse, TrainingPlanExerciseDetailResponse,
+    TrainingPlanExerciseExecutionStatusResponse, TrainingPlanExerciseVariantDetailResponse,
+    TrainingPlanExerciseVariantSummaryResponse, TrainingPlanExerciseVariantsQuery,
+    TrainingPlanExerciseVariantsResponse, TrainingPlanSaveImpactResponse, TrainingPlanSaveResponse,
+    TrainingPlanSummaryResponse, TrainingPlanVariantAvailabilityResponse,
+    TrainingPlanVariantLoadInputModeResponse, TrainingPlanVariantRepetitionKindResponse,
+    TrainingPlanVariantSetTrackingModeResponse,
     TrainingPlanVersionSummary as TrainingPlanVersionSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
@@ -50,7 +51,7 @@ pub(crate) async fn assess_training_plan_save(
         &state.repository,
         &training_plan_id,
         &session.user_id,
-        &request.into_domain(),
+        &request.into_domain().definition,
     )
     .await
     .map_err(map_training_plan_service_error)?;
@@ -266,6 +267,10 @@ fn training_plan_exercise_variant_detail_response(
                 station_profile_loads_kg: Some(station.station_profile_loads_kg),
             })
             .collect(),
+        guidance_override: variant
+            .guidance_override
+            .map(training_plan_guidance_values_response),
+        effective_guidance: training_plan_guidance_values_response(variant.effective_guidance),
     })
 }
 
@@ -281,6 +286,7 @@ fn training_plan_exercise_detail_response(
         execution_status: exercise
             .execution_status
             .map(training_plan_exercise_status_response),
+        default_guidance: training_plan_guidance_values_response(exercise.default_guidance),
         variants: exercise
             .variants
             .into_iter()

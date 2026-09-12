@@ -104,6 +104,50 @@ describe("workout-api credentials", () => {
     );
   });
 
+  it("serializes guidance and its count-specific override replacement confirmation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ creates_new_version: false }),
+    });
+
+    await assessTrainingPlanSave(
+      "plan-1",
+      {
+        name: "Plan",
+        exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }],
+        guidance: {
+          exercises: [{
+            exercise_id: "exercise-1",
+            defaults: { rep_min: 8, rep_max: 12, target_sets: 3 },
+            variant_overrides: [{
+              variant_id: "variant-1",
+              guidance: { rep_min: null, rep_max: null, target_sets: null },
+            }],
+          }],
+        },
+        replace_existing_variant_override_count: 1,
+      },
+      fetchMock as unknown as typeof fetch,
+    );
+
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({
+      name: "Plan",
+      exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }],
+      guidance: {
+        exercises: [{
+          exercise_id: "exercise-1",
+          defaults: { rep_min: 8, rep_max: 12, target_sets: 3 },
+          variant_overrides: [{
+            variant_id: "variant-1",
+            guidance: { rep_min: null, rep_max: null, target_sets: null },
+          }],
+        }],
+      },
+      replace_existing_variant_override_count: 1,
+    }));
+  });
+
   it("reconciles a complete Station compatibility selection in one PUT request", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

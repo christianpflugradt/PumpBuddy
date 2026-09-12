@@ -405,6 +405,16 @@ pub(crate) trait TrainingPlanRepository {
         ))
     }
 
+    async fn count_training_plan_guidance_overrides_for_user(
+        &self,
+        _training_plan_id: &str,
+        _user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan guidance is not available".into(),
+        ))
+    }
+
     async fn fetch_training_plan_summaries_for_user(
         &self,
         user_id: &str,
@@ -1511,6 +1521,19 @@ impl DomainRepository {
             training_plan_id,
             user_id,
             guidance,
+        )
+        .await
+    }
+
+    pub async fn count_training_plan_guidance_overrides_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        training_plans::count_training_plan_guidance_overrides_for_user(
+            self,
+            training_plan_id,
+            user_id,
         )
         .await
     }

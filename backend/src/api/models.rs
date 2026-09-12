@@ -10,7 +10,9 @@ use crate::domain::{
     ExerciseUpdate, ExerciseVariantUpdate, GymUpdate, LoadProfileDefinitionInput,
     LoadProfileUpdate, NewConfiguratorStation, NewExercise, NewExerciseVariant, NewGym,
     NewLoadProfile, NewWorkout, NewWorkoutExercise, NewWorkoutSet, TrainingPlanDefinition,
-    TrainingPlanExerciseDefinition, WorkoutDetail as DomainWorkoutDetail,
+    TrainingPlanExerciseDefinition, TrainingPlanExerciseGuidance,
+    TrainingPlanExerciseVariantGuidanceOverride, TrainingPlanGuidance, TrainingPlanGuidanceValues,
+    TrainingPlanSaveRequest, WorkoutDetail as DomainWorkoutDetail,
     WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
@@ -149,19 +151,64 @@ impl ExerciseCreateRequest {
     }
 }
 impl TrainingPlanDefinitionRequest {
-    pub fn into_domain(self) -> TrainingPlanDefinition {
-        TrainingPlanDefinition {
-            name: self.name,
-            exercises: self
-                .exercises
-                .into_iter()
-                .map(|exercise| TrainingPlanExerciseDefinition {
-                    exercise_id: exercise.exercise_id,
-                    allowed_variant_ids: exercise.allowed_variant_ids,
-                })
-                .collect(),
+    pub fn into_domain(self) -> TrainingPlanSaveRequest {
+        TrainingPlanSaveRequest {
+            definition: TrainingPlanDefinition {
+                name: self.name,
+                exercises: self
+                    .exercises
+                    .into_iter()
+                    .map(|exercise| TrainingPlanExerciseDefinition {
+                        exercise_id: exercise.exercise_id,
+                        allowed_variant_ids: exercise.allowed_variant_ids,
+                    })
+                    .collect(),
+            },
+            guidance: self.guidance.map(|guidance| TrainingPlanGuidance {
+                exercises: guidance
+                    .exercises
+                    .into_iter()
+                    .map(|exercise| TrainingPlanExerciseGuidance {
+                        exercise_id: exercise.exercise_id,
+                        defaults: training_plan_guidance_values_from_api(*exercise.defaults),
+                        variant_overrides: exercise
+                            .variant_overrides
+                            .into_iter()
+                            .map(|override_| TrainingPlanExerciseVariantGuidanceOverride {
+                                variant_id: override_.variant_id,
+                                guidance: training_plan_guidance_values_from_api(
+                                    *override_.guidance,
+                                ),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            }),
+            replace_existing_variant_override_count: self.replace_existing_variant_override_count,
         }
     }
+}
+
+fn training_plan_guidance_values_from_api(
+    values: crate::models::training_plan_guidance_values::TrainingPlanGuidanceValues,
+) -> TrainingPlanGuidanceValues {
+    TrainingPlanGuidanceValues {
+        rep_min: values.rep_min,
+        rep_max: values.rep_max,
+        target_sets: values.target_sets,
+    }
+}
+
+pub(crate) fn training_plan_guidance_values_response(
+    values: TrainingPlanGuidanceValues,
+) -> Box<crate::models::training_plan_guidance_values::TrainingPlanGuidanceValues> {
+    Box::new(
+        crate::models::training_plan_guidance_values::TrainingPlanGuidanceValues {
+            rep_min: values.rep_min,
+            rep_max: values.rep_max,
+            target_sets: values.target_sets,
+        },
+    )
 }
 impl ExerciseUpdateRequest {
     pub fn into_domain(self) -> ExerciseUpdate {

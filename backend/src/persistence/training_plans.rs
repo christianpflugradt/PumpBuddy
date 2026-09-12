@@ -90,6 +90,7 @@ pub(super) async fn fetch_training_plan_detail_for_user(
          )
          SELECT
             tpe.id::text AS training_plan_exercise_id,
+            tpe.exercise_id::text AS exercise_id,
             tpe.position,
             e.name AS exercise_name,
             peo.id::text AS training_plan_exercise_variant_id,
@@ -600,6 +601,23 @@ pub(super) async fn replace_training_plan_guidance_for_user(
     Ok(())
 }
 
+pub(super) async fn count_training_plan_guidance_overrides_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    user_id: &str,
+) -> Result<i64, PersistenceError> {
+    sqlx::query_scalar(
+        "SELECT COUNT(*)
+         FROM training_plan_exercise_variant_guidance_overrides
+         WHERE training_plan_id = $1::uuid AND user_id = $2::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await
+    .map_err(Into::into)
+}
+
 fn ensure_every_exercise_has_variant(
     definition: &crate::domain::TrainingPlanDefinition,
 ) -> Result<(), PersistenceError> {
@@ -656,11 +674,13 @@ fn group_training_plan_detail_rows(
         {
             exercises.push(TrainingPlanDetailExercise {
                 id: training_plan_exercise_id.clone(),
+                exercise_id: row.get("exercise_id"),
                 exercise_name: row.get("exercise_name"),
                 position: row.get("position"),
                 configured_variant_count: 0,
                 executable_variant_count: None,
                 execution_status: None,
+                default_guidance: TrainingPlanGuidanceValues::default(),
                 variants: Vec::new(),
             });
         }
@@ -703,6 +723,8 @@ fn group_training_plan_detail_rows(
                     .expect("configured variant rows should include set_tracking_mode"),
                 availability: None,
                 compatible_stations: Vec::new(),
+                guidance_override: None,
+                effective_guidance: TrainingPlanGuidanceValues::default(),
             });
         }
 

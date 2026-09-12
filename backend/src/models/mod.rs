@@ -69,6 +69,38 @@ pub mod training_plan_exercise_definition_request {
 }
 pub use training_plan_exercise_definition_request::TrainingPlanExerciseDefinitionRequest;
 
+pub mod training_plan_guidance_values {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_guidance_values.rs"
+    ));
+}
+pub use training_plan_guidance_values::TrainingPlanGuidanceValues;
+
+pub mod training_plan_exercise_variant_guidance_override {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_variant_guidance_override.rs"
+    ));
+}
+pub use training_plan_exercise_variant_guidance_override::TrainingPlanExerciseVariantGuidanceOverride;
+
+pub mod training_plan_exercise_guidance {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_guidance.rs"
+    ));
+}
+pub use training_plan_exercise_guidance::TrainingPlanExerciseGuidance;
+
+pub mod training_plan_guidance {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_guidance.rs"
+    ));
+}
+pub use training_plan_guidance::TrainingPlanGuidance;
+
 pub mod training_plan_save_response {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
