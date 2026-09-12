@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
+  createTrainingPlan,
   createGym,
   createLoadProfile,
   deleteGym,
@@ -73,6 +74,7 @@ vi.mock("./workout-api", async () => {
     await vi.importActual<typeof import("./workout-api")>("./workout-api");
   return {
     ...actual,
+    createTrainingPlan: vi.fn(),
     createGym: vi.fn(),
     loadActiveWorkout: vi.fn(),
     createLoadProfile: vi.fn(),
@@ -98,6 +100,7 @@ vi.mock("./workout-api", async () => {
   };
 });
 
+const createTrainingPlanMock = vi.mocked(createTrainingPlan);
 const createLoadProfileMock = vi.mocked(createLoadProfile);
 const createGymMock = vi.mocked(createGym);
 const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
@@ -485,6 +488,11 @@ describe("workout-controller (createApp)", () => {
     loadGymDetailMock.mockResolvedValue(createGymDetail());
     loadTrainingPlanSummariesMock.mockResolvedValue([]);
     loadTrainingPlanDetailMock.mockResolvedValue(createTrainingPlanDetail());
+    createTrainingPlanMock.mockResolvedValue({
+      training_plan_id: "created-plan",
+      version_number: 1,
+      created_new_version: false,
+    });
     loadStationDetailMock.mockImplementation(
       async (_fetchJson, _gymId, stationId) => createStationDetail(stationId),
     );
@@ -768,6 +776,64 @@ describe("workout-controller (createApp)", () => {
       loadProfileId: "profile-1",
     });
     expect(loadLoadProfileDetailMock).toHaveBeenCalledWith(expect.any(Function), "profile-1");
+  });
+
+  it("keeps a successfully created training plan in the Configurator detail flow", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+
+    createApp(app);
+    await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-training-plans");
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-training-plans",
+    });
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-training-plan",
+      payload: {
+        request: {
+          name: "Created Plan",
+          exercises: [
+            {
+              exercise_id: "exercise-1",
+              allowed_variant_ids: ["variant-1"],
+            },
+          ],
+        },
+      },
+      respond,
+    });
+    await flush();
+
+    expect(createTrainingPlanMock).toHaveBeenCalledWith({
+      name: "Created Plan",
+      exercises: [
+        {
+          exercise_id: "exercise-1",
+          allowed_variant_ids: ["variant-1"],
+        },
+      ],
+    });
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-training-plan-detail",
+      trainingPlanId: "created-plan",
+    });
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "created-plan",
+      null,
+      1,
+    );
+
+    dispatchAction(app, "navigate-back-from-configurator-training-plan-detail");
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-training-plans",
+    });
   });
 
   it("navigates through the configurator Gym list and only opens visible Gym routes", async () => {

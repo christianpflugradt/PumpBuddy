@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-068-item-07
   title: Keep successful plan creation in Configurator
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

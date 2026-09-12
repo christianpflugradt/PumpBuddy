@@ -642,7 +642,13 @@ export const createApp = (
           try {
             const existingId = state.viewState.screen === "configurator-training-plan-detail" ? state.viewState.trainingPlanId : null;
             const saved = existingId ? await updateTrainingPlan(existingId, detail.payload!.request as never) : await createTrainingPlan(detail.payload!.request as never);
-            state = { ...state, viewState: existingId ? { screen: "configurator-training-plan-detail", trainingPlanId: saved.training_plan_id } : { screen: "training-plan-detail", trainingPlanId: saved.training_plan_id, selectedGymId: null, selectedVersionNumber: null } };
+            state = {
+              ...state,
+              viewState: {
+                screen: "configurator-training-plan-detail",
+                trainingPlanId: saved.training_plan_id,
+              },
+            };
             render();
             detail.respond?.({ ok: true });
             void loadTrainingPlanDetailScreenData(saved.training_plan_id, null, saved.version_number);
