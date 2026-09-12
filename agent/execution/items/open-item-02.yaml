@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-069-item-02
+  title: Enable Handle-Only Touch Exercise Sorting
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Reorder mode reliably changes the local Training Plan Exercise draft through
+    handle-initiated touch sorting.
+  rationale: The reorder interface must support the intended mobile interaction without
+    turning the editor into a general sortable framework.
+scope:
+  in:
+  - Evaluate and integrate one maintained touch-capable drag-and-drop dependency only
+    if it fits the existing web-component stack.
+  - Start dragging exclusively from the visible row handle.
+  - Support sensible edge scrolling and restrained active-row and insertion feedback.
+  - Update local draft ordering and displayed positions after a completed drop.
+  - Add deterministic renderer tests for handle-only sorting and retained reordered
+    state.
+  out:
+  - Introducing a frontend framework or reusable application-wide sortable abstraction.
+  - Persisting order changes or changing versioning rules.
+constraints:
+- Keep drag behavior scoped to the Training Plan Reorder mode.
+- Do not let a row body, title, or normal editor control initiate a drag.
+- Preserve the existing exercise identifiers and variant selections while moving rows.
+inputs:
+  required:
+  - agent/execution/items/open-item-01.yaml
+  - renderer/package.json
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/package-lock.json
+acceptance_criteria:
+- id: ac-01
+  statement: A touch drag initiated from a reorder-row handle moves that exercise
+    to the indicated position and updates the local draft order.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality suite passes with regression coverage for handle-only
+      sorting and the emitted reordered draft.
+- id: ac-02
+  statement: Dragging provides restrained moving and insertion feedback and supports
+    scrolling near the list edges without exposing normal edit controls.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer build and mocked UI smoke checks pass after drag interaction
+      and style changes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The dependency decision is constrained by the existing renderer
+    stack and can be made during implementation.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer local exercise draft state
+  - renderer touch interaction dependency
+handoff:
+  review_focus:
+  - Verify that only the handle starts a drag and that drop ordering is deterministic.
+  - Verify dependency scope and bundle impact remain narrowly justified.
+review_feedback: []
+review_result: null

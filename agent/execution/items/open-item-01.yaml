@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-069-item-01
+  title: Add Training Plan Reorder Mode Presentation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A focused Reorder mode is available from the Training Plan editor and preserves
+    the local draft when exited.
+  rationale: The editor needs a clear, non-persisting mode boundary before drag behavior
+    is introduced.
+scope:
+  in:
+  - Add the normal-mode Exercises divider, count heading, and right-aligned Reorder
+    action.
+  - Render a compact reorder-only row view with current positions, exercise names,
+    inert drag handles, and a Done action.
+  - Hide exercise details, variant controls, add/remove controls, and Add Exercise
+    while Reorder mode is active.
+  - Add responsive SCSS for a legible six-exercise list at the 390 x 800 reference
+    viewport.
+  - Keep the existing local draft intact when Done returns to normal editing.
+  out:
+  - Implementing drag-and-drop or changing exercise order.
+  - Changing save assessment, save confirmation, API contracts, or backend persistence.
+constraints:
+- Use the existing TypeScript web-component and SCSS patterns without adding a frontend
+  framework.
+- Done must only exit Reorder mode and must not invoke a save action.
+- Do not show a drag grip beside the normal-mode Reorder action.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/styles.scss
+  optional:
+  - agent/design/domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Normal editing shows the subtle Exercises section header and Reorder
+    action, while Reorder mode shows only compact numbered exercise rows with handles
+    and Done.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality suite passes, including focused editor assertions
+      for both modes and Done preserving the local draft.
+- id: ac-02
+  statement: The reorder presentation remains usable at the reference mobile viewport
+    without exposing normal edit controls.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer build and mocked UI smoke checks pass with the responsive
+      reorder styles.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The implementation boundary and existing component seams
+    are explicit.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer Training Plan editor presentation
+handoff:
+  review_focus:
+  - Verify that Reorder and Done only change local UI mode and never dispatch persistence
+    actions.
+  - Verify that normal-mode controls are completely absent while Reorder mode is active.
+review_feedback: []
+review_result: null

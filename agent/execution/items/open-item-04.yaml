@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-069-item-04
+  title: Version Training Plan Exercise Order Changes
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A reordered Training Plan Exercise definition creates a new immutable version
+    while unchanged order does not.
+  rationale: Exercise position is part of the versioned plan structure and historical
+    versions must retain their original sequence.
+scope:
+  in:
+  - Treat a change to submitted exercise sequence as a version-producing structural
+    change in the Training Plan application service.
+  - Preserve the existing ordered persistence flow for new versions.
+  - Add backend regression coverage for reordered and unchanged definitions.
+  - Add PostgreSQL-backed persistence or API-boundary coverage proving the new version
+    has reordered exercises and an earlier version retains its order.
+  out:
+  - Changing Training Plan request or response schemas.
+  - Changing non-order versioning semantics, lifecycle rules, or database schema.
+constraints:
+- Keep prior Training Plan versions immutable.
+- Use the existing backend repository and SQLx persistence flow.
+- Do not create a new version when the submitted exercise sequence is unchanged.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/application/training_plans.rs
+  - backend/src/persistence/training_plans.rs
+  optional:
+  - backend/src/api/handlers/training_plans.rs
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: The save-impact assessment reports a pure exercise-order change as version-producing
+    and reports an unchanged sequence as non-version-producing.
+  verification:
+    type: command
+    command: make check-backend
+    expected: The backend quality suite passes with unit coverage for order-sensitive
+      version-impact assessment.
+- id: ac-02
+  statement: A persisted reordered save creates a later version with the new positions
+    and leaves the earlier version in its original order.
+  verification:
+    type: command
+    command: make check-backend
+    expected: The backend quality suite passes with PostgreSQL-backed regression coverage
+      for version history and ordered exercise persistence.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan provides the exact versioning boundary and existing
+    service and repository seams.
+  independent_review_required: true
+  independent_review_reason: This changes immutable version-creation behavior and
+    must independently verify historical-order preservation.
+  risk_level: high
+  boundary_impact:
+  - backend Training Plan versioning policy
+  - backend ordered version persistence
+handoff:
+  review_focus:
+  - Verify pure ordering is detected without changing additive, removal, rename, or
+    variant-selection semantics beyond the requested order case.
+  - Verify the persisted historical version cannot be overwritten or reordered by
+    the new save.
+review_feedback: []
+review_result: null

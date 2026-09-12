@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-069-item-03
+  title: Carry Reordered Drafts Through the Existing Save Flow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A locally reordered Training Plan is assessed and saved through the existing
+    renderer workflow without a reorder-specific confirmation.
+  rationale: The new interaction must preserve the established save assessment and
+    warning flow rather than adding a competing persistence path.
+scope:
+  in:
+  - Verify the reordered local draft is serialized in its visible exercise order by
+    Save Training Plan.
+  - Verify Save Training Plan dispatches the existing save-assessment action before
+    persistence.
+  - Verify a version-producing assessment displays the existing warning and confirmation
+    wording.
+  - Verify Done alone and re-entering Reorder mode do not save or discard local order.
+  out:
+  - Changing renderer controller action names, API shape, confirmation copy, or backend
+    versioning policy.
+  - Adding a reorder-specific modal, route, or save action.
+constraints:
+- Reuse the current Save Training Plan action and confirmation dialog unchanged.
+- Keep order local until the user explicitly confirms the existing save flow.
+inputs:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller.test.ts
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Saving after a reorder submits exercises in the visible local order to
+    the existing assessment and save actions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality suite passes with coverage for the ordered request,
+      existing version warning, and confirmed save.
+- id: ac-02
+  statement: Done and a subsequent return to Reorder mode preserve unsaved order without
+    dispatching assessment or save actions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality suite passes with regression coverage for non-persisting
+      Reorder mode transitions.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The existing action contract is sufficient and the work is
+    limited to integration coverage and any narrow adapter correction it exposes.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer editor-to-controller save assessment boundary
+handoff:
+  review_focus:
+  - Verify no alternate persistence path or confirmation has been added.
+  - Verify the request order exactly matches the rendered order after a completed
+    drag.
+review_feedback: []
+review_result: null
