@@ -1,0 +1,49 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-10
+  title: Confirm whitespace-only training plan renames
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Preserve a non-empty submitted plan name for comparison and save so whitespace-only
+    renames receive the required confirmation.
+  rationale: The editor trims the submitted name before impact assessment and persistence,
+    so a whitespace-only rename is silently discarded instead of being confirmed as
+    required by pb-068-item-09.
+scope:
+  in:
+  - Update the Configurator plan editor to distinguish the persisted submitted name
+    from validation-only trimming.
+  - Add renderer coverage for a whitespace-only rename confirmation and saved request.
+  out:
+  - Change backend plan-name normalization or version-production rules.
+  - Change confirmation behavior for ordinary Variant additions.
+constraints:
+- Keep structural version-impact classification backend-authoritative.
+- Reject all-whitespace names with the existing usability validation.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: A submitted Training Plan name that differs only by leading or trailing
+    whitespace displays the rename confirmation before dispatching the save request,
+    and the request retains that submitted non-empty name.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with whitespace-only rename confirmation coverage.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - Configurator save confirmation workflow
+handoff:
+  review_focus:
+  - Verify validation still rejects all-whitespace names while submitted non-empty
+    whitespace is not normalized before save.
