@@ -131,3 +131,84 @@ async fn training_plan_writes_create_atomic_versions_and_preserve_guidance() {
         .await;
     assert!(matches!(rejected, Err(PersistenceError::Conflict(_))));
 }
+
+#[tokio::test]
+async fn reordered_training_plan_save_creates_an_immutable_ordered_version() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+    let initial = plan_definition(vec![
+        (
+            "10000000-0000-0000-0000-000000000003",
+            vec!["20000000-0000-0000-0000-000000000003"],
+        ),
+        (
+            "10000000-0000-0000-0000-000000000004",
+            vec!["20000000-0000-0000-0000-000000000004"],
+        ),
+    ]);
+    let created = repository
+        .create_training_plan_for_user(DEV_USER_ID, &initial)
+        .await
+        .expect("initial plan should persist");
+
+    let reordered = plan_definition(vec![
+        (
+            "10000000-0000-0000-0000-000000000004",
+            vec!["20000000-0000-0000-0000-000000000004"],
+        ),
+        (
+            "10000000-0000-0000-0000-000000000003",
+            vec!["20000000-0000-0000-0000-000000000003"],
+        ),
+    ]);
+    let saved = repository
+        .save_training_plan_for_user(&created.training_plan_id, DEV_USER_ID, &reordered, true)
+        .await
+        .expect("reordered save should create a version");
+    assert_eq!(saved.version_number, 2);
+    assert!(saved.created_new_version);
+
+    let orders: Vec<(i32, Vec<String>)> = sqlx::query(
+        "SELECT tpv.version_number, tpe.position, tpe.exercise_id::text AS exercise_id
+         FROM training_plan_versions tpv
+         JOIN training_plan_exercises tpe ON tpe.training_plan_version_id = tpv.id
+         WHERE tpv.training_plan_id = $1::uuid
+         ORDER BY tpv.version_number, tpe.position",
+    )
+    .bind(&created.training_plan_id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("version exercise order should be readable")
+    .into_iter()
+    .fold(Vec::new(), |mut versions, row| {
+        let version_number = row.get::<i32, _>("version_number");
+        let exercise_id = row.get::<String, _>("exercise_id");
+        match versions.last_mut() {
+            Some((current_version, exercise_ids)) if *current_version == version_number => {
+                exercise_ids.push(exercise_id);
+            }
+            _ => versions.push((version_number, vec![exercise_id])),
+        }
+        versions
+    });
+    assert_eq!(
+        orders,
+        vec![
+            (
+                1,
+                vec![
+                    "10000000-0000-0000-0000-000000000003".to_owned(),
+                    "10000000-0000-0000-0000-000000000004".to_owned(),
+                ],
+            ),
+            (
+                2,
+                vec![
+                    "10000000-0000-0000-0000-000000000004".to_owned(),
+                    "10000000-0000-0000-0000-000000000003".to_owned(),
+                ],
+            ),
+        ]
+    );
+}

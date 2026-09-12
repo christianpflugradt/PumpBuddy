@@ -553,22 +553,43 @@ mod tests {
     }
 
     #[test]
-    fn only_structural_removals_or_exercise_changes_produce_a_new_version() {
-        let current = definition(vec!["existing"]);
+    fn structural_exercise_changes_produce_a_new_version() {
+        let current = TrainingPlanDefinition {
+            name: "Plan".into(),
+            exercises: vec![
+                TrainingPlanExerciseDefinition {
+                    exercise_id: "first-exercise".into(),
+                    allowed_variant_ids: vec!["first-variant".into()],
+                },
+                TrainingPlanExerciseDefinition {
+                    exercise_id: "second-exercise".into(),
+                    allowed_variant_ids: vec!["second-variant".into()],
+                },
+            ],
+        };
+        let reordered = TrainingPlanDefinition {
+            name: "Plan".into(),
+            exercises: vec![current.exercises[1].clone(), current.exercises[0].clone()],
+        };
+        assert!(!is_version_producing_change(&current, &current));
+        assert!(is_version_producing_change(&current, &reordered));
         assert!(!is_version_producing_change(
-            &current,
+            &definition(vec!["existing"]),
             &definition(vec!["existing", "added"])
         ));
         assert!(!is_version_producing_change(
-            &current,
+            &definition(vec!["existing"]),
             &TrainingPlanDefinition {
                 name: "Renamed".into(),
-                ..current.clone()
+                ..definition(vec!["existing"])
             }
         ));
-        assert!(is_version_producing_change(&current, &definition(vec![])));
         assert!(is_version_producing_change(
-            &current,
+            &definition(vec!["existing"]),
+            &definition(vec![])
+        ));
+        assert!(is_version_producing_change(
+            &definition(vec!["existing"]),
             &TrainingPlanDefinition {
                 name: "Plan".into(),
                 exercises: vec![TrainingPlanExerciseDefinition {

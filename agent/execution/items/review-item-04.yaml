@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-069-item-04
   title: Version Training Plan Exercise Order Changes
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
