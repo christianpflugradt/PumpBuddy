@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-05
   title: Verify end-to-end guidance workflows
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

@@ -986,6 +986,81 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await expect(page.getByLabel('Workout completion metrics')).toHaveCount(0);
 });
 
+test('UI smoke guidance edits stay local until save and appear as advisory workout guidance', async ({ page }) => {
+  let isLoggedIn = false;
+  let saveCount = 0;
+  const plan = { id: 'guided-plan', name: 'Guided Squat', exercise_count: 1, last_completed_at: null };
+  const detail = {
+    id: plan.id, name: plan.name, selected_version_number: 1, versions: [{ version_number: 1, is_current: true }],
+    selected_gym_id: null, is_executable: true, execution_status: 'READY', execution_summary: null,
+    exercises: [{ training_plan_exercise_id: 'guided-exercise', exercise_name: 'Squat', exercise_position: 1,
+      configured_variant_count: 2, executable_variant_count: 2, execution_status: 'READY',
+      default_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 },
+      variants: [
+        { id: 'guided-option-1', training_plan_exercise_id: 'guided-exercise', variant_id: 'guided-variant-1', variant_name: 'Back Squat', requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', availability: null, compatible_stations: [], guidance_override: null, effective_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 } },
+        { id: 'guided-option-2', training_plan_exercise_id: 'guided-exercise', variant_id: 'guided-variant-2', variant_name: 'Front Squat', requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: 'REPS', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', availability: null, compatible_stations: [], guidance_override: null, effective_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 } },
+      ],
+    }],
+  };
+  const exercise = { id: 'guided-exercise', name: 'Squat', status: 'active', variant_count: 2 };
+  const variants = [
+    { id: 'guided-variant-1', exercise_id: 'guided-exercise', name: 'Back Squat', status: 'active', requires_station: false, load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', repetition_kind: 'REPS' },
+    { id: 'guided-variant-2', exercise_id: 'guided-exercise', name: 'Front Squat', status: 'active', requires_station: false, load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', repetition_kind: 'REPS' },
+  ];
+  await page.route('**/auth/session', async (route) => route.fulfill({ status: isLoggedIn ? 200 : 401, contentType: 'application/json', body: isLoggedIn ? JSON.stringify({ user: { name: 'Dev User' } }) : '{}' }));
+  await page.route('**/auth/login', async (route) => { isLoggedIn = true; await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
+  await page.route('**/api/training-plans', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([plan]) }));
+  await page.route('**/api/gyms', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'guided-gym', name: 'Guidance Gym' }]) }));
+  await page.route('**/api/exercises/guided-exercise/variants', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(variants) }));
+  await page.route('**/api/exercises', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([exercise]) }));
+  await page.route('**/api/training-plans/guided-plan/save-impact', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ creates_new_version: false }) }));
+  await page.route('**/api/training-plans/guided-plan', async (route) => {
+    if (route.request().method() === 'PUT') {
+      saveCount += 1;
+      const request = route.request().postDataJSON();
+      expect(request.guidance.exercises[0]).toMatchObject({
+        exercise_id: 'guided-exercise', defaults: { target_sets: 4, rep_min: 6, rep_max: 10 },
+        variant_overrides: [{ variant_id: 'guided-variant-2', guidance: { target_sets: 2, rep_min: 5, rep_max: 6 } }],
+      });
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(route.request().method() === 'PUT' ? { training_plan_id: plan.id, version_number: 1, created_new_version: false } : detail) });
+  });
+  await page.route('**/api/training-plans/guided-plan/options?gymId=guided-gym', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ training_plan_id: plan.id, gym_id: 'guided-gym', exercise_variants: [] }) }));
+  await page.route('**/api/active-workout', async (route) => {
+    if (route.request().method() === 'GET') return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ message: 'No active workout' }) });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ workout: { id: 'guided-workout' }, current_exercise_position: 1, exercises: [{ training_plan_exercise_id: 'guided-exercise', position: 1, exercise_name: 'Squat', selected_training_plan_exercise_variant_id: 'guided-option-1', selected_variant_id: 'guided-variant-1', selected_variant_name: 'Back Squat', load_input_mode: 'TOTAL', set_tracking_mode: 'BILATERAL', selected_station_id: null, selected_station_name: null, skipped_at: null, completed_at: null, completed_sets: [], effective_guidance: { target_sets: 4, rep_min: 6, rep_max: 10 }, suggested_set: { set_index: 1, set_side: 'BILATERAL', repetition_kind: 'REPS', repetition_value: 8, reps: 8, suggested_load_input_kg: null, suggested_load_total_kg: null } }] }) });
+  });
+
+  await page.goto('/');
+  await page.getByLabel('Login').fill('main');
+  await page.getByLabel('Password', { exact: true }).fill('test-api-key');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.getByRole('button', { name: 'Configurator' }).click();
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Training Plans' }).click();
+  await page.getByRole('button', { name: 'Open Guided Squat training plan' }).click();
+  await page.getByRole('button', { name: 'Edit guidance' }).click();
+  await page.getByLabel('Target sets').fill('4');
+  await page.getByLabel('Minimum repetitions').fill('6');
+  await page.getByRole('button', { name: 'Save guidance' }).click();
+  expect(saveCount).toBe(0);
+  await page.getByRole('button', { name: 'Add exception' }).click();
+  await page.getByLabel('Target sets').fill('2');
+  await page.getByLabel('Minimum repetitions').fill('5');
+  await page.getByLabel('Maximum repetitions').fill('6');
+  await page.getByRole('button', { name: 'Save guidance' }).click();
+  expect(saveCount).toBe(0);
+  await page.getByRole('button', { name: 'Save Training Plan' }).click();
+  await expect.poll(() => saveCount).toBe(1);
+  await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Back to Workout' }).click();
+  await page.getByLabel('Training Plan', { exact: true }).selectOption(plan.id);
+  await page.getByLabel('Gym', { exact: true }).selectOption('guided-gym');
+  await page.getByRole('button', { name: 'Start Workout' }).click();
+  await expect(page.locator('.set-row-field-guidance')).toHaveText('try 6-10');
+});
+
 test('UI smoke configurator exercises > navigation, search, lifecycle, loading, and error states', async ({ page }) => {
   // TODO: Add exercise create/detail lifecycle coverage when those editor flows have stable UI smoke fixtures.
   let isLoggedIn = false;
