@@ -177,10 +177,16 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-2", "exercise-1", "exercise-3", "exercise-4"]);
     document.dispatchEvent(pointer("pointerup", 104));
 
+    rows().forEach((row, index) => { row.getBoundingClientRect = () => new DOMRect(0, index * 48, 300, 48); });
+    (el.querySelector('[data-reorder-handle][data-exercise-id="exercise-1"]') as HTMLButtonElement).dispatchEvent(pointer("pointerdown", 72));
+    document.dispatchEvent(pointer("pointermove", 160));
+    expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-2", "exercise-3", "exercise-1", "exercise-4"]);
+    document.dispatchEvent(pointer("pointerup", 160));
+
     (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("1. Bench");
-    expect(el.textContent).toContain("2. Squat");
-    expect(el.textContent).toContain("3. Deadlift");
+    expect(el.textContent).toContain("2. Deadlift");
+    expect(el.textContent).toContain("3. Squat");
     expect(el.textContent).toContain("4. Row");
     el.remove();
   });
