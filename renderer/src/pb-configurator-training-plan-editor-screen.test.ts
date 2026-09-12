@@ -10,11 +10,21 @@ const state = (): ConfiguratorTrainingPlanEditorScreenState => ({
   detail: { id: "plan-1", name: "Upper", selected_version_number: 1, versions: [{ version_number: 1, is_current: true }], selected_gym_id: null, is_executable: null, execution_status: null, execution_summary: null, exercises: [{ training_plan_exercise_id: "plan-exercise-1", exercise_name: "Squat", exercise_position: 1, configured_variant_count: 1, executable_variant_count: null, execution_status: null, variants: [{ id: "configured-1", training_plan_exercise_id: "plan-exercise-1", variant_id: "variant-1", variant_name: "Back squat", requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", availability: null, compatible_stations: [] }] }] },
 });
 
+const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void => {
+  el.addEventListener("pb-ui-action", (event) => {
+    const detail = (event as CustomEvent).detail;
+    if (detail.action === "assess-configurator-training-plan-save") {
+      detail.respond({ ok: true, createsNewVersion });
+    }
+  });
+};
+
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
   it("uses compact Variant rows, counts variants in the Exercise heading, and hides a spent add action", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
+    respondToSaveImpact(el, false);
     expect(el.textContent).toContain("3 sets · 8–10 reps");
     expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
     expect(el.querySelector(".configurator-gym-input[data-field=\"plan-name\"]")).toBeTruthy();
@@ -44,8 +54,12 @@ describe("pb-configurator-training-plan-editor-screen", () => {
   it("saves an additive Variant change directly with the complete definition", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
+    respondToSaveImpact(el, false);
     const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
-    el.addEventListener("pb-ui-action", (event) => actions.push((event as CustomEvent).detail));
+    el.addEventListener("pb-ui-action", (event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.action === "save-configurator-training-plan") actions.push(detail);
+    });
 
     (el.querySelector('[data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
@@ -68,6 +82,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
   it("confirms a rename without a version warning, then saves it", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
+    respondToSaveImpact(el, false);
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
     const name = el.querySelector('[data-field="plan-name"]') as HTMLInputElement;
@@ -83,6 +98,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
   it("adds one searchable Exercise through a picker and closes it immediately", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
+    respondToSaveImpact(el, true);
 
     expect(el.textContent).toContain("+ Add Exercise");
     expect(el.querySelector('[data-ui-action="add-plan-exercise"]')).toBeNull();
@@ -107,6 +123,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
   it("requires confirmation before saving an added Exercise", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
+    respondToSaveImpact(el, true);
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => {
       const detail = (event as CustomEvent).detail;
@@ -135,6 +152,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const originalExercise = editorState.detail!.exercises[0];
     editorState.detail!.exercises.push({ ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] });
     document.body.append(el); el.state = editorState;
+    respondToSaveImpact(el, true);
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
     (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="remove-plan-exercise"]') as HTMLButtonElement).click();
@@ -150,6 +168,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const editorState = state();
     editorState.detail!.exercises[0].variants.push({ ...editorState.detail!.exercises[0].variants[0], id: "configured-2", variant_id: "variant-2", variant_name: "Front squat" });
     document.body.append(el); el.state = editorState;
+    respondToSaveImpact(el, true);
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
 
@@ -171,6 +190,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const editorState = state();
     editorState.detail!.exercises[0].variants.push({ ...editorState.detail!.exercises[0].variants[0], id: "configured-2", variant_id: "variant-2", variant_name: "Front squat" });
     document.body.append(el); el.state = editorState;
+    respondToSaveImpact(el, true);
     let response: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") response = detail.respond; });
     const name = el.querySelector('[data-field="plan-name"]') as HTMLInputElement;

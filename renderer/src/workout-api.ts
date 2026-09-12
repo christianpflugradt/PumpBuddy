@@ -34,6 +34,7 @@ import type {
   TrainingPlanDetailResponse,
   TrainingPlanDefinitionRequest,
   TrainingPlanSaveResponse,
+  TrainingPlanSaveImpactResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   WorkoutDetailResponse,
@@ -64,6 +65,7 @@ import {
   parseLoadProfileSummaries,
   parseTrainingPlanDetailResponse,
   parseTrainingPlanSaveResponse,
+  parseTrainingPlanSaveImpactResponse,
   parseTrainingPlanOptionsResponse,
   parseTrainingPlanSummaries,
   parseWorkoutDetailResponse,
@@ -292,6 +294,19 @@ export const updateTrainingPlan = async (
   fetchImpl: typeof fetch = fetch,
 ): Promise<TrainingPlanSaveResponse> =>
   submitLoadProfileRequest(fetchImpl, `/api/training-plans/${encodeURIComponent(trainingPlanId)}`, "PUT", serializeTrainingPlanDefinitionRequest(payload), parseTrainingPlanSaveResponse);
+
+export const assessTrainingPlanSave = async (
+  trainingPlanId: string,
+  payload: TrainingPlanDefinitionRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TrainingPlanSaveImpactResponse> =>
+  submitLoadProfileRequest(
+    fetchImpl,
+    `/api/training-plans/${encodeURIComponent(trainingPlanId)}/save-impact`,
+    "POST",
+    serializeTrainingPlanDefinitionRequest(payload),
+    parseTrainingPlanSaveImpactResponse,
+  );
 
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];

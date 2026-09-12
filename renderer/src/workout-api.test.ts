@@ -19,6 +19,7 @@ import {
   loadStartScreenData,
   loadTrainingPlanDetail,
   loadTrainingPlanOptions,
+  assessTrainingPlanSave,
 } from "./workout-api";
 
 describe("workout-api credentials", () => {
@@ -76,6 +77,31 @@ describe("workout-api credentials", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/training-plans", {
       credentials: "same-origin",
     });
+  });
+
+  it("assesses a training-plan save through the generated backend contract", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ creates_new_version: true }),
+    });
+
+    await expect(
+      assessTrainingPlanSave(
+        "plan-1",
+        { name: "Plan", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] },
+        fetchMock as unknown as typeof fetch,
+      ),
+    ).resolves.toEqual({ creates_new_version: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/training-plans/plan-1/save-impact",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ name: "Plan", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }),
+      },
+    );
   });
 
   it("reconciles a complete Station compatibility selection in one PUT request", async () => {

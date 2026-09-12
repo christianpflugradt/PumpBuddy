@@ -1201,6 +1201,42 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500': { $ref: '#/components/responses/InternalServerError' }
+  /api/training-plans/{trainingPlanId}/save-impact:
+    post:
+      summary: Assess whether saving a training plan definition creates a new version
+      operationId: assessTrainingPlanSave
+      parameters:
+        - name: trainingPlanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingPlanDefinitionRequest'
+      responses:
+        '200':
+          description: Version impact assessed using the same policy as the persisted save
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanSaveImpactResponse'
+        '400':
+          description: Training plan definition validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Training plan not found for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /api/training-plans/{trainingPlanId}/options:
     get:
       summary: List gym-agnostic training plan exercise variants realizable in a selected gym context
@@ -2197,6 +2233,13 @@ components:
           type: integer
           minimum: 1
         created_new_version:
+          type: boolean
+    TrainingPlanSaveImpactResponse:
+      type: object
+      description: Read-only version-impact assessment using the persisted save policy.
+      required: [creates_new_version]
+      properties:
+        creates_new_version:
           type: boolean
     ExerciseCreateRequest:
       type: object

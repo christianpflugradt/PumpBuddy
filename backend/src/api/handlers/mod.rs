@@ -23,8 +23,8 @@ pub(crate) use load_profiles::{
     update_load_profile,
 };
 pub(crate) use training_plans::{
-    create_training_plan, get_training_plan, list_training_plan_exercise_variants,
-    list_training_plans, save_training_plan,
+    assess_training_plan_save, create_training_plan, get_training_plan,
+    list_training_plan_exercise_variants, list_training_plans, save_training_plan,
 };
 pub(crate) use workouts::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,

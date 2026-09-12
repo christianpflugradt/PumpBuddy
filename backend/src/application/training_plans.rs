@@ -14,6 +14,11 @@ pub enum TrainingPlanServiceError {
     Validation(String),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TrainingPlanSaveImpact {
+    pub creates_new_version: bool,
+}
+
 pub(crate) async fn create_training_plan(
     repository: &(impl TrainingPlanRepository + ?Sized),
     user_id: &str,
@@ -32,17 +37,34 @@ pub(crate) async fn save_training_plan(
     user_id: &str,
     definition: TrainingPlanDefinition,
 ) -> Result<TrainingPlanSaveResult, TrainingPlanServiceError> {
-    validate_definition(repository, user_id, &definition).await?;
+    let impact =
+        assess_training_plan_save(repository, training_plan_id, user_id, &definition).await?;
+    repository
+        .save_training_plan_for_user(
+            training_plan_id,
+            user_id,
+            &definition,
+            impact.creates_new_version,
+        )
+        .await
+        .map_err(TrainingPlanServiceError::Persistence)
+}
+
+pub(crate) async fn assess_training_plan_save(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    training_plan_id: &str,
+    user_id: &str,
+    definition: &TrainingPlanDefinition,
+) -> Result<TrainingPlanSaveImpact, TrainingPlanServiceError> {
+    validate_definition(repository, user_id, definition).await?;
     let current = repository
         .fetch_current_training_plan_definition_for_user(training_plan_id, user_id)
         .await
         .map_err(TrainingPlanServiceError::Persistence)?
         .ok_or_else(|| TrainingPlanServiceError::NotFound("Training plan not found".into()))?;
-    let create_new_version = is_version_producing_change(&current, &definition);
-    repository
-        .save_training_plan_for_user(training_plan_id, user_id, &definition, create_new_version)
-        .await
-        .map_err(TrainingPlanServiceError::Persistence)
+    Ok(TrainingPlanSaveImpact {
+        creates_new_version: is_version_producing_change(&current, definition),
+    })
 }
 
 async fn validate_definition(
@@ -317,8 +339,9 @@ fn status_for_counts(executable_count: i32, configured_count: i32) -> TrainingPl
 #[cfg(test)]
 mod tests {
     use super::{
-        create_training_plan, get_training_plan, is_version_producing_change,
-        list_training_plan_exercise_variants, TrainingPlanServiceError,
+        assess_training_plan_save, create_training_plan, get_training_plan,
+        is_version_producing_change, list_training_plan_exercise_variants,
+        TrainingPlanServiceError,
     };
     use crate::{
         domain::{
@@ -338,6 +361,8 @@ mod tests {
         detail_calls: AtomicUsize,
         latest_options_calls: AtomicUsize,
         active_workout_options_calls: AtomicUsize,
+        definition_valid: bool,
+        current_definition: Option<TrainingPlanDefinition>,
     }
 
     impl FakeTrainingPlanRepository {
@@ -348,6 +373,16 @@ mod tests {
                 detail_calls: AtomicUsize::new(0),
                 latest_options_calls: AtomicUsize::new(0),
                 active_workout_options_calls: AtomicUsize::new(0),
+                definition_valid: false,
+                current_definition: None,
+            }
+        }
+
+        fn for_save(current_definition: TrainingPlanDefinition) -> Self {
+            Self {
+                definition_valid: true,
+                current_definition: Some(current_definition),
+                ..Self::new(vec![], None)
             }
         }
     }
@@ -358,7 +393,15 @@ mod tests {
             _definition: &TrainingPlanDefinition,
             _user_id: &str,
         ) -> Result<bool, PersistenceError> {
-            Ok(false)
+            Ok(self.definition_valid)
+        }
+
+        async fn fetch_current_training_plan_definition_for_user(
+            &self,
+            _training_plan_id: &str,
+            _user_id: &str,
+        ) -> Result<Option<TrainingPlanDefinition>, PersistenceError> {
+            Ok(self.current_definition.clone())
         }
 
         async fn fetch_training_plan_summaries_for_user(
@@ -534,5 +577,44 @@ mod tests {
                 }],
             }
         ));
+    }
+
+    #[tokio::test]
+    async fn save_impact_uses_the_backend_version_policy_for_preview_and_persisted_saves() {
+        let current = definition(vec!["existing"]);
+        let repository = FakeTrainingPlanRepository::for_save(current.clone());
+
+        let additive = assess_training_plan_save(
+            &repository,
+            "plan-id",
+            "user-id",
+            &definition(vec!["existing", "added"]),
+        )
+        .await
+        .expect("additive definition should be assessable");
+        let removal = assess_training_plan_save(
+            &repository,
+            "plan-id",
+            "user-id",
+            &TrainingPlanDefinition {
+                name: "Plan".into(),
+                exercises: vec![],
+            },
+        )
+        .await
+        .expect("removal definition should be assessable");
+
+        assert!(!additive.creates_new_version);
+        assert!(removal.creates_new_version);
+        assert_eq!(
+            removal.creates_new_version,
+            is_version_producing_change(
+                &current,
+                &TrainingPlanDefinition {
+                    name: "Plan".into(),
+                    exercises: vec![],
+                },
+            )
+        );
     }
 }

@@ -40,6 +40,7 @@ import { LoadProfileUpdateRequestToJSON } from "../generated/openapi/typescript/
 import { TrainingPlanDetailResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanDetailResponse";
 import { TrainingPlanDefinitionRequestToJSON } from "../generated/openapi/typescript/models/TrainingPlanDefinitionRequest";
 import { TrainingPlanSaveResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanSaveResponse";
+import { TrainingPlanSaveImpactResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanSaveImpactResponse";
 import type { TrainingPlanExerciseVariantSummary as OpenApiTrainingPlanExerciseVariantSummary } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantSummary";
 import { TrainingPlanExerciseVariantsResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantsResponse";
 import { TrainingPlanSummaryFromJSON } from "../generated/openapi/typescript/models/TrainingPlanSummary";
@@ -91,6 +92,7 @@ import type {
   TrainingPlanDetailResponse,
   TrainingPlanDefinitionRequest,
   TrainingPlanSaveResponse,
+  TrainingPlanSaveImpactResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   UpdateActiveWorkoutRequest,
@@ -297,6 +299,9 @@ export const serializeTrainingPlanDefinitionRequest = (
 
 export const parseTrainingPlanSaveResponse = (json: unknown): TrainingPlanSaveResponse =>
   toRendererModel<TrainingPlanSaveResponse>(TrainingPlanSaveResponseFromJSON(json));
+
+export const parseTrainingPlanSaveImpactResponse = (json: unknown): TrainingPlanSaveImpactResponse =>
+  toRendererModel<TrainingPlanSaveImpactResponse>(TrainingPlanSaveImpactResponseFromJSON(json));
 
 export const parseTrainingPlanOptionsResponse = (
   json: unknown,

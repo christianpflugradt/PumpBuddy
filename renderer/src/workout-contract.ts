@@ -259,6 +259,10 @@ export type TrainingPlanSaveResponse = {
   created_new_version: boolean;
 };
 
+export type TrainingPlanSaveImpactResponse = {
+  creates_new_version: boolean;
+};
+
 export type AboutMetadata = {
   app_version: string;
   commit_hash_short: string;

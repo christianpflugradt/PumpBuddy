@@ -77,6 +77,14 @@ pub mod training_plan_save_response {
 }
 pub use training_plan_save_response::TrainingPlanSaveResponse;
 
+pub mod training_plan_save_impact_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_save_impact_response.rs"
+    ));
+}
+pub use training_plan_save_impact_response::TrainingPlanSaveImpactResponse;
+
 pub mod active_workout_exercise {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

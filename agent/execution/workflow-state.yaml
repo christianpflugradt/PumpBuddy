@@ -8,11 +8,11 @@ current:
   active_plan_id: pb-068
   active_plan_path: agent/execution/plan.yaml
 item_counters:
-  open: 3
+  open: 2
   review: 0
-  done: 5
+  done: 6
 last_transition:
-  at: '2026-09-12T08:56:24Z'
-  from: finalize_plan
+  at: '2026-09-12T09:13:33Z'
+  from: execute_items
   to: execute_items
-  reason: stakeholder_rejected_finalize
+  reason: item_implemented_done

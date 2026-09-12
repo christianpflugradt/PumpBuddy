@@ -13,15 +13,16 @@ use crate::api::models::{
     TrainingPlanExerciseDetailResponse, TrainingPlanExerciseExecutionStatusResponse,
     TrainingPlanExerciseVariantDetailResponse, TrainingPlanExerciseVariantSummaryResponse,
     TrainingPlanExerciseVariantsQuery, TrainingPlanExerciseVariantsResponse,
-    TrainingPlanSaveResponse, TrainingPlanSummaryResponse, TrainingPlanVariantAvailabilityResponse,
-    TrainingPlanVariantLoadInputModeResponse, TrainingPlanVariantRepetitionKindResponse,
-    TrainingPlanVariantSetTrackingModeResponse,
+    TrainingPlanSaveImpactResponse, TrainingPlanSaveResponse, TrainingPlanSummaryResponse,
+    TrainingPlanVariantAvailabilityResponse, TrainingPlanVariantLoadInputModeResponse,
+    TrainingPlanVariantRepetitionKindResponse, TrainingPlanVariantSetTrackingModeResponse,
     TrainingPlanVersionSummary as TrainingPlanVersionSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
 use crate::application::training_plans::{
+    assess_training_plan_save as assess_training_plan_save_service,
     create_training_plan as create_training_plan_service,
     get_training_plan as get_training_plan_service,
     list_training_plan_exercise_variants as list_training_plan_exercise_variants_service,
@@ -37,6 +38,25 @@ use crate::domain::{
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
     eprintln!("{error}");
     ApiError::Internal
+}
+
+pub(crate) async fn assess_training_plan_save(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(training_plan_id): Path<String>,
+    Json(request): Json<TrainingPlanDefinitionRequest>,
+) -> Result<Json<TrainingPlanSaveImpactResponse>, ApiError> {
+    let impact = assess_training_plan_save_service(
+        &state.repository,
+        &training_plan_id,
+        &session.user_id,
+        &request.into_domain(),
+    )
+    .await
+    .map_err(map_training_plan_service_error)?;
+    Ok(Json(TrainingPlanSaveImpactResponse {
+        creates_new_version: impact.creates_new_version,
+    }))
 }
 
 fn map_training_plan_service_error(error: TrainingPlanServiceError) -> ApiError {

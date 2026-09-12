@@ -4,6 +4,7 @@ import {
   createConfiguratorStation,
   createExercise,
   createConfiguratorExerciseVariant,
+  assessTrainingPlanSave,
   createTrainingPlan,
   createGym,
   createActiveWorkoutApi,
@@ -618,6 +619,21 @@ export const createApp = (
     }
 
     switch (action) {
+      case "assess-configurator-training-plan-save": {
+        if (state.viewState.screen !== "configurator-training-plan-detail") return;
+        const detail = customEvent.detail as { payload?: { trainingPlanId?: unknown; request?: unknown }; respond?: (result: { ok: boolean; createsNewVersion?: boolean; errorMessage?: string }) => void };
+        if (!detail.respond || typeof detail.payload?.trainingPlanId !== "string" || !detail.payload?.request || typeof detail.payload.request !== "object") return;
+        const trainingPlanId = detail.payload.trainingPlanId;
+        void (async () => {
+          try {
+            const impact = await assessTrainingPlanSave(trainingPlanId, detail.payload!.request as never);
+            detail.respond?.({ ok: true, createsNewVersion: impact.creates_new_version });
+          } catch (error) {
+            detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to assess training plan changes right now.") });
+          }
+        })();
+        return;
+      }
       case "save-configurator-training-plan": {
         if (state.viewState.screen !== "configurator-training-plans" && state.viewState.screen !== "configurator-training-plan-detail") return;
         const detail = customEvent.detail as { payload?: { request?: unknown }; respond?: (result: { ok: boolean; errorMessage?: string }) => void };

@@ -105,6 +105,7 @@ pub use crate::models::training_plan_exercise_variant_detail::SetTrackingMode as
 pub use crate::models::training_plan_exercise_variant_detail::TrainingPlanExerciseVariantDetail as TrainingPlanExerciseVariantDetailResponse;
 pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
+pub use crate::models::training_plan_save_impact_response::TrainingPlanSaveImpactResponse;
 pub use crate::models::training_plan_save_response::TrainingPlanSaveResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::training_plan_version_summary::TrainingPlanVersionSummary;
