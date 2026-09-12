@@ -404,9 +404,19 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   text-align: left;
 }
 
+.configurator-training-plans-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
 .configurator-training-plan-editor-card,
 .configurator-training-plan-exercise-card,
 .configurator-training-plan-variant-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.configurator-training-plan-create-variants {
   display: grid;
   gap: var(--space-sm);
 }
