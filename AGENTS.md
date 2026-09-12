@@ -19,6 +19,7 @@ Rules:
 - Start each task run with fresh context.
 - Do not carry implicit perspective between task runs.
 - When changing perspective (for example implement -> review), use fresh context.
+- Before returning a plan from `finalize-plan`, complete one consolidated, fresh-context audit of every done item and relevant integration boundary. Record every confirmed plan-blocking finding in the same return artifact; do not return after discovering only a first issue when further review remains. Ask for stakeholder acceptance only after that audit is complete and has no actionable findings.
 
 If the script fails, stop deterministic task execution and follow repository failure-handling guidance if present.
 
