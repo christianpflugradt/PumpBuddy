@@ -9,10 +9,10 @@ current:
   active_plan_path: agent/execution/plan.yaml
 item_counters:
   open: 0
-  review: 3
-  done: 2
+  review: 2
+  done: 3
 last_transition:
-  at: '2026-09-12T20:18:49Z'
+  at: '2026-09-12T20:36:40Z'
   from: execute_items
   to: execute_items
-  reason: item_implemented_done
+  reason: item_review_accepted

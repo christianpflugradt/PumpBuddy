@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-01
   title: Persist live plan guidance
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,4 +78,21 @@ handoff:
   - Verify user-scoped foreign keys and cleanup behavior match existing training-plan
     persistence.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 and AC-02 are met: nullable exercise defaults and row-presence
+      variant overrides round-trip without copying inherited values; non-positive
+      targets and unordered bounds are rejected before persistence.'
+    evidence: Independent review of backend/src/domain.rs, backend/src/persistence/training_plans.rs,
+      runtime/database/00-schema.sql, backend/tests/persistence_integration/training_plan_writes.rs,
+      and the canonical domain and persistence models confirmed sparse override deletion,
+      explicit all-null override support, user-scoped composite foreign keys, cascade
+      cleanup, and no guidance columns in TrainingPlanVersion snapshot writes.
+    runtime_build_check: 'make check-backend completed successfully: Rust formatting,
+      Clippy, 142 unit tests, 22 auth API tests, 3 integration API tests, 29 workout
+      API tests, and 81 PostgreSQL-backed persistence tests passed.'
+    residual_risk: Guidance intentionally remains mutable live state rather than historical
+      version data; future work must preserve that lifecycle boundary when exposing
+      save and workout behavior.
+  findings: []
