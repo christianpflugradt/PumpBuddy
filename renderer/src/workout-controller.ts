@@ -636,13 +636,6 @@ export const createApp = (
         })();
         return;
       }
-      case "confirm-configurator-training-plan-save": {
-        const detail = customEvent.detail as { payload?: { message?: unknown }; respond?: unknown };
-        if (typeof detail.payload?.message !== "string" || typeof detail.respond !== "function") return;
-        openConfirmDialog(detail.payload.message, "Save Changes", detail.respond as () => void);
-        render();
-        return;
-      }
       case "logout":
         stopSecsTimerOnCurrentExercise();
         closeConfirmDialog();

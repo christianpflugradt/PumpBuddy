@@ -65,6 +65,21 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("confirms a rename without a version warning, then saves it", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    const saved: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
+    const name = el.querySelector('[data-field="plan-name"]') as HTMLInputElement;
+    name.value = "Renamed Upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("historical workouts");
+    expect(el.textContent).not.toContain("new Training Plan Version");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(saved).toEqual([{ name: "Renamed Upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    el.remove();
+  });
+
   it("adds one searchable Exercise through a picker and closes it immediately", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
@@ -89,31 +104,86 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
-  it("requires confirmation before saving a structural edit", () => {
+  it("requires confirmation before saving an added Exercise", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
-    let confirm: (() => void) | undefined;
     const saved: unknown[] = [];
     el.addEventListener("pb-ui-action", (event) => {
       const detail = (event as CustomEvent).detail;
-      if (detail.action === "confirm-configurator-training-plan-save") confirm = detail.respond;
       if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request);
     });
 
-    (el.querySelector('[data-ui-action="remove-plan-exercise"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="open-plan-exercise-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="add-plan-exercise"]') as HTMLButtonElement).click();
     (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-3"][data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
 
-    expect(confirm).toBeTypeOf("function");
+    expect(el.textContent).toContain("new Training Plan Version");
     expect(saved).toEqual([]);
-    confirm?.();
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
     expect(saved).toEqual([{
       name: "Upper",
-      exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }],
+      exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }, { exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }],
     }]);
+    el.remove();
+  });
+
+  it("requires confirmation before saving a removed Exercise", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    const originalExercise = editorState.detail!.exercises[0];
+    editorState.detail!.exercises.push({ ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] });
+    document.body.append(el); el.state = editorState;
+    const saved: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
+    (el.querySelector('[data-exercise-id="exercise-2"][data-ui-action="remove-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("new Training Plan Version");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(saved).toEqual([{ name: "Upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    el.remove();
+  });
+
+  it("confirms a removed Variant, retains the draft on cancel, and emits the complete changed definition after confirmation", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    editorState.detail!.exercises[0].variants.push({ ...editorState.detail!.exercises[0].variants[0], id: "configured-2", variant_id: "variant-2", variant_name: "Front squat" });
+    document.body.append(el); el.state = editorState;
+    const saved: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
+
+    (el.querySelector('[data-variant-id="variant-2"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("new Training Plan Version");
+    (el.querySelector('[data-ui-action="dismiss-training-plan-save-confirmation"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("1/2 variants");
+    expect(saved).toEqual([]);
+
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(saved).toEqual([{ name: "Upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    el.remove();
+  });
+
+  it("combines rename and structural warnings, then keeps a failed save visible", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    editorState.detail!.exercises[0].variants.push({ ...editorState.detail!.exercises[0].variants[0], id: "configured-2", variant_id: "variant-2", variant_name: "Front squat" });
+    document.body.append(el); el.state = editorState;
+    let response: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") response = detail.respond; });
+    const name = el.querySelector('[data-field="plan-name"]') as HTMLInputElement;
+    name.value = "Renamed Upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-variant-id="variant-2"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("historical workouts");
+    expect(el.textContent).toContain("new Training Plan Version");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(response).toBeTypeOf("function");
+    response?.({ ok: false, errorMessage: "Save failed." });
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain("Save failed.");
+    expect((el.querySelector('[data-field="plan-name"]') as HTMLInputElement).value).toBe("Renamed Upper");
     el.remove();
   });
 });
