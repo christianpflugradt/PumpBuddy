@@ -299,12 +299,9 @@ async fn insert_user_b_owned_workout_reference_fixture(pool: &PgPool) {
              training_plan_exercise_id,
              exercise_variant_id,
              selection_order,
-             rep_min,
-             rep_max,
-             target_sets,
              user_id
          )
-         VALUES ($1::uuid, $2::uuid, $3::uuid, 1, 8, 12, 3, $4::uuid)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 1, $4::uuid)
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID)
@@ -314,6 +311,19 @@ async fn insert_user_b_owned_workout_reference_fixture(pool: &PgPool) {
     .execute(pool)
     .await
     .expect("user-b training plan option insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercise_guidance (
+             training_plan_id, exercise_id, rep_min, rep_max, target_sets, user_id
+         ) VALUES ($1::uuid, $2::uuid, 8, 12, 3, $3::uuid)
+         ON CONFLICT (training_plan_id, exercise_id) DO NOTHING",
+    )
+    .bind(USER_B_TRAINING_PLAN_ID)
+    .bind(USER_B_EXERCISE_ID)
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("user-b training plan guidance insert should succeed");
 
     sqlx::query(
         "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)

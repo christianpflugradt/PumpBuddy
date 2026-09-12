@@ -210,6 +210,7 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, user_id, name),
     CONSTRAINT exercise_variants_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT exercise_variants_id_exercise_user_unique UNIQUE (id, exercise_id, user_id),
     CONSTRAINT exercise_variants_status_check CHECK (status IN ('new', 'active', 'inactive')),
     CONSTRAINT exercise_variants_exercise_user_fk FOREIGN KEY (exercise_id, user_id)
         REFERENCES exercises (id, user_id)
@@ -250,23 +251,10 @@ CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
     training_plan_exercise_id UUID NOT NULL,
     exercise_variant_id UUID NOT NULL,
     selection_order INTEGER NOT NULL,
-    rep_min INTEGER,
-    rep_max INTEGER,
-    target_sets INTEGER DEFAULT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT training_plan_exercise_variants_selection_order_positive_check CHECK (selection_order > 0),
-    CONSTRAINT training_plan_exercise_variants_rep_min_positive_check CHECK (
-        rep_min IS NULL OR rep_min > 0
-    ),
-    CONSTRAINT training_plan_exercise_variants_rep_max_positive_check CHECK (
-        rep_max IS NULL OR rep_max > 0
-    ),
-    CONSTRAINT training_plan_exercise_variants_rep_range_check CHECK (
-        rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
-    ),
-    CONSTRAINT training_plan_exercise_variants_target_sets_check CHECK (target_sets IS NULL OR target_sets >= 1),
     CONSTRAINT training_plan_exercise_variants_unique UNIQUE (
         training_plan_exercise_id,
         exercise_variant_id
@@ -288,6 +276,53 @@ CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
     )
         REFERENCES exercise_variants (id, user_id)
         ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS training_plan_exercise_guidance (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    training_plan_id UUID NOT NULL,
+    exercise_id UUID NOT NULL,
+    rep_min INTEGER,
+    rep_max INTEGER,
+    target_sets INTEGER,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT training_plan_exercise_guidance_plan_exercise_unique UNIQUE (training_plan_id, exercise_id),
+    CONSTRAINT training_plan_exercise_guidance_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT training_plan_exercise_guidance_plan_user_fk FOREIGN KEY (training_plan_id, user_id)
+        REFERENCES training_plans (id, user_id) ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_guidance_exercise_user_fk FOREIGN KEY (exercise_id, user_id)
+        REFERENCES exercises (id, user_id) ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_guidance_rep_min_positive_check CHECK (rep_min IS NULL OR rep_min > 0),
+    CONSTRAINT training_plan_exercise_guidance_rep_max_positive_check CHECK (rep_max IS NULL OR rep_max > 0),
+    CONSTRAINT training_plan_exercise_guidance_rep_range_check CHECK (rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max),
+    CONSTRAINT training_plan_exercise_guidance_target_sets_check CHECK (target_sets IS NULL OR target_sets > 0)
+);
+
+CREATE TABLE IF NOT EXISTS training_plan_exercise_variant_guidance_overrides (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    training_plan_id UUID NOT NULL,
+    exercise_id UUID NOT NULL,
+    exercise_variant_id UUID NOT NULL,
+    rep_min INTEGER,
+    rep_max INTEGER,
+    target_sets INTEGER,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_unique UNIQUE (training_plan_id, exercise_id, exercise_variant_id),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_plan_user_fk FOREIGN KEY (training_plan_id, user_id)
+        REFERENCES training_plans (id, user_id) ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_variant_guidance_override_exercise_user_fk FOREIGN KEY (exercise_id, user_id)
+        REFERENCES exercises (id, user_id) ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_variant_guidance_override_variant_exercise_user_fk FOREIGN KEY (exercise_variant_id, exercise_id, user_id)
+        REFERENCES exercise_variants (id, exercise_id, user_id) ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_variant_guidance_override_rep_min_positive_check CHECK (rep_min IS NULL OR rep_min > 0),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_rep_max_positive_check CHECK (rep_max IS NULL OR rep_max > 0),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_rep_range_check CHECK (rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max),
+    CONSTRAINT training_plan_exercise_variant_guidance_override_target_sets_check CHECK (target_sets IS NULL OR target_sets > 0)
 );
 
 CREATE TABLE IF NOT EXISTS workouts (

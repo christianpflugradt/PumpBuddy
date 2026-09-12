@@ -114,13 +114,15 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: TrainingPlan
-    description: Training plan aggregate with versioned exercise definitions.
+    description: Training plan aggregate with versioned exercise definitions and mutable live guidance.
     attributes:
       - id
       - name
     relationships:
       - type: one_to_many
         target: TrainingPlanVersion
+      - type: one_to_many
+        target: TrainingPlanExerciseGuidance
     lifecycle_policy: IMMUTABLE
 
   - name: TrainingPlanVersion
@@ -312,20 +314,54 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: TrainingPlanExerciseVariant
-    description: Allowed variant selection option for one plan exercise; options are gym-agnostic source-of-truth records where rep_min/rep_max define progression bounds, target_sets defines optional logical set targeting, and configured-gym realizability is derived from compatibility mappings plus requires_station semantics.
+    description: Allowed variant selection option for one immutable plan exercise snapshot; configured-gym realizability is derived from compatibility mappings plus requires_station semantics.
     attributes:
       - id
       - training_plan_exercise_id
       - variant
-      - rep_min
-      - rep_max
-      - target_sets
     relationships:
       - type: many_to_one
         target: TrainingPlanExercise
       - type: many_to_one
         target: ExerciseVariant
     lifecycle_policy: ARCHIVABLE
+
+  - name: TrainingPlanExerciseGuidance
+    description: Mutable live guidance default for one exercise in a TrainingPlan. Its nullable values are advisory and deliberately excluded from TrainingPlanVersion snapshots.
+    attributes:
+      - id
+      - training_plan_id
+      - exercise_id
+      - rep_min
+      - rep_max
+      - target_sets
+    relationships:
+      - type: many_to_one
+        target: TrainingPlan
+      - type: many_to_one
+        target: Exercise
+      - type: one_to_many
+        target: TrainingPlanExerciseVariantGuidanceOverride
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: TrainingPlanExerciseVariantGuidanceOverride
+    description: Sparse mutable guidance exception for one variant. Row absence means inheritance; a present row with nullable fields remains an explicit override state.
+    attributes:
+      - id
+      - training_plan_id
+      - exercise_id
+      - exercise_variant_id
+      - rep_min
+      - rep_max
+      - target_sets
+    relationships:
+      - type: many_to_one
+        target: TrainingPlan
+      - type: many_to_one
+        target: Exercise
+      - type: many_to_one
+        target: ExerciseVariant
+    lifecycle_policy: HARD_DELETABLE
 
   - name: ExerciseVariantEquipmentCompatibility
     description: Station compatibility mapping for station-required variants in configured gym mode.

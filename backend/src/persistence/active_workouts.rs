@@ -350,8 +350,8 @@ pub(super) async fn fetch_active_workout(
             es.name AS selected_station_name,
             we.skipped_at::text AS skipped_at,
             we.completed_at::text AS completed_at,
-            peo.rep_min AS rep_min,
-            peo.rep_max AS rep_max
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_min ELSE tpeg.rep_min END AS rep_min,
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_max ELSE tpeg.rep_max END AS rep_max
          FROM training_plan_exercises tpe
          JOIN exercises e ON e.id = tpe.exercise_id
          LEFT JOIN workout_exercises we
@@ -360,6 +360,20 @@ pub(super) async fn fetch_active_workout(
          LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
          LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
          LEFT JOIN training_plan_exercise_variants peo ON peo.id = we.selected_training_plan_exercise_variant_id
+         LEFT JOIN training_plan_exercise_guidance tpeg
+           ON tpeg.training_plan_id = (
+                SELECT tpv.training_plan_id
+                FROM workouts w
+                JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+                WHERE w.id = $2::uuid AND w.user_id = tpe.user_id
+           )
+          AND tpeg.exercise_id = tpe.exercise_id
+          AND tpeg.user_id = tpe.user_id
+         LEFT JOIN training_plan_exercise_variant_guidance_overrides tpgevo
+           ON tpgevo.training_plan_id = tpeg.training_plan_id
+          AND tpgevo.exercise_id = tpe.exercise_id
+          AND tpgevo.exercise_variant_id = peo.exercise_variant_id
+          AND tpgevo.user_id = tpe.user_id
          WHERE tpe.training_plan_version_id = (
             SELECT training_plan_version_id
             FROM workouts

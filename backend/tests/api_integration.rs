@@ -528,18 +528,12 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
              training_plan_exercise_id,
              exercise_variant_id,
              selection_order,
-             rep_min,
-             rep_max,
-             target_sets,
              user_id
          ) VALUES (
              '9f000000-0000-0000-0000-000000000002'::uuid,
              '32000000-0000-0000-0000-000000000007'::uuid,
              '9f000000-0000-0000-0000-000000000001'::uuid,
              2,
-             6,
-             10,
-             3,
              $1::uuid
          )",
     )
@@ -547,6 +541,21 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
     .execute(&pool)
     .await
     .expect("unavailable plan exercise variant should insert");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercise_variant_guidance_overrides (
+             training_plan_id, exercise_id, exercise_variant_id, rep_min, rep_max, target_sets, user_id
+         )
+         SELECT tpv.training_plan_id, tpe.exercise_id, $1::uuid, 6, 10, 3, tpe.user_id
+         FROM training_plan_exercises tpe
+         JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
+         WHERE tpe.id = $2::uuid",
+    )
+    .bind("9f000000-0000-0000-0000-000000000001")
+    .bind("32000000-0000-0000-0000-000000000007")
+    .execute(&pool)
+    .await
+    .expect("unavailable variant guidance should insert");
 
     let selected_gym_uri = "/api/training-plans/30000000-0000-0000-0000-000000000002?gymId=50000000-0000-0000-0000-000000000001";
     let (selected_detail_status, selected_detail_payload) = json_response(

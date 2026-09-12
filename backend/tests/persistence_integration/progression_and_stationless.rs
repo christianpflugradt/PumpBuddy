@@ -161,9 +161,16 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
     clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     sqlx::query(
-        "UPDATE training_plan_exercise_variants
-         SET rep_min = $1, rep_max = $2
-         WHERE id = $3::uuid",
+        "INSERT INTO training_plan_exercise_guidance (
+             training_plan_id, exercise_id, rep_min, rep_max, user_id
+         )
+         SELECT tpv.training_plan_id, tpe.exercise_id, $1, $2, tpe.user_id
+         FROM training_plan_exercise_variants peo
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
+         WHERE peo.id = $3::uuid
+         ON CONFLICT (training_plan_id, exercise_id)
+         DO UPDATE SET rep_min = EXCLUDED.rep_min, rep_max = EXCLUDED.rep_max",
     )
     .bind(9_i32)
     .bind(11_i32)
@@ -250,9 +257,16 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
     let repository = DomainRepository::new(db.pool.clone());
 
     sqlx::query(
-        "UPDATE training_plan_exercise_variants
-         SET rep_min = $1, rep_max = $2
-         WHERE id = $3::uuid",
+        "INSERT INTO training_plan_exercise_guidance (
+             training_plan_id, exercise_id, rep_min, rep_max, user_id
+         )
+         SELECT tpv.training_plan_id, tpe.exercise_id, $1, $2, tpe.user_id
+         FROM training_plan_exercise_variants peo
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
+         WHERE peo.id = $3::uuid
+         ON CONFLICT (training_plan_id, exercise_id)
+         DO UPDATE SET rep_min = EXCLUDED.rep_min, rep_max = EXCLUDED.rep_max",
     )
     .bind(8_i32)
     .bind(12_i32)
@@ -335,9 +349,16 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
     clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     sqlx::query(
-        "UPDATE training_plan_exercise_variants
-         SET rep_min = NULL, rep_max = $1
-         WHERE id = $2::uuid",
+        "INSERT INTO training_plan_exercise_guidance (
+             training_plan_id, exercise_id, rep_min, rep_max, user_id
+         )
+         SELECT tpv.training_plan_id, tpe.exercise_id, NULL, $1, tpe.user_id
+         FROM training_plan_exercise_variants peo
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
+         WHERE peo.id = $2::uuid
+         ON CONFLICT (training_plan_id, exercise_id)
+         DO UPDATE SET rep_min = EXCLUDED.rep_min, rep_max = EXCLUDED.rep_max",
     )
     .bind(11_i32)
     .bind("33000000-0000-0000-0000-000000000004")

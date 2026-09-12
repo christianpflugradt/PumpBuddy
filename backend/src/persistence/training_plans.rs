@@ -1,8 +1,9 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
     ConfiguredGymTrainingPlanExerciseVariantOption, GymStationOption, TrainingPlanDetail,
-    TrainingPlanDetailExercise, TrainingPlanExerciseVariantDetail, TrainingPlanSummary,
-    TrainingPlanVersionSummary,
+    TrainingPlanDetailExercise, TrainingPlanExerciseGuidance, TrainingPlanExerciseVariantDetail,
+    TrainingPlanExerciseVariantGuidanceOverride, TrainingPlanGuidance, TrainingPlanGuidanceValues,
+    TrainingPlanSummary, TrainingPlanVersionSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, PgConnection, Row};
 use std::collections::HashSet;
@@ -93,9 +94,9 @@ pub(super) async fn fetch_training_plan_detail_for_user(
             e.name AS exercise_name,
             peo.id::text AS training_plan_exercise_variant_id,
             peo.selection_order,
-            peo.rep_min,
-            peo.rep_max,
-            peo.target_sets,
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_min ELSE tpeg.rep_min END AS rep_min,
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_max ELSE tpeg.rep_max END AS rep_max,
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.target_sets ELSE tpeg.target_sets END AS target_sets,
             ev.id::text AS variant_id,
             ev.name AS variant_name,
             ev.requires_station,
@@ -115,6 +116,15 @@ pub(super) async fn fetch_training_plan_detail_for_user(
          LEFT JOIN exercise_variants ev
            ON ev.id = peo.exercise_variant_id
           AND ev.user_id = $2::uuid
+         LEFT JOIN training_plan_exercise_guidance tpeg
+           ON tpeg.training_plan_id = $1::uuid
+          AND tpeg.exercise_id = tpe.exercise_id
+          AND tpeg.user_id = $2::uuid
+         LEFT JOIN training_plan_exercise_variant_guidance_overrides tpgevo
+           ON tpgevo.training_plan_id = $1::uuid
+          AND tpgevo.exercise_id = tpe.exercise_id
+          AND tpgevo.exercise_variant_id = peo.exercise_variant_id
+          AND tpgevo.user_id = $2::uuid
          LEFT JOIN compatible_variant_stations cvs
            ON cvs.exercise_variant_id = ev.id
          LEFT JOIN load_profiles lp
@@ -283,7 +293,7 @@ pub(super) async fn create_training_plan_for_user(
     .bind(user_id)
     .fetch_one(&mut *transaction)
     .await?;
-    insert_complete_version(&mut transaction, &version_id, user_id, definition, None).await?;
+    insert_complete_version(&mut transaction, &version_id, user_id, definition).await?;
     transaction.commit().await?;
     Ok(crate::domain::TrainingPlanSaveResult {
         training_plan_id,
@@ -338,14 +348,7 @@ pub(super) async fn save_training_plan_for_user(
         .bind(user_id)
         .fetch_one(&mut *transaction)
         .await?;
-        insert_complete_version(
-            &mut transaction,
-            &version_id,
-            user_id,
-            definition,
-            Some(&latest_id),
-        )
-        .await?;
+        insert_complete_version(&mut transaction, &version_id, user_id, definition).await?;
         transaction.commit().await?;
         return Ok(crate::domain::TrainingPlanSaveResult {
             training_plan_id: training_plan_id.to_owned(),
@@ -381,6 +384,222 @@ pub(super) async fn save_training_plan_for_user(
     })
 }
 
+pub(super) async fn fetch_training_plan_guidance_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    user_id: &str,
+) -> Result<Option<TrainingPlanGuidance>, PersistenceError> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+             SELECT 1 FROM training_plans
+             WHERE id = $1::uuid AND user_id = $2::uuid
+         )",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+    if !exists {
+        return Ok(None);
+    }
+
+    let rows = sqlx::query(
+        "SELECT
+             tpeg.exercise_id::text AS exercise_id,
+             tpeg.rep_min AS default_rep_min,
+             tpeg.rep_max AS default_rep_max,
+             tpeg.target_sets AS default_target_sets,
+             tpgevo.exercise_variant_id::text AS variant_id,
+             tpgevo.rep_min AS override_rep_min,
+             tpgevo.rep_max AS override_rep_max,
+             tpgevo.target_sets AS override_target_sets
+         FROM training_plan_exercise_guidance tpeg
+         LEFT JOIN training_plan_exercise_variant_guidance_overrides tpgevo
+           ON tpgevo.training_plan_id = tpeg.training_plan_id
+          AND tpgevo.exercise_id = tpeg.exercise_id
+          AND tpgevo.user_id = tpeg.user_id
+         WHERE tpeg.training_plan_id = $1::uuid
+           AND tpeg.user_id = $2::uuid
+         ORDER BY tpeg.exercise_id, tpgevo.exercise_variant_id",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let mut exercises: Vec<TrainingPlanExerciseGuidance> = Vec::new();
+    for row in rows {
+        let exercise_id: String = row.get("exercise_id");
+        if exercises
+            .last()
+            .is_none_or(|exercise| exercise.exercise_id != exercise_id)
+        {
+            exercises.push(TrainingPlanExerciseGuidance {
+                exercise_id,
+                defaults: TrainingPlanGuidanceValues {
+                    rep_min: row.get("default_rep_min"),
+                    rep_max: row.get("default_rep_max"),
+                    target_sets: row.get("default_target_sets"),
+                },
+                variant_overrides: Vec::new(),
+            });
+        }
+        if let Some(variant_id) = row.get::<Option<String>, _>("variant_id") {
+            exercises
+                .last_mut()
+                .expect("guidance exercise was just inserted")
+                .variant_overrides
+                .push(TrainingPlanExerciseVariantGuidanceOverride {
+                    variant_id,
+                    guidance: TrainingPlanGuidanceValues {
+                        rep_min: row.get("override_rep_min"),
+                        rep_max: row.get("override_rep_max"),
+                        target_sets: row.get("override_target_sets"),
+                    },
+                });
+        }
+    }
+    Ok(Some(TrainingPlanGuidance { exercises }))
+}
+
+pub(super) async fn replace_training_plan_guidance_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    user_id: &str,
+    guidance: &TrainingPlanGuidance,
+) -> Result<(), PersistenceError> {
+    guidance.validate().map_err(PersistenceError::Conflict)?;
+    let mut transaction = repository.pool.begin().await?;
+    let plan_id: Option<String> = sqlx::query_scalar(
+        "SELECT id::text FROM training_plans
+         WHERE id = $1::uuid AND user_id = $2::uuid
+         FOR UPDATE",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_one(&mut *transaction)
+    .await?;
+    if plan_id.is_none() {
+        return Err(PersistenceError::NotFound(
+            "Training plan not found".to_owned(),
+        ));
+    }
+
+    for exercise in &guidance.exercises {
+        let configured: bool = sqlx::query_scalar(
+            "SELECT EXISTS(
+                 SELECT 1
+                 FROM training_plan_versions tpv
+                 JOIN training_plan_exercises tpe ON tpe.training_plan_version_id = tpv.id
+                 WHERE tpv.training_plan_id = $1::uuid
+                   AND tpv.user_id = $2::uuid
+                   AND tpe.user_id = $2::uuid
+                   AND tpe.exercise_id = $3::uuid
+                   AND tpv.version_number = (
+                       SELECT MAX(version_number) FROM training_plan_versions
+                       WHERE training_plan_id = $1::uuid AND user_id = $2::uuid
+                   )
+             )",
+        )
+        .bind(training_plan_id)
+        .bind(user_id)
+        .bind(&exercise.exercise_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+        if !configured {
+            return Err(PersistenceError::Conflict(
+                "guidance exercise is not configured in the current training plan".to_owned(),
+            ));
+        }
+        for variant in &exercise.variant_overrides {
+            let configured: bool = sqlx::query_scalar(
+                "SELECT EXISTS(
+                     SELECT 1
+                     FROM training_plan_versions tpv
+                     JOIN training_plan_exercises tpe ON tpe.training_plan_version_id = tpv.id
+                     JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
+                     WHERE tpv.training_plan_id = $1::uuid
+                       AND tpv.user_id = $2::uuid
+                       AND tpe.user_id = $2::uuid
+                       AND peo.user_id = $2::uuid
+                       AND tpe.exercise_id = $3::uuid
+                       AND peo.exercise_variant_id = $4::uuid
+                       AND tpv.version_number = (
+                           SELECT MAX(version_number) FROM training_plan_versions
+                           WHERE training_plan_id = $1::uuid AND user_id = $2::uuid
+                       )
+                 )",
+            )
+            .bind(training_plan_id)
+            .bind(user_id)
+            .bind(&exercise.exercise_id)
+            .bind(&variant.variant_id)
+            .fetch_one(&mut *transaction)
+            .await?;
+            if !configured {
+                return Err(PersistenceError::Conflict(
+                    "guidance variant is not configured for its training plan exercise".to_owned(),
+                ));
+            }
+        }
+    }
+
+    sqlx::query(
+        "DELETE FROM training_plan_exercise_variant_guidance_overrides
+         WHERE training_plan_id = $1::uuid AND user_id = $2::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .execute(&mut *transaction)
+    .await?;
+    sqlx::query(
+        "DELETE FROM training_plan_exercise_guidance
+         WHERE training_plan_id = $1::uuid AND user_id = $2::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(user_id)
+    .execute(&mut *transaction)
+    .await?;
+
+    for exercise in &guidance.exercises {
+        sqlx::query(
+            "INSERT INTO training_plan_exercise_guidance (
+                 training_plan_id, exercise_id, rep_min, rep_max, target_sets, user_id
+             ) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid)",
+        )
+        .bind(training_plan_id)
+        .bind(&exercise.exercise_id)
+        .bind(exercise.defaults.rep_min)
+        .bind(exercise.defaults.rep_max)
+        .bind(exercise.defaults.target_sets)
+        .bind(user_id)
+        .execute(&mut *transaction)
+        .await?;
+
+        for variant in &exercise.variant_overrides {
+            if variant.guidance != exercise.defaults {
+                sqlx::query(
+                    "INSERT INTO training_plan_exercise_variant_guidance_overrides (
+                         training_plan_id, exercise_id, exercise_variant_id,
+                         rep_min, rep_max, target_sets, user_id
+                     ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7::uuid)",
+                )
+                .bind(training_plan_id)
+                .bind(&exercise.exercise_id)
+                .bind(&variant.variant_id)
+                .bind(variant.guidance.rep_min)
+                .bind(variant.guidance.rep_max)
+                .bind(variant.guidance.target_sets)
+                .bind(user_id)
+                .execute(&mut *transaction)
+                .await?;
+            }
+        }
+    }
+    transaction.commit().await?;
+    Ok(())
+}
+
 fn ensure_every_exercise_has_variant(
     definition: &crate::domain::TrainingPlanDefinition,
 ) -> Result<(), PersistenceError> {
@@ -401,7 +620,6 @@ async fn insert_complete_version(
     version_id: &str,
     user_id: &str,
     definition: &crate::domain::TrainingPlanDefinition,
-    prior_version_id: Option<&str>,
 ) -> Result<(), PersistenceError> {
     for (position, exercise) in definition.exercises.iter().enumerate() {
         let plan_exercise_id: String = sqlx::query_scalar(
@@ -411,21 +629,15 @@ async fn insert_complete_version(
         for (selection_order, variant_id) in exercise.allowed_variant_ids.iter().enumerate() {
             sqlx::query(
                 "INSERT INTO training_plan_exercise_variants (
-                    training_plan_exercise_id, exercise_variant_id, selection_order, rep_min, rep_max, target_sets, user_id
-                 )
-                 SELECT $1::uuid, $2::uuid, $3,
-                        prior.rep_min, prior.rep_max, prior.target_sets, $4::uuid
-                 FROM (SELECT 1) source
-                 LEFT JOIN LATERAL (
-                    SELECT peo.rep_min, peo.rep_max, peo.target_sets
-                    FROM training_plan_exercises tpe
-                    JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
-                    WHERE tpe.training_plan_version_id = $5::uuid
-                      AND tpe.exercise_id = $6::uuid
-                      AND peo.exercise_variant_id = $2::uuid
-                      AND tpe.user_id = $4::uuid AND peo.user_id = $4::uuid
-                 ) prior ON TRUE",
-            ).bind(&plan_exercise_id).bind(variant_id).bind(selection_order as i32 + 1).bind(user_id).bind(prior_version_id).bind(&exercise.exercise_id).execute(&mut *connection).await?;
+                    training_plan_exercise_id, exercise_variant_id, selection_order, user_id
+                 ) VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+            )
+            .bind(&plan_exercise_id)
+            .bind(variant_id)
+            .bind(selection_order as i32 + 1)
+            .bind(user_id)
+            .execute(&mut *connection)
+            .await?;
         }
     }
     Ok(())
@@ -681,9 +893,9 @@ async fn fetch_training_plan_exercise_variant_summaries_with_version_cte(
              tpe.id::text AS training_plan_exercise_id,
              e.name AS exercise_name,
              tpe.position AS exercise_position,
-             peo.rep_min,
-             peo.rep_max,
-             peo.target_sets,
+             CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_min ELSE tpeg.rep_min END AS rep_min,
+             CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_max ELSE tpeg.rep_max END AS rep_max,
+             CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.target_sets ELSE tpeg.target_sets END AS target_sets,
              peo.selection_order,
              ev.id::text AS variant_id,
              ev.name AS variant_name,
@@ -707,6 +919,15 @@ async fn fetch_training_plan_exercise_variant_summaries_with_version_cte(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
+         LEFT JOIN training_plan_exercise_guidance tpeg
+           ON tpeg.training_plan_id = $1::uuid
+          AND tpeg.exercise_id = tpe.exercise_id
+          AND tpeg.user_id = $4::uuid
+         LEFT JOIN training_plan_exercise_variant_guidance_overrides tpgevo
+           ON tpgevo.training_plan_id = $1::uuid
+          AND tpgevo.exercise_id = tpe.exercise_id
+          AND tpgevo.exercise_variant_id = peo.exercise_variant_id
+          AND tpgevo.user_id = $4::uuid
          LEFT JOIN compatible_variant_stations cvs ON cvs.exercise_variant_id = peo.exercise_variant_id
          LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id AND lp.user_id = $4::uuid
          LEFT JOIN LATERAL (

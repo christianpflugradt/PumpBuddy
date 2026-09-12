@@ -4,7 +4,8 @@ use crate::domain::{
     ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail, GymSummary,
     GymUpdate, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate, NewConfiguratorStation,
     NewGym, NewLoadProfile, NewWorkout, TrainingPlanDefinition, TrainingPlanDetail,
-    TrainingPlanSaveResult, TrainingPlanSummary, Workout, WorkoutHistorySummary,
+    TrainingPlanGuidance, TrainingPlanSaveResult, TrainingPlanSummary, Workout,
+    WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -339,6 +340,7 @@ pub trait AuthRepository {
     ) -> Result<SideMenuMiddleClickCounts, PersistenceError>;
 }
 
+#[allow(dead_code)]
 pub(crate) trait TrainingPlanRepository {
     async fn training_plan_definition_is_valid_for_user(
         &self,
@@ -379,6 +381,27 @@ pub(crate) trait TrainingPlanRepository {
     ) -> Result<TrainingPlanSaveResult, PersistenceError> {
         Err(PersistenceError::NotFound(
             "Training plan writes are not available".into(),
+        ))
+    }
+
+    async fn fetch_training_plan_guidance_for_user(
+        &self,
+        _training_plan_id: &str,
+        _user_id: &str,
+    ) -> Result<Option<TrainingPlanGuidance>, PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan guidance is not available".into(),
+        ))
+    }
+
+    async fn replace_training_plan_guidance_for_user(
+        &self,
+        _training_plan_id: &str,
+        _user_id: &str,
+        _guidance: &TrainingPlanGuidance,
+    ) -> Result<(), PersistenceError> {
+        Err(PersistenceError::NotFound(
+            "Training plan guidance is not available".into(),
         ))
     }
 
@@ -1465,6 +1488,29 @@ impl DomainRepository {
             user_id,
             definition,
             create_new_version,
+        )
+        .await
+    }
+
+    pub async fn fetch_training_plan_guidance_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<Option<TrainingPlanGuidance>, PersistenceError> {
+        training_plans::fetch_training_plan_guidance_for_user(self, training_plan_id, user_id).await
+    }
+
+    pub async fn replace_training_plan_guidance_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+        guidance: &TrainingPlanGuidance,
+    ) -> Result<(), PersistenceError> {
+        training_plans::replace_training_plan_guidance_for_user(
+            self,
+            training_plan_id,
+            user_id,
+            guidance,
         )
         .await
     }

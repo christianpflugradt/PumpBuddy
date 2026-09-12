@@ -111,12 +111,12 @@ decisions:
   - id: variant_repetition_kind_strategy
     decision: Persist exercise_variants.repetition_kind with values REPS and SECS to define repetition-value interpretation for each variant.
     rationale: Makes variant-level repetition semantics explicit for both count-based and timed sets.
-  - id: training_plan_exercise_variant_rep_range_strategy
-    decision: Persist rep_min and rep_max on training_plan_exercise_variants as the canonical progression-bound source, and disable progression fallback when either bound is null or when rep_min >= rep_max.
-    rationale: Centralizes rep-range ownership at option level and prevents invalid or degenerate bounds from driving fallback suggestions.
-  - id: training_plan_exercise_variant_target_sets_strategy
-    decision: Persist target_sets on training_plan_exercise_variants as nullable integer where present values must be >= 1, with null retaining legacy behavior.
-    rationale: Enables target-set-aware behavior without forcing migration of legacy options.
+  - id: training_plan_live_guidance_strategy
+    decision: Persist nullable rep_min, rep_max, and target_sets in training_plan_exercise_guidance keyed by TrainingPlan and Exercise; keep these fields out of TrainingPlanVersion and training_plan_exercise_variants.
+    rationale: Guidance is mutable plan-level advisory state, so structural version snapshots and historical reads cannot copy or preserve it.
+  - id: training_plan_variant_guidance_override_strategy
+    decision: Persist sparse training_plan_exercise_variant_guidance_overrides keyed by TrainingPlan, Exercise, and ExerciseVariant. Delete an override when its values equal the exercise default; use row presence rather than field nullability to represent whether a variant overrides inheritance.
+    rationale: This preserves explicit all-null overrides while avoiding materialized inherited values on every variant.
   - id: stationless_null_load_strategy
     decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
     rationale: Aligns persistence with stationless execution while preserving validation for station-based loads.
@@ -387,6 +387,7 @@ tables:
     unique_constraints:
       - { columns: [exercise_id, user_id, name] }
       - { columns: [id, user_id] }
+      - { columns: [id, exercise_id, user_id] }
     checks:
       - status in ('new', 'active', 'inactive')
       - load_input_mode in ('TOTAL', 'PER_SIDE')
@@ -418,6 +419,27 @@ tables:
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: selection_order, type: integer, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [training_plan_exercise_id, user_id], references: "training_plan_exercises(id,user_id)" }
+      - { columns: [exercise_variant_id, exercise_id, user_id], references: "exercise_variants(id,exercise_id,user_id)" }
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [training_plan_exercise_id, exercise_variant_id] }
+      - { columns: [training_plan_exercise_id, selection_order] }
+      - { columns: [id, user_id] }
+    checks:
+      - selection_order > 0
+
+  - name: training_plan_exercise_guidance
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: exercise_id, type: uuid, nullable: false }
       - { name: rep_min, type: integer, nullable: true }
       - { name: rep_max, type: integer, nullable: true }
       - { name: target_sets, type: integer, nullable: true }
@@ -426,19 +448,45 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_exercise_id, user_id], references: "training_plan_exercises(id,user_id)" }
-      - { columns: [exercise_variant_id, user_id], references: "exercise_variants(id,user_id)" }
+      - { columns: [training_plan_id, user_id], references: "training_plans(id,user_id)" }
+      - { columns: [exercise_id, user_id], references: "exercises(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [training_plan_exercise_id, exercise_variant_id] }
-      - { columns: [training_plan_exercise_id, selection_order] }
+      - { columns: [training_plan_id, exercise_id] }
       - { columns: [id, user_id] }
     checks:
-      - selection_order > 0
       - rep_min IS NULL OR rep_min > 0
       - rep_max IS NULL OR rep_max > 0
       - rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
-      - target_sets IS NULL OR target_sets >= 1
+      - target_sets IS NULL OR target_sets > 0
+
+  - name: training_plan_exercise_variant_guidance_overrides
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: exercise_id, type: uuid, nullable: false }
+      - { name: exercise_variant_id, type: uuid, nullable: false }
+      - { name: rep_min, type: integer, nullable: true }
+      - { name: rep_max, type: integer, nullable: true }
+      - { name: target_sets, type: integer, nullable: true }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [training_plan_id, user_id], references: "training_plans(id,user_id)" }
+      - { columns: [exercise_id, user_id], references: "exercises(id,user_id)" }
+      - { columns: [exercise_variant_id, user_id], references: "exercise_variants(id,user_id)" }
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [training_plan_id, exercise_id, exercise_variant_id] }
+      - { columns: [id, user_id] }
+    checks:
+      - rep_min IS NULL OR rep_min > 0
+      - rep_max IS NULL OR rep_max > 0
+      - rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
+      - target_sets IS NULL OR target_sets > 0
 
   - name: workouts
     lifecycle_policy: HARD_DELETABLE

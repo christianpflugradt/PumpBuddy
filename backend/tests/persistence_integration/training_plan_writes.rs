@@ -14,13 +14,16 @@ fn plan_definition(exercises: Vec<(&str, Vec<&str>)>) -> pumpbuddy_backend::doma
 }
 
 #[tokio::test]
-async fn training_plan_writes_create_atomic_versions_and_preserve_guidance() {
+async fn training_plan_guidance_is_live_sparse_and_excluded_from_versions() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
     let initial = plan_definition(vec![(
         "10000000-0000-0000-0000-000000000003",
-        vec!["20000000-0000-0000-0000-000000000003"],
+        vec![
+            "20000000-0000-0000-0000-000000000003",
+            "20000000-0000-0000-0000-000000000017",
+        ],
     )]);
     let created = repository
         .create_training_plan_for_user(DEV_USER_ID, &initial)
@@ -28,25 +31,41 @@ async fn training_plan_writes_create_atomic_versions_and_preserve_guidance() {
         .expect("initial plan should persist");
     assert_eq!(created.version_number, 1);
 
-    sqlx::query(
-        "UPDATE training_plan_exercise_variants SET rep_min = 8, rep_max = 12, target_sets = 3
-         WHERE training_plan_exercise_id IN (
-             SELECT id FROM training_plan_exercises
-             WHERE training_plan_version_id = (
-                 SELECT id FROM training_plan_versions
-                 WHERE training_plan_id = $1::uuid AND version_number = 1
-             )
-         )",
-    )
-    .bind(&created.training_plan_id)
-    .execute(&db.pool)
-    .await
-    .expect("initial guidance should be writable for fixture setup");
+    let guidance = pumpbuddy_backend::domain::TrainingPlanGuidance {
+        exercises: vec![pumpbuddy_backend::domain::TrainingPlanExerciseGuidance {
+            exercise_id: "10000000-0000-0000-0000-000000000003".to_owned(),
+            defaults: pumpbuddy_backend::domain::TrainingPlanGuidanceValues {
+                rep_min: Some(8),
+                rep_max: Some(12),
+                target_sets: Some(3),
+            },
+            variant_overrides: vec![
+                pumpbuddy_backend::domain::TrainingPlanExerciseVariantGuidanceOverride {
+                    variant_id: "20000000-0000-0000-0000-000000000017".to_owned(),
+                    guidance: pumpbuddy_backend::domain::TrainingPlanGuidanceValues::default(),
+                },
+            ],
+        }],
+    };
+    repository
+        .replace_training_plan_guidance_for_user(&created.training_plan_id, DEV_USER_ID, &guidance)
+        .await
+        .expect("live guidance should persist");
+    assert_eq!(
+        repository
+            .fetch_training_plan_guidance_for_user(&created.training_plan_id, DEV_USER_ID)
+            .await
+            .expect("guidance read should succeed"),
+        Some(guidance.clone())
+    );
 
     let structural = plan_definition(vec![
         (
             "10000000-0000-0000-0000-000000000003",
-            vec!["20000000-0000-0000-0000-000000000003"],
+            vec![
+                "20000000-0000-0000-0000-000000000003",
+                "20000000-0000-0000-0000-000000000017",
+            ],
         ),
         (
             "10000000-0000-0000-0000-000000000004",
@@ -60,30 +79,45 @@ async fn training_plan_writes_create_atomic_versions_and_preserve_guidance() {
     assert_eq!(saved.version_number, 2);
     assert!(saved.created_new_version);
 
-    let guidance: Vec<_> = sqlx::query(
-        "SELECT tpv.version_number, peo.rep_min, peo.rep_max, peo.target_sets
-         FROM training_plan_versions tpv
-         JOIN training_plan_exercises tpe ON tpe.training_plan_version_id = tpv.id
-         JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
-         WHERE tpv.training_plan_id = $1::uuid
-           AND tpe.exercise_id = '10000000-0000-0000-0000-000000000003'::uuid
-         ORDER BY tpv.version_number",
+    assert_eq!(
+        repository
+            .fetch_training_plan_guidance_for_user(&created.training_plan_id, DEV_USER_ID)
+            .await
+            .expect("guidance read should succeed"),
+        Some(guidance.clone())
+    );
+
+    let inherited = pumpbuddy_backend::domain::TrainingPlanGuidance {
+        exercises: vec![pumpbuddy_backend::domain::TrainingPlanExerciseGuidance {
+            exercise_id: "10000000-0000-0000-0000-000000000003".to_owned(),
+            defaults: guidance.exercises[0].defaults.clone(),
+            variant_overrides: vec![
+                pumpbuddy_backend::domain::TrainingPlanExerciseVariantGuidanceOverride {
+                    variant_id: "20000000-0000-0000-0000-000000000017".to_owned(),
+                    guidance: guidance.exercises[0].defaults.clone(),
+                },
+            ],
+        }],
+    };
+    repository
+        .replace_training_plan_guidance_for_user(&created.training_plan_id, DEV_USER_ID, &inherited)
+        .await
+        .expect("returning to inherited guidance should persist");
+    let stored = repository
+        .fetch_training_plan_guidance_for_user(&created.training_plan_id, DEV_USER_ID)
+        .await
+        .expect("guidance read should succeed")
+        .expect("plan should exist");
+    assert!(stored.exercises[0].variant_overrides.is_empty());
+    let override_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM training_plan_exercise_variant_guidance_overrides
+         WHERE training_plan_id = $1::uuid",
     )
     .bind(&created.training_plan_id)
-    .fetch_all(&db.pool)
+    .fetch_one(&db.pool)
     .await
-    .expect("version guidance should be readable")
-    .into_iter()
-    .map(|row| {
-        (
-            row.get::<i32, _>("version_number"),
-            row.get::<Option<i32>, _>("rep_min"),
-            row.get::<Option<i32>, _>("rep_max"),
-            row.get::<Option<i32>, _>("target_sets"),
-        )
-    })
-    .collect();
-    assert_eq!(guidance, vec![(1, Some(8), Some(12), Some(3)), (2, Some(8), Some(12), Some(3))]);
+    .expect("override cleanup should be readable");
+    assert_eq!(override_count, 0);
 
     let renamed_with_addition = pumpbuddy_backend::domain::TrainingPlanDefinition {
         name: "Renamed Plan".to_owned(),
@@ -130,6 +164,54 @@ async fn training_plan_writes_create_atomic_versions_and_preserve_guidance() {
         )
         .await;
     assert!(matches!(rejected, Err(PersistenceError::Conflict(_))));
+}
+
+#[tokio::test]
+async fn training_plan_guidance_rejects_invalid_values_before_persistence() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+    let created = repository
+        .create_training_plan_for_user(
+            DEV_USER_ID,
+            &plan_definition(vec![(
+                "10000000-0000-0000-0000-000000000003",
+                vec!["20000000-0000-0000-0000-000000000003"],
+            )]),
+        )
+        .await
+        .expect("plan should persist");
+
+    for values in [
+        pumpbuddy_backend::domain::TrainingPlanGuidanceValues {
+            rep_min: Some(0),
+            rep_max: Some(12),
+            target_sets: Some(3),
+        },
+        pumpbuddy_backend::domain::TrainingPlanGuidanceValues {
+            rep_min: Some(12),
+            rep_max: Some(8),
+            target_sets: Some(3),
+        },
+    ] {
+        let invalid = pumpbuddy_backend::domain::TrainingPlanGuidance {
+            exercises: vec![pumpbuddy_backend::domain::TrainingPlanExerciseGuidance {
+                exercise_id: "10000000-0000-0000-0000-000000000003".to_owned(),
+                defaults: values,
+                variant_overrides: Vec::new(),
+            }],
+        };
+        assert!(matches!(
+            repository
+                .replace_training_plan_guidance_for_user(
+                    &created.training_plan_id,
+                    DEV_USER_ID,
+                    &invalid,
+                )
+                .await,
+            Err(PersistenceError::Conflict(_))
+        ));
+    }
 }
 
 #[tokio::test]

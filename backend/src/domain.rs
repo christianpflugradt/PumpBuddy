@@ -335,6 +335,77 @@ pub struct TrainingPlanExerciseDefinition {
     pub allowed_variant_ids: Vec<String>,
 }
 
+/// Nullable advisory targets owned by the mutable training plan rather than a
+/// versioned plan option. A present value must be valid on its own; a partial
+/// repetition range deliberately remains valid because guidance is optional.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TrainingPlanGuidanceValues {
+    pub rep_min: Option<i32>,
+    pub rep_max: Option<i32>,
+    pub target_sets: Option<i32>,
+}
+
+impl TrainingPlanGuidanceValues {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.rep_min.is_some_and(|value| value <= 0)
+            || self.rep_max.is_some_and(|value| value <= 0)
+            || self.target_sets.is_some_and(|value| value <= 0)
+        {
+            return Err("guidance values must be positive when provided".to_owned());
+        }
+        if let (Some(rep_min), Some(rep_max)) = (self.rep_min, self.rep_max) {
+            if rep_min > rep_max {
+                return Err("guidance rep_min must not exceed rep_max".to_owned());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanExerciseGuidance {
+    pub exercise_id: String,
+    pub defaults: TrainingPlanGuidanceValues,
+    /// A row is retained for an all-null value when it intentionally overrides
+    /// non-null defaults. Absence from this vector means inheritance.
+    pub variant_overrides: Vec<TrainingPlanExerciseVariantGuidanceOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanExerciseVariantGuidanceOverride {
+    pub variant_id: String,
+    pub guidance: TrainingPlanGuidanceValues,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TrainingPlanGuidance {
+    pub exercises: Vec<TrainingPlanExerciseGuidance>,
+}
+
+impl TrainingPlanGuidance {
+    pub fn validate(&self) -> Result<(), String> {
+        let mut exercise_ids = std::collections::HashSet::new();
+        let mut variant_ids = std::collections::HashSet::new();
+        for exercise in &self.exercises {
+            if exercise.exercise_id.trim().is_empty() || !exercise_ids.insert(&exercise.exercise_id)
+            {
+                return Err("guidance exercise identifiers must be unique and non-empty".to_owned());
+            }
+            exercise.defaults.validate()?;
+            for variant in &exercise.variant_overrides {
+                if variant.variant_id.trim().is_empty() || !variant_ids.insert(&variant.variant_id)
+                {
+                    return Err(
+                        "guidance variant identifiers must be unique and non-empty".to_owned()
+                    );
+                }
+                variant.guidance.validate()?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrainingPlanSaveResult {
     pub training_plan_id: String,
