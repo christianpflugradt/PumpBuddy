@@ -1,0 +1,48 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-068-item-09
+  title: Confirm every persisted Training Plan rename
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Every submitted plan name that differs from the stored name receives the
+    configured rename confirmation before it is saved.
+  rationale: The editor normalizes both names before deciding whether to show confirmation,
+    while the backend persists the submitted name verbatim; case-only or whitespace-only
+    renames therefore bypass the required rename confirmation.
+scope:
+  in:
+  - Compare the stored and submitted plan names using the same distinction that the
+    persisted save preserves.
+  - Add focused renderer coverage for a case-only or whitespace-only rename confirmation.
+  out:
+  - Changing backend version-production rules.
+  - Changing Training Plan name normalization or persistence semantics.
+constraints:
+- Keep structural version-impact classification backend-authoritative.
+- Preserve direct saves for ordinary Variant additions.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: A case-only or whitespace-only submitted Training Plan name change displays
+    the rename confirmation before the save request is dispatched.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage of the persisted-name rename confirmation.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - Configurator save confirmation workflow
+handoff:
+  review_focus:
+  - Ensure the change affects rename confirmation only and does not recreate version-impact
+    logic in the renderer.
