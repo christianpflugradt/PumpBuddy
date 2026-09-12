@@ -379,6 +379,24 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   font-weight: 750;
 }
 
+.configurator-training-plan-card {
+  display: grid;
+  align-content: center;
+  gap: var(--space-xs);
+}
+
+.configurator-training-plan-card-name {
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.configurator-training-plan-card-exercise-count {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
 .configurator-gym-status {
   border-radius: 999px;
   padding: 0.16rem 0.42rem;

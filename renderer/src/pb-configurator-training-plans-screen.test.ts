@@ -20,7 +20,10 @@ describe("pb-configurator-training-plans-screen", () => {
     el.state = createState(); document.body.append(el);
     const actions: unknown[] = []; el.addEventListener("pb-ui-action", (event) => actions.push((event as CustomEvent).detail));
     expect(el.textContent).toContain("Upper");
-    (el.querySelector('[data-training-plan-id="plan-1"]') as HTMLButtonElement).click();
+    const card = el.querySelector('[data-training-plan-id="plan-1"]') as HTMLButtonElement;
+    expect(card.querySelector(":scope > .configurator-training-plan-card-name")?.textContent).toBe("Upper");
+    expect(card.querySelector(":scope > .configurator-training-plan-card-exercise-count")?.textContent).toBe("1 exercise");
+    card.click();
     expect(actions).toEqual([{ action: "open-configurator-training-plan-detail", payload: { trainingPlanId: "plan-1" } }]);
     el.remove();
   });

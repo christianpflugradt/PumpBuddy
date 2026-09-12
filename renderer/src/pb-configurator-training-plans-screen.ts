@@ -56,7 +56,7 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
     if (this.#state.isLoading) return '<p class="start-status" role="status">Loading training plans...</p>';
     if (this.#state.errorMessage) return `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>`;
     if (this.#state.trainingPlans.length === 0) return '<p class="start-copy">No training plans available yet. Create one with an Exercise and allowed Variant.</p>';
-    return `<div class="configurator-gym-list" aria-label="Training plans">${this.#state.trainingPlans.map((plan) => `<button type="button" class="configurator-gym-card" data-ui-action="open-configurator-training-plan-detail" data-training-plan-id="${escapeHtml(plan.id)}" aria-label="Open ${escapeHtml(plan.name)} training plan"><span class="configurator-gym-name">${escapeHtml(plan.name)}</span><span class="configurator-exercise-card-metadata">${plan.exercise_count === 1 ? "1 exercise" : `${plan.exercise_count} exercises`}</span></button>`).join("")}</div>`;
+    return `<div class="configurator-gym-list" aria-label="Training plans">${this.#state.trainingPlans.map((plan) => `<button type="button" class="configurator-gym-card configurator-training-plan-card" data-ui-action="open-configurator-training-plan-detail" data-training-plan-id="${escapeHtml(plan.id)}" aria-label="Open ${escapeHtml(plan.name)} training plan"><span class="configurator-training-plan-card-name">${escapeHtml(plan.name)}</span><span class="configurator-training-plan-card-exercise-count">${plan.exercise_count === 1 ? "1 exercise" : `${plan.exercise_count} exercises`}</span></button>`).join("")}</div>`;
   }
   #renderCreate(): string {
     const exercise = this.#selectedExercise();
