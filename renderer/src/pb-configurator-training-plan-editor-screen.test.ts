@@ -81,12 +81,13 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
-  it("sorts only from a reorder handle and retains the reordered local draft", () => {
+  it("keeps a reordered draft local across Reorder mode, then assesses and saves it in visible order", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     const editorState = state();
     const originalExercise = editorState.detail!.exercises[0];
     editorState.detail!.exercises.push({ ...originalExercise, id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, variants: [{ ...originalExercise.variants[0], id: "configured-3", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench" }] });
     document.body.append(el); el.state = editorState;
+    const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
     (el.querySelector('[data-ui-action="start-plan-exercise-reorder"]') as HTMLButtonElement).click();
     const pointer = (type: string, y: number, pointerId = 1) => Object.assign(new Event(type, { bubbles: true, cancelable: true }), { clientY: y, pointerId });
     const rows = () => [...el.querySelectorAll<HTMLElement>(".configurator-training-plan-reorder-row")];
@@ -107,11 +108,47 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("1. Bench");
     expect(el.textContent).toContain("2. Squat");
-    respondToSaveImpact(el, false);
-    const saved: unknown[] = [];
-    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saved.push(detail.payload.request); });
+    expect(actions).toEqual([]);
+    (el.querySelector('[data-ui-action="start-plan-exercise-reorder"]') as HTMLButtonElement).click();
+    expect(rows().map((row) => row.dataset.exerciseId)).toEqual(["exercise-2", "exercise-1"]);
+    expect(actions).toEqual([]);
+    (el.querySelector('[data-ui-action="finish-plan-exercise-reorder"]') as HTMLButtonElement).click();
+
+    el.addEventListener("pb-ui-action", (event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.action === "assess-configurator-training-plan-save") {
+        actions.push(detail);
+        detail.respond({ ok: true, createsNewVersion: true });
+      }
+      if (detail.action === "save-configurator-training-plan") actions.push(detail);
+    });
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
-    expect(saved).toEqual([{ name: "Upper", exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }, { exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] }]);
+    expect(actions).toEqual([
+      expect.objectContaining({
+        action: "assess-configurator-training-plan-save",
+        payload: expect.objectContaining({
+          trainingPlanId: "plan-1",
+          request: {
+            name: "Upper",
+            exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }, { exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }],
+          },
+        }),
+      }),
+    ]);
+    expect(el.textContent).toContain("new Training Plan Version");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(actions).toEqual([
+      expect.objectContaining({ action: "assess-configurator-training-plan-save" }),
+      expect.objectContaining({
+        action: "save-configurator-training-plan",
+        payload: expect.objectContaining({
+          request: {
+            name: "Upper",
+            exercises: [{ exercise_id: "exercise-2", allowed_variant_ids: ["variant-3"] }, { exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }],
+          },
+        }),
+      }),
+    ]);
     el.remove();
   });
 
