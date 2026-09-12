@@ -811,8 +811,8 @@ async fn assemble_active_workout_exercise(
         if workout_suggestion_logic::can_use_weighted_reps_progression(
             &exercise.repetition_kind,
             enough_data_for_reps_progression,
-            exercise.rep_min,
-            exercise.rep_max,
+            exercise.effective_guidance.rep_min,
+            exercise.effective_guidance.rep_max,
         ) {
             repository
                 .fetch_reps_progression_history_for_user(RepsProgressionHistoryQuery {
@@ -845,8 +845,8 @@ async fn assemble_active_workout_exercise(
         no_load_prior_repetition_value,
         enough_data_for_load_progression,
         enough_data_for_reps_progression,
-        rep_min: exercise.rep_min,
-        rep_max: exercise.rep_max,
+        rep_min: exercise.effective_guidance.rep_min,
+        rep_max: exercise.effective_guidance.rep_max,
         weighted_progression_history: &weighted_progression_history,
         set_index: idx,
         set_side: &suggested_side,
@@ -866,6 +866,7 @@ async fn assemble_active_workout_exercise(
         set_tracking_mode: exercise.set_tracking_mode.clone(),
         selected_station_id: exercise.selected_station_id.clone(),
         selected_station_name: exercise.selected_station_name.clone(),
+        effective_guidance: exercise.effective_guidance.clone(),
         skipped_at: exercise.skipped_at.clone(),
         completed_at: exercise.completed_at.clone(),
         completed_sets: exercise.completed_sets.clone(),
@@ -2743,6 +2744,7 @@ mod tests {
             set_tracking_mode: Some(set_tracking_mode.to_owned()),
             selected_station_id: None,
             selected_station_name: None,
+            effective_guidance: crate::domain::TrainingPlanGuidanceValues::default(),
             skipped_at: None,
             completed_at: None,
             completed_sets,

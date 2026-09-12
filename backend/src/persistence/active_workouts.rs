@@ -351,7 +351,8 @@ pub(super) async fn fetch_active_workout(
             we.skipped_at::text AS skipped_at,
             we.completed_at::text AS completed_at,
             CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_min ELSE tpeg.rep_min END AS rep_min,
-            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_max ELSE tpeg.rep_max END AS rep_max
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.rep_max ELSE tpeg.rep_max END AS rep_max,
+            CASE WHEN tpgevo.id IS NOT NULL THEN tpgevo.target_sets ELSE tpeg.target_sets END AS target_sets
          FROM training_plan_exercises tpe
          JOIN exercises e ON e.id = tpe.exercise_id
          LEFT JOIN workout_exercises we
@@ -450,8 +451,11 @@ pub(super) async fn fetch_active_workout(
             selected_station_name: row.get("selected_station_name"),
             skipped_at: row.get("skipped_at"),
             completed_at: row.get("completed_at"),
-            rep_min: row.get("rep_min"),
-            rep_max: row.get("rep_max"),
+            effective_guidance: crate::domain::TrainingPlanGuidanceValues {
+                rep_min: row.get("rep_min"),
+                rep_max: row.get("rep_max"),
+                target_sets: row.get("target_sets"),
+            },
             completed_sets,
         });
     }

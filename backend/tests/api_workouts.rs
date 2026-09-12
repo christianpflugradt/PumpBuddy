@@ -2002,6 +2002,10 @@ async fn free_mode_active_workout_start_can_resume_and_cancel_before_any_complet
     assert!(
         exercise_for_position(&create_body, 1)["suggested_set"]["repetition_value"].is_number()
     );
+    assert_eq!(
+        exercise_for_position(&create_body, 1)["effective_guidance"],
+        json!({ "rep_min": 5, "rep_max": 8, "target_sets": 3 })
+    );
 
     let workout_id = create_body["workout"]["id"]
         .as_str()

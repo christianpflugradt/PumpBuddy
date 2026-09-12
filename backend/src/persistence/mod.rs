@@ -4,8 +4,8 @@ use crate::domain::{
     ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail, GymSummary,
     GymUpdate, LoadProfileDetail, LoadProfileSummary, LoadProfileUpdate, NewConfiguratorStation,
     NewGym, NewLoadProfile, NewWorkout, TrainingPlanDefinition, TrainingPlanDetail,
-    TrainingPlanGuidance, TrainingPlanSaveResult, TrainingPlanSummary, Workout,
-    WorkoutHistorySummary,
+    TrainingPlanGuidance, TrainingPlanGuidanceValues, TrainingPlanSaveResult, TrainingPlanSummary,
+    Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -141,8 +141,7 @@ pub(crate) struct ActiveWorkoutExerciseReadModel {
     pub(crate) selected_station_name: Option<String>,
     pub(crate) skipped_at: Option<String>,
     pub(crate) completed_at: Option<String>,
-    pub(crate) rep_min: Option<i32>,
-    pub(crate) rep_max: Option<i32>,
+    pub(crate) effective_guidance: TrainingPlanGuidanceValues,
     pub(crate) completed_sets: Vec<CompletedActiveWorkoutSet>,
 }
 
@@ -949,6 +948,43 @@ impl TrainingPlanRepository for DomainRepository {
             user_id,
             definition,
             create_new_version,
+        )
+        .await
+    }
+
+    async fn fetch_training_plan_guidance_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<Option<TrainingPlanGuidance>, PersistenceError> {
+        DomainRepository::fetch_training_plan_guidance_for_user(self, training_plan_id, user_id)
+            .await
+    }
+
+    async fn replace_training_plan_guidance_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+        guidance: &TrainingPlanGuidance,
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::replace_training_plan_guidance_for_user(
+            self,
+            training_plan_id,
+            user_id,
+            guidance,
+        )
+        .await
+    }
+
+    async fn count_training_plan_guidance_overrides_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        DomainRepository::count_training_plan_guidance_overrides_for_user(
+            self,
+            training_plan_id,
+            user_id,
         )
         .await
     }

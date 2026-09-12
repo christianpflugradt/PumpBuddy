@@ -478,6 +478,32 @@ describe("pb-exercise-screen", () => {
     expect(finishButton.disabled).toBe(true);
   });
 
+  it("renders live active-workout guidance as advisory in free mode", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "free";
+    state.plan.exercises[0]!.effectiveGuidance = {
+      rep_min: 6,
+      rep_max: 10,
+      target_sets: 2,
+    };
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 40, reps: 10 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 42.5, reps: 9 },
+    ];
+
+    el.state = state;
+
+    expect(el.textContent).toContain("Target: 2 sets · 6-10 reps");
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(true);
+  });
+
   it("keeps Complete Set filled when logical sets are below target_sets", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

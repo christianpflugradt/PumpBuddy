@@ -3073,6 +3073,7 @@ components:
         - set_tracking_mode
         - selected_station_id
         - selected_station_name
+        - effective_guidance
         - completed_sets
         - suggested_set
         - next_set
@@ -3120,6 +3121,12 @@ components:
         selected_station_name:
           type: string
           nullable: true
+        effective_guidance:
+          $ref: '#/components/schemas/TrainingPlanGuidanceValues'
+          description: |
+            Live advisory guidance resolved for the selected variant, falling back to
+            the exercise default and then to no guidance. It is intentionally not a
+            workout snapshot and never restricts set confirmation or completion.
         skipped_at:
           type: string
           format: date-time

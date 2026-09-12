@@ -10,6 +10,7 @@ import type {
   LoadProfileDetailResponse,
   LoadProfileSummary,
   PlanExerciseOptionSummary,
+  TrainingPlanGuidanceValues,
   TrainingPlanDetailResponse,
   TrainingPlanSummary,
   WorkoutDetailResponse,
@@ -61,6 +62,7 @@ export type ExerciseStep = {
   loadInputMode?: LoadInputMode | null;
   repetitionKind: RepetitionKind;
   setTrackingMode?: SetTrackingMode | null;
+  effectiveGuidance?: TrainingPlanGuidanceValues;
   isFallbackOptionConfirmed: boolean;
   skippedAt?: string | null;
   suggestedSet: WorkoutSetDraft;

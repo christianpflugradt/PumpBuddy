@@ -704,6 +704,7 @@ fn active_workout_exercise_response(
         set_tracking_mode,
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
+        effective_guidance: training_plan_guidance_values_response(exercise.effective_guidance),
         skipped_at: exercise.skipped_at.map(Some),
         completed_at: exercise.completed_at.map(Some),
         completed_sets: exercise
@@ -1731,6 +1732,11 @@ mod tests {
                 set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
+                effective_guidance: crate::domain::TrainingPlanGuidanceValues {
+                    rep_min: Some(8),
+                    rep_max: Some(12),
+                    target_sets: Some(3),
+                },
                 skipped_at: None,
                 completed_at: None,
                 completed_sets: Vec::new(),
@@ -1749,6 +1755,9 @@ mod tests {
         .expect("response mapping should succeed");
 
         let exercise = &response.workout.exercises[0];
+        assert_eq!(exercise.effective_guidance.rep_min, Some(8));
+        assert_eq!(exercise.effective_guidance.rep_max, Some(12));
+        assert_eq!(exercise.effective_guidance.target_sets, Some(3));
         assert_eq!(
             exercise.load_input_mode,
             Some(super::ActiveWorkoutExerciseLoadInputModeResponse::Total)
@@ -1786,6 +1795,7 @@ mod tests {
                 set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
+                effective_guidance: crate::domain::TrainingPlanGuidanceValues::default(),
                 skipped_at: None,
                 completed_at: None,
                 completed_sets: Vec::new(),
@@ -2072,6 +2082,7 @@ mod tests {
                 set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
+                effective_guidance: crate::domain::TrainingPlanGuidanceValues::default(),
                 skipped_at: None,
                 completed_at: None,
                 completed_sets: Vec::new(),

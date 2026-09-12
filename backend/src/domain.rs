@@ -696,6 +696,7 @@ pub struct ActiveWorkoutExercise {
     pub set_tracking_mode: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_station_name: Option<String>,
+    pub effective_guidance: TrainingPlanGuidanceValues,
     pub skipped_at: Option<String>,
     pub completed_at: Option<String>,
     pub completed_sets: Vec<CompletedActiveWorkoutSet>,
