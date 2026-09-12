@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-069-item-04
   title: Version Training Plan Exercise Order Changes
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,4 +72,20 @@ handoff:
   - Verify the persisted historical version cannot be overwritten or reordered by
     the new save.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01: positional comparison treats a pure reordered exercise sequence
+      as version-producing while identical sequence remains non-version-producing;
+      AC-02: the PostgreSQL-backed regression verifies version 1 retains its original
+      positions and version 2 persists the reordered positions.'
+    evidence: backend/src/application/training_plans.rs compares current and submitted
+      exercises in sequence; save_training_plan uses that assessment before repository
+      save. backend/tests/persistence_integration/training_plan_writes.rs asserts
+      ordered history for versions 1 and 2.
+    runtime_build_check: 'make check-backend passed: formatting, clippy, 142 backend
+      unit tests, API and persistence integration suites, and doc tests all completed
+      successfully.'
+    residual_risk: The review found no unresolved implementation or API-contract risk.
+      Existing API request and response schemas remain unchanged.
+  findings: []
