@@ -12,14 +12,15 @@ const state = (): ConfiguratorTrainingPlanEditorScreenState => ({
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
-  it("uses compact Variant rows and a searchable picker that prevents duplicates", () => {
+  it("uses compact Variant rows, counts variants in the Exercise heading, and hides a spent add action", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
     expect(el.textContent).toContain("3 sets · 8–10 reps");
     expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
     expect(el.querySelector(".configurator-gym-input[data-field=\"plan-name\"]")).toBeTruthy();
     expect(el.querySelector(".configurator-training-plan-exercise-card")).toBeTruthy();
-    expect(el.textContent).toContain("Allowed Variants · 1");
+    expect(el.textContent).toContain("1. Squat 1/2 variants");
+    expect(el.textContent).not.toContain("Allowed Variants");
     expect(el.textContent).not.toContain("Find Variant");
     expect(el.textContent).not.toContain("Remove Exercise");
     expect(el.querySelector('[data-variant-id="variant-1"][data-ui-action="add-plan-variant"]')).toBeNull();
@@ -34,6 +35,8 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     add.click();
     expect(el.querySelector('[role="dialog"]')).toBeNull();
     expect(el.querySelector('[data-variant-id="variant-2"][data-ui-action="add-plan-variant"]')).toBeNull();
+    expect(el.textContent).toContain("1. Squat 2/2 variants");
+    expect(el.querySelector('[data-exercise-id="exercise-1"][data-ui-action="open-plan-variant-picker"]')).toBeNull();
     expect((el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).disabled).toBe(false);
     el.remove();
   });

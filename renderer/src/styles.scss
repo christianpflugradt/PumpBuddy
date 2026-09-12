@@ -413,7 +413,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 .configurator-training-plan-exercise-card,
 .configurator-training-plan-variant-list {
   display: grid;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .configurator-training-plan-create-variants {
@@ -422,7 +422,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-training-plan-exercise-card {
-  padding: var(--space-md) 0;
+  padding: var(--space-sm) 0;
   border-top: 1px solid var(--border-card);
 }
 
@@ -434,14 +434,9 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   gap: var(--space-md);
 }
 
-.configurator-training-plan-exercise-heading h3,
-.configurator-training-plan-variants-heading {
-  margin: 0;
-}
+.configurator-training-plan-exercise-heading h3 { min-width: 0; margin: 0; font-size: 1.0625rem; font-weight: 750; line-height: 1.25; }
 
-.configurator-training-plan-exercise-heading h3 { min-width: 0; font-size: var(--font-size-body); }
-
-.configurator-training-plan-variants-heading { color: var(--text-secondary); font-size: var(--font-size-label); }
+.configurator-training-plan-variant-count { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 500; white-space: nowrap; }
 
 .configurator-training-plan-variant-list {
   margin: 0;
@@ -450,7 +445,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-training-plan-variant {
-  padding: var(--space-sm) 0;
+  padding: var(--space-2xs) 0;
 }
 
 .configurator-training-plan-variant > span {
@@ -459,7 +454,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   min-width: 0;
 }
 
-.configurator-training-plan-variant strong { font-weight: 650; overflow-wrap: anywhere; }
+.configurator-training-plan-variant strong { font-size: 0.9375rem; font-weight: 500; overflow-wrap: anywhere; }
 
 .configurator-training-plan-variant small {
   color: var(--text-secondary);
