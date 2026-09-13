@@ -41,6 +41,40 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
+  it("clears saved guidance from the next unchanged save without dropping it after a failure", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    const editorState = state();
+    editorState.detail!.exercises[0].variants[0].guidance_override = { target_sets: 4, rep_min: 5, rep_max: 7 };
+    document.body.append(el); el.state = editorState; respondToSaveImpact(el, false);
+    const saves: Array<{ request: unknown; respond: (result: { ok: boolean; errorMessage?: string }) => void }> = [];
+    el.addEventListener("pb-ui-action", (event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.action === "save-configurator-training-plan") saves.push({ request: detail.payload.request, respond: detail.respond });
+    });
+
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    const min = el.querySelector('[data-field="guidance-repMin"]') as HTMLInputElement;
+    min.value = "6"; min.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("replace 1 existing variant exception");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(saves[0].request).toMatchObject({ guidance: { exercises: [{ defaults: { target_sets: 3, rep_min: 6, rep_max: 10 } }] } });
+    saves[0].respond({ ok: false, errorMessage: "Save failed." });
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain("Save failed.");
+
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).toContain("replace 1 existing variant exception");
+    (el.querySelector('[data-ui-action="confirm-training-plan-save"]') as HTMLButtonElement).click();
+    expect(saves[1].request).toMatchObject({ guidance: { exercises: [{ defaults: { target_sets: 3, rep_min: 6, rep_max: 10 } }] } });
+    saves[1].respond({ ok: true });
+
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.textContent).not.toContain("replace 1 existing variant exception");
+    expect(saves[2].request).toEqual({ name: "Upper", exercises: [{ exercise_id: "exercise-1", allowed_variant_ids: ["variant-1"] }] });
+    el.remove();
+  });
+
   it("shows only overridden Variant guidance, can clear it, and confirms replacement using the existing count", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     const editorState = state();
