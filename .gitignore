@@ -11,6 +11,7 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.*.example
+!renderer/.env.production
 .venv/
 
 # --- Logs ---
