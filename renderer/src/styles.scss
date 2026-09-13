@@ -479,6 +479,28 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   border-top: 1px solid var(--border-card);
 }
 
+/* Keep the divider-led separation between exercises, while tightening only
+   the heading, guidance, and variant content inside the detail-list cards. */
+.configurator-training-plan-exercise-card[data-exercise-id] {
+  /* Content is compact; the following card's divider and bottom padding
+     remain the intentional separation between exercise groups. */
+  gap: 0;
+  padding-top: var(--space-2xs);
+}
+
+/* The 48px action buttons deliberately extend 4px beyond these compact rows.
+   This keeps their touch areas intact while letting the visible exercise and
+   variant content occupy less vertical space. */
+.configurator-training-plan-exercise-card[data-exercise-id] .configurator-training-plan-exercise-heading,
+.configurator-training-plan-exercise-card[data-exercise-id] .configurator-training-plan-variant {
+  min-height: 2.5rem;
+}
+
+.configurator-training-plan-exercise-card[data-exercise-id] .configurator-training-plan-edit,
+.configurator-training-plan-exercise-card[data-exercise-id] .configurator-training-plan-remove {
+  margin-block: -0.25rem;
+}
+
 .configurator-training-plan-section-header {
   display: flex;
   align-items: center;
@@ -557,10 +579,11 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   margin: 0;
   padding: 0;
   list-style: none;
+  gap: 0;
 }
 
 .configurator-training-plan-variant {
-  padding: var(--space-2xs) 0;
+  padding: 0;
 }
 
 .configurator-training-plan-guidance,
@@ -680,7 +703,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--status-danger-text);
-  font-size: 1.55rem;
+  font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
 }
