@@ -74,6 +74,7 @@ refresh-backend-api-client:
 		-g rust \
 		-o "/local/$(OPENAPI_BACKEND_OUTPUT)" \
 		--type-mappings UUID=String,Uuid=String,uuid=String,date-time=String,DateTime=String \
+		--model-name-mappings application/json=ApplicationJson \
 		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
 
 refresh-frontend-api-client:
