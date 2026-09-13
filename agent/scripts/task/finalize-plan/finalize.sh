@@ -243,6 +243,8 @@ PY
   ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}_${PLAN_SLUG}"
 fi
 
+FINALIZE_ACCEPT_COMMIT_MESSAGE="${FINALIZE_ACCEPT_COMMIT_MESSAGE:-docs: finalize plan ${PLAN_ID}}"
+
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   if [ "${OUTCOME}" = "accept" ]; then
@@ -264,7 +266,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "DRY_RUN=would_stage_paths all_changed_files"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     if [ "${OUTCOME}" = "accept" ]; then
-      echo "DRY_RUN=would_git_commit docs: finalize plan ${PLAN_ID}"
+      echo "DRY_RUN=would_git_commit ${FINALIZE_ACCEPT_COMMIT_MESSAGE}"
     else
       echo "DRY_RUN=would_git_commit docs: return finalize plan ${PLAN_ID} with findings"
     fi
@@ -376,8 +378,8 @@ PY
     echo "No staged changes detected after finalize accept actions." >&2
     exit 9
   fi
-  run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize plan ${PLAN_ID}" \
-    git commit -m "docs: finalize plan ${PLAN_ID}"
+  run_write_command "${EXECUTION_CONFIG}" "would_git_commit ${FINALIZE_ACCEPT_COMMIT_MESSAGE}" \
+    git commit -m "${FINALIZE_ACCEPT_COMMIT_MESSAGE}"
 else
   if [ "${SKIP_MUTATION}" != "true" ]; then
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "false"
