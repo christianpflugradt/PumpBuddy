@@ -41,16 +41,17 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     el.remove();
   });
 
-  it("labels an exception, can clear it, and confirms replacement using the existing count", () => {
+  it("shows only overridden Variant guidance, can clear it, and confirms replacement using the existing count", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     const editorState = state();
     editorState.detail!.exercises[0].variants[0].guidance_override = { target_sets: 4, rep_min: 5, rep_max: 7 };
     document.body.append(el); el.state = editorState; respondToSaveImpact(el, false);
-    expect(el.textContent).toContain("Exception: 4 sets · 5–7 reps");
+    expect(el.textContent).toContain("4 sets · 5–7 reps");
+    expect(el.textContent).not.toContain("Exception:");
     (el.querySelector('[data-ui-action="open-variant-guidance"]') as HTMLButtonElement).click();
     expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherits: 3 sets · 8–10 reps");
     (el.querySelector('[data-ui-action="clear-variant-guidance"]') as HTMLButtonElement).click();
-    expect(el.textContent).toContain("Inherits exercise guidance");
+    expect(el.textContent).not.toContain("Inherits exercise guidance");
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("replace 1 existing variant exception");
     el.remove();
@@ -68,6 +69,11 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     expect(el.textContent).not.toContain("Allowed Variants");
     expect(el.textContent).not.toContain("Find Variant");
     expect(el.textContent).not.toContain("Remove Exercise");
+    expect(el.textContent).not.toContain("Default guidance:");
+    expect(el.textContent).not.toContain("Inherits exercise guidance");
+    expect(el.textContent).not.toContain("Add exception");
+    expect(el.textContent).not.toContain("Edit guidance");
+    expect(el.querySelectorAll('svg[data-icon="pen"]')).toHaveLength(2);
     expect(el.querySelector('[data-variant-id="variant-1"][data-ui-action="add-plan-variant"]')).toBeNull();
     const remove = el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement;
     expect(remove.disabled).toBe(true);

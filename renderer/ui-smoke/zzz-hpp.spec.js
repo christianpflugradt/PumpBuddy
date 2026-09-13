@@ -1052,12 +1052,12 @@ test('UI smoke guidance edits stay local until save and appear as advisory worko
   await page.getByRole('button', { name: 'Open navigation menu' }).click();
   await page.locator('pb-side-menu[mode="configurator"]').getByRole('button', { name: 'Training Plans' }).click();
   await page.getByRole('button', { name: 'Open Guided Squat training plan' }).click();
-  await page.getByRole('button', { name: 'Edit guidance', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit guidance for Squat', exact: true }).click();
   await page.getByLabel('Target sets').fill('4');
   await page.getByLabel('Minimum repetitions').fill('6');
   await page.getByRole('button', { name: 'Save guidance' }).click();
   expect(saveCount).toBe(0);
-  await page.getByRole('button', { name: 'Edit guidance exception for Front Squat' }).click();
+  await page.getByRole('button', { name: 'Edit guidance for Front Squat', exact: true }).click();
   await page.getByLabel('Target sets').fill('2');
   await page.getByLabel('Minimum repetitions').fill('5');
   await page.getByLabel('Maximum repetitions').fill('6');

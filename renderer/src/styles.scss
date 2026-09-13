@@ -572,31 +572,46 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 .configurator-training-plan-guidance {
-  justify-content: space-between;
   color: var(--text-secondary);
+  margin-top: calc(-1 * var(--space-2xs));
 }
 
-.configurator-training-plan-guidance--exception {
-  color: var(--brand-strong);
-  font-weight: 700;
+.configurator-training-plan-exercise-actions,
+.configurator-training-plan-variant-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2xs);
 }
 
-.configurator-training-plan-guidance-action {
+.configurator-training-plan-edit {
+  width: var(--action-target-min-height);
   min-height: 2.25rem;
-  padding: 0 var(--space-xs);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--brand-strong);
-  font: inherit;
-  font-size: var(--font-size-label);
-  font-weight: 700;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
-.configurator-training-plan-guidance-action:focus-visible {
+.configurator-training-plan-edit:hover { color: var(--text-primary); }
+
+.configurator-training-plan-edit:focus-visible {
   outline: 2px solid var(--brand-strong);
   outline-offset: 2px;
+}
+
+.configurator-training-plan-edit-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .configurator-guidance-overlay .confirm-dialog-actions {
