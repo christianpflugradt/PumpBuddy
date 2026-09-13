@@ -614,10 +614,6 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   stroke-linejoin: round;
 }
 
-.configurator-guidance-overlay .confirm-dialog-actions {
-  flex-wrap: wrap;
-}
-
 .configurator-guidance-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -625,6 +621,40 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 
 .configurator-guidance-fields > :first-child {
   grid-column: 1 / -1;
+}
+
+.configurator-guidance-actions {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.configurator-guidance-inherit {
+  background: var(--surface-interactive);
+  color: var(--text-primary);
+  border-color: var(--border-input);
+  box-shadow: none;
+}
+
+.configurator-guidance-inherit:not(:disabled):hover {
+  background: var(--surface-input);
+}
+
+.configurator-guidance-primary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.configurator-guidance-cancel {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.configurator-guidance-cancel:not(:disabled):hover {
+  background: var(--surface-interactive);
+  color: var(--text-primary);
 }
 
 .configurator-training-plan-variant > span {

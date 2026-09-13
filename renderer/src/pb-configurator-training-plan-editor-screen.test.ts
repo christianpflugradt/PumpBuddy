@@ -27,7 +27,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     const actions: Array<{ action: string; payload?: { request?: unknown } }> = [];
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") actions.push(detail); });
     (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
-    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Exercise guidance");
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Squat · Guidance");
     const min = el.querySelector('[data-field="guidance-repMin"]') as HTMLInputElement;
     min.value = "12"; min.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
@@ -49,11 +49,27 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     expect(el.textContent).toContain("4 sets · 5–7 reps");
     expect(el.textContent).not.toContain("Exception:");
     (el.querySelector('[data-ui-action="open-variant-guidance"]') as HTMLButtonElement).click();
-    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherits: 3 sets · 8–10 reps");
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Back squat · Guidance");
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherited: 3 sets · 8–10 reps");
+    expect(el.querySelector('[role="dialog"]')?.textContent).not.toContain("exception");
+    expect(el.querySelector('[role="dialog"] [data-ui-action="clear-variant-guidance"]')?.classList.contains("configurator-guidance-inherit")).toBe(true);
+    expect(el.querySelector('[role="dialog"] [data-ui-action="dismiss-guidance-overlay"]')?.classList.contains("configurator-guidance-cancel")).toBe(true);
+    expect(el.querySelector('[role="dialog"] [data-ui-action="save-guidance-overlay"]')?.classList.contains("nav-button-primary")).toBe(true);
     (el.querySelector('[data-ui-action="clear-variant-guidance"]') as HTMLButtonElement).click();
     expect(el.textContent).not.toContain("Inherits exercise guidance");
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("replace 1 existing variant exception");
+    el.remove();
+  });
+
+  it("hides Use inherited guidance when the Variant already inherits Exercise guidance", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    (el.querySelector('[data-ui-action="open-variant-guidance"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherited: 3 sets · 8–10 reps");
+    expect(el.querySelector('[role="dialog"] [data-ui-action="clear-variant-guidance"]')).toBeNull();
+    expect(el.querySelector('[role="dialog"] [data-ui-action="dismiss-guidance-overlay"]')).toBeTruthy();
+    expect(el.querySelector('[role="dialog"] [data-ui-action="save-guidance-overlay"]')).toBeTruthy();
     el.remove();
   });
 
