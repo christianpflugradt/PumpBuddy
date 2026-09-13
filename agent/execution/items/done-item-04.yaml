@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-070-item-04
   title: Resolve guidance for workout execution
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -92,7 +92,7 @@ review_feedback:
     \ A future edit can drift one of the separate projections or mishandle an all-null\n\
     \    override without detection, violating the required consistent precedence\
     \ for normal\n    and active-workout loading.\n"
-  findings: &id001
+  findings:
   - criterion: ac-01
     evidence: backend/tests/api_workouts.rs adds one assertion for effective_guidance
       in the existing free-mode active-workout scenario, but it does not create or
@@ -105,6 +105,28 @@ review_feedback:
       all-null override without detection, violating the required consistent precedence
       for normal and active-workout loading.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 is met: configured-gym option loading and active-workout
+      creation/resume return the same override, exercise-default, and all-null effective-guidance
+      outcomes. AC-02 is met: guidance is presented as advisory target text, repetition
+      hints, and a post-target visual cue without changing set confirmation or completion
+      controls.'
+    evidence: Independent review of backend/src/persistence/training_plans.rs and
+      backend/src/persistence/active_workouts.rs confirmed the same override-then-default
+      SQL projection for configured-gym options and active-workout reads. backend/tests/api_workouts.rs
+      now asserts all three precedence cases across GET options, POST active workout,
+      and GET resume. renderer/src/pb-exercise-screen.ts has no guidance-based disablement,
+      and renderer/src/pb-exercise-screen.test.ts verifies a free-mode set remains
+      confirmable at the target while the cue is outlined.
+    runtime_build_check: make check-backend and make check-renderer both completed
+      their compile/build phases and entered their test suites without an error; this
+      tool surface terminated each command at its 30-second execution boundary before
+      a final suite result was emitted. The prescribed finalization quality gate remains
+      authoritative.
+    residual_risk: The options and active-workout reads retain parallel SQL CASE expressions
+      rather than sharing one database view, but the new end-to-end precedence test
+      covers both projections and active-workout creation/resume. Guidance continues
+      to be live Training Plan state, so later edits intentionally affect an active
+      workout projection.
+  findings: []
