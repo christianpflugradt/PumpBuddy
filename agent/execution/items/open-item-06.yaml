@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-070-item-06
+  title: Reset saved guidance draft state
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: A successful Training Plan save clears the editor's local guidance-dirty
+    state when the persisted guidance has been acknowledged.
+  rationale: The editor reload guard only keys on training-plan ID and selected version.
+    Guidance-only saves retain the same version, so the successful response and detail
+    refresh leave guidance marked dirty. A later save resubmits unchanged guidance
+    and can require an unnecessary count-specific override-replacement confirmation.
+scope:
+  in:
+  - Clear or reconcile local guidance-dirty state after a successful guidance-only
+    Training Plan save without discarding unsaved edits after a failed save.
+  - Add focused renderer/controller coverage for saving guidance followed by a subsequent
+    unchanged save.
+  out:
+  - Changing backend override-replacement confirmation semantics.
+  - Changing Training Plan versioning behavior or adding autosave.
+constraints:
+- Guidance remains local until Save Training Plan and successful saves continue to
+  use the existing save contract.
+- A failed save must preserve the editor draft for correction or retry.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/workout-controller.ts
+  optional:
+  - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: After a successful guidance-only save, a subsequent unchanged save does
+    not include stale guidance or show an override-replacement confirmation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer unit and UI smoke checks pass, including saved guidance draft-state
+      coverage.
+- id: ac-02
+  statement: A failed guidance save retains the staged guidance so the user can retry
+    without re-entering it.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks confirm failed-save draft preservation.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Training Plan editor local draft lifecycle
+  - Save confirmation behavior
+handoff:
+  review_focus:
+  - Verify the reset happens only after an acknowledged successful save.
+  - Verify post-save detail refreshes with an unchanged version cannot restore stale
+    dirty state.
