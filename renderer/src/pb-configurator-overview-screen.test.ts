@@ -14,7 +14,7 @@ describe("pb-configurator-overview-screen", () => {
     };
     document.body.append(el);
     el.state = {
-      counts: { loadProfiles: 8, gyms: 4, stations: 23, exercises: 37, exerciseVariants: 45 },
+      counts: { loadProfiles: 8, gyms: 4, stations: 23, exercises: 37, exerciseVariants: 45, trainingPlans: 6 },
       isLoading: false,
       errorMessage: null,
     };
@@ -23,14 +23,15 @@ describe("pb-configurator-overview-screen", () => {
     expect(el.textContent).toContain("Manage the building blocks of your workout setup.");
     const rows = Array.from(el.querySelectorAll<HTMLButtonElement>(".configurator-overview-row"));
     expect(rows.map((row) => row.textContent?.trim())).toEqual([
-      "Load Profiles8›", "Gyms4›", "Stations23›", "Exercises37›", "Exercise Variants45›",
+      "Load Profiles8›", "Exercises37›", "Exercise Variants45›", "Training Plans6›", "Gyms4›", "Stations23›",
     ]);
     expect(rows.map((row) => row.dataset.uiAction)).toEqual([
       "navigate-configurator-load-profiles",
-      "navigate-configurator-gyms",
-      "navigate-configurator-gyms",
       "navigate-configurator-exercises",
       "navigate-configurator-exercises",
+      "navigate-configurator-training-plans",
+      "navigate-configurator-gyms",
+      "navigate-configurator-gyms",
     ]);
     expect(el.querySelector(".configurator-overview-configure-button")?.textContent).toBe("Configure");
   });
@@ -43,7 +44,7 @@ describe("pb-configurator-overview-screen", () => {
 
     (el.querySelectorAll<HTMLButtonElement>(".configurator-overview-row")[3]).click();
 
-    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ detail: { action: "navigate-configurator-exercises" } }));
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ detail: { action: "navigate-configurator-training-plans" } }));
   });
 
   it("opens the existing Configurator side menu from Configure", () => {

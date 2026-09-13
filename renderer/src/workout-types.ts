@@ -185,6 +185,7 @@ export type AppState = {
       stations: number;
       exercises: number;
       exerciseVariants: number;
+      trainingPlans: number;
     };
     isLoading: boolean;
     errorMessage: string | null;

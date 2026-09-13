@@ -177,6 +177,7 @@ export const createScreenDataController = (deps: Dependencies): {
           stations: 0,
           exercises: 0,
           exerciseVariants: 0,
+          trainingPlans: 0,
         },
         isLoading: true,
         errorMessage: null,
@@ -185,10 +186,11 @@ export const createScreenDataController = (deps: Dependencies): {
     render();
 
     try {
-      const [loadProfiles, gyms, exercises] = await Promise.all([
+      const [loadProfiles, gyms, exercises, trainingPlans] = await Promise.all([
         loadLoadProfileSummaries(fetchJson),
         loadGymSummaries(fetchJson),
         loadExerciseSummaries(fetchJson),
+        loadTrainingPlanSummaries(fetchJson),
       ]);
       const stationLists = await Promise.all(
         gyms.map((gym) => loadConfiguratorStations(fetchJson, gym.id)),
@@ -209,6 +211,7 @@ export const createScreenDataController = (deps: Dependencies): {
               (total, exercise) => total + exercise.variant_count,
               0,
             ),
+            trainingPlans: trainingPlans.length,
           },
           isLoading: false,
           errorMessage: null,
@@ -229,6 +232,7 @@ export const createScreenDataController = (deps: Dependencies): {
             stations: 0,
             exercises: 0,
             exerciseVariants: 0,
+            trainingPlans: 0,
           },
           isLoading: false,
           errorMessage: "Unable to load configurator overview right now.",

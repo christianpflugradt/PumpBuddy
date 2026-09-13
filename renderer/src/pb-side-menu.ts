@@ -35,6 +35,22 @@ type SideMenuAction =
   | "navigate-about"
   | "logout";
 
+export type ConfiguratorNavigationAction =
+  | "navigate-configurator-load-profiles"
+  | "navigate-configurator-gyms"
+  | "navigate-configurator-exercises"
+  | "navigate-configurator-training-plans";
+
+export type ConfiguratorNavigationEntry = {
+  screen:
+    | "configurator-load-profiles"
+    | "configurator-exercises"
+    | "configurator-training-plans"
+    | "configurator-gyms";
+  label: string;
+  action: ConfiguratorNavigationAction;
+};
+
 type SideMenuEntry = {
   label: string;
   action: SideMenuAction | null;
@@ -97,7 +113,7 @@ const configuratorReturnEntry: SideMenuEntry = {
   action: "navigate-workout",
 };
 
-const configuratorNavigationEntries: SideMenuEntry[] = [
+export const configuratorNavigationEntries: ConfiguratorNavigationEntry[] = [
   {
     screen: "configurator-load-profiles",
     label: "Load Profiles",

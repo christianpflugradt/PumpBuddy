@@ -161,7 +161,7 @@ class PbAppRootElement extends HTMLElement {
         state: ConfiguratorOverviewScreenState;
       };
       el.state = state.configuratorOverviewScreen ?? {
-        counts: { loadProfiles: 0, gyms: 0, stations: 0, exercises: 0, exerciseVariants: 0 },
+        counts: { loadProfiles: 0, gyms: 0, stations: 0, exercises: 0, exerciseVariants: 0, trainingPlans: 0 },
         isLoading: false,
         errorMessage: null,
       };

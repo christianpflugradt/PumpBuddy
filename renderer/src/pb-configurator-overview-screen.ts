@@ -1,4 +1,7 @@
-import "./pb-side-menu";
+import {
+  configuratorNavigationEntries,
+  type ConfiguratorNavigationAction,
+} from "./pb-side-menu";
 
 export const pbConfiguratorOverviewScreenTag = "pb-configurator-overview-screen";
 
@@ -9,29 +12,37 @@ export type ConfiguratorOverviewScreenState = {
     stations: number;
     exercises: number;
     exerciseVariants: number;
+    trainingPlans: number;
   };
   isLoading: boolean;
   errorMessage: string | null;
 };
 
-type ConfiguratorNavigationAction =
-  | "navigate-configurator-load-profiles"
-  | "navigate-configurator-gyms"
-  | "navigate-configurator-exercises";
-
 const inventoryRows = (
   counts: ConfiguratorOverviewScreenState["counts"],
-): Array<{ label: string; count: number; action: ConfiguratorNavigationAction }> => [
-  { label: "Load Profiles", count: counts.loadProfiles, action: "navigate-configurator-load-profiles" },
-  { label: "Gyms", count: counts.gyms, action: "navigate-configurator-gyms" },
-  { label: "Stations", count: counts.stations, action: "navigate-configurator-gyms" },
-  { label: "Exercises", count: counts.exercises, action: "navigate-configurator-exercises" },
-  { label: "Exercise Variants", count: counts.exerciseVariants, action: "navigate-configurator-exercises" },
-];
+): Array<{ label: string; count: number; action: ConfiguratorNavigationAction }> =>
+  configuratorNavigationEntries.flatMap(({ screen, label, action }) => {
+    switch (screen) {
+      case "configurator-load-profiles":
+        return [{ label, count: counts.loadProfiles, action }];
+      case "configurator-exercises":
+        return [
+          { label, count: counts.exercises, action },
+          { label: "Exercise Variants", count: counts.exerciseVariants, action },
+        ];
+      case "configurator-training-plans":
+        return [{ label, count: counts.trainingPlans, action }];
+      case "configurator-gyms":
+        return [
+          { label, count: counts.gyms, action },
+          { label: "Stations", count: counts.stations, action },
+        ];
+    }
+  });
 
 class PbConfiguratorOverviewScreenElement extends HTMLElement {
   #state: ConfiguratorOverviewScreenState = {
-    counts: { loadProfiles: 0, gyms: 0, stations: 0, exercises: 0, exerciseVariants: 0 },
+    counts: { loadProfiles: 0, gyms: 0, stations: 0, exercises: 0, exerciseVariants: 0, trainingPlans: 0 },
     isLoading: false,
     errorMessage: null,
   };

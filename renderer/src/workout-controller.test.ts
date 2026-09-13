@@ -722,12 +722,14 @@ describe("workout-controller (createApp)", () => {
     expect(loadGymSummariesMock).toHaveBeenCalledTimes(1);
     expect(loadConfiguratorStationsMock).toHaveBeenCalledWith(expect.any(Function), "gym-1");
     expect(loadExerciseSummariesMock).toHaveBeenCalledTimes(1);
+    expect(loadTrainingPlanSummariesMock).toHaveBeenCalledTimes(1);
     expect(app.state?.configuratorOverviewScreen?.counts).toEqual({
       loadProfiles: 1,
       gyms: 1,
       stations: 1,
       exercises: 1,
       exerciseVariants: 2,
+      trainingPlans: 0,
     });
 
     dispatchSideMenuAction(app, "navigate-workout");
