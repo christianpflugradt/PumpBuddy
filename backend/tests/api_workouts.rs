@@ -2065,6 +2065,141 @@ async fn free_mode_active_workout_start_can_resume_and_cancel_before_any_complet
 }
 
 #[tokio::test]
+async fn workout_option_and_active_workout_guidance_use_identical_precedence() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercise_variant_guidance_overrides (
+             training_plan_id, exercise_id, exercise_variant_id,
+             rep_min, rep_max, target_sets, user_id
+         ) VALUES (
+             '30000000-0000-0000-0000-000000000001'::uuid,
+             '10000000-0000-0000-0000-000000000001'::uuid,
+             '20000000-0000-0000-0000-000000000001'::uuid,
+             3, 5, 1, $1::uuid
+         )
+         ON CONFLICT (training_plan_id, exercise_id, exercise_variant_id)
+         DO UPDATE SET rep_min = EXCLUDED.rep_min,
+                       rep_max = EXCLUDED.rep_max,
+                       target_sets = EXCLUDED.target_sets",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("guidance override should persist");
+
+    sqlx::query(
+        "UPDATE training_plan_exercise_guidance
+         SET rep_min = 7, rep_max = 9, target_sets = 4
+         WHERE training_plan_id = '30000000-0000-0000-0000-000000000001'::uuid
+           AND exercise_id = '10000000-0000-0000-0000-000000000002'::uuid
+           AND user_id = $1::uuid",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("default guidance should update");
+
+    sqlx::query(
+        "DELETE FROM training_plan_exercise_guidance
+         WHERE training_plan_id = '30000000-0000-0000-0000-000000000001'::uuid
+           AND exercise_id = '10000000-0000-0000-0000-000000000012'::uuid
+           AND user_id = $1::uuid",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("unguided exercise guidance should delete");
+
+    let expected = [
+        (1, json!({ "rep_min": 3, "rep_max": 5, "target_sets": 1 })),
+        (2, json!({ "rep_min": 7, "rep_max": 9, "target_sets": 4 })),
+        (
+            3,
+            json!({ "rep_min": null, "rep_max": null, "target_sets": null }),
+        ),
+    ];
+
+    let (status, options_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/training-plans/30000000-0000-0000-0000-000000000001/options?gymId=50000000-0000-0000-0000-000000000001")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    for (position, guidance) in &expected {
+        let option = options_body["exercise_variants"]
+            .as_array()
+            .and_then(|options| {
+                options
+                    .iter()
+                    .find(|option| option["exercise_position"] == json!(position))
+            })
+            .expect("option should exist for tested exercise position");
+        assert_eq!(
+            json!({
+                "rep_min": option["rep_min"],
+                "rep_max": option["rep_max"],
+                "target_sets": option["target_sets"],
+            }),
+            guidance.clone()
+        );
+    }
+
+    let (status, created_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_configured_gym_active_workout_payload().to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    for (position, guidance) in &expected {
+        assert_eq!(
+            exercise_for_position(&created_body, *position)["effective_guidance"],
+            guidance.clone()
+        );
+    }
+
+    let (status, resumed_body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    for (position, guidance) in &expected {
+        assert_eq!(
+            exercise_for_position(&resumed_body, *position)["effective_guidance"],
+            guidance.clone()
+        );
+    }
+}
+
+#[tokio::test]
 async fn active_workout_set_command_routes_confirm_and_delete_canonical_state() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
