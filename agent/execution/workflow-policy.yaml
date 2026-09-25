@@ -89,6 +89,28 @@ quality_gates:
       - known_infrastructure_symptom
       - other_concrete_evidence_of_unexpected_stalled_progress
 
+communication_efficiency:
+  applies_to: all_workflows
+  principle: communicate_only_information_useful_to_the_stakeholder_or_required_by_the_workflow
+  routine_execution:
+    - remain_terse_and_do_not_narrate_routine_reads_searches_edits_commands_or_obvious_next_steps
+    - do_not_restate_established_context_or_repeat_unchanged_progress
+    - do_not_duplicate_tool_actions_or_normal_tool_results_in_prose
+    - honor_the_existing_long_running_command_passive_wait_policy
+  implementation:
+    - surface_material_decisions_scope_or_architecture_concerns_unexpected_conditions_and_required_input
+    - completion_reports_only_material_changes_validation_deviations_and_unresolved_issues
+  review:
+    - inspect_evidence_quietly_and_report_substantive_findings_not_review_process
+    - preserve_evidence_rationale_and_rigor_for_each_substantive_finding
+    - report_no_substantive_findings_concisely
+  persistent_artifacts:
+    - keep_plans_items_acceptance_criteria_findings_decisions_constraints_and_non_goals_self_contained_and_precise
+    - compress_transient_narration_aggressively_but_persistent_knowledge_conservatively
+  safeguards:
+    - do_not_reduce_reasoning_quality_implementation_quality_review_depth_or_actionable_error_information
+    - use_compact_clear_technical_language_without_sacrificing_material_meaning
+
 clarification_policy:
   required_when:
     - meaning_is_ambiguous_and_changes_implementation_or_acceptance
