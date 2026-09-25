@@ -725,14 +725,14 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   cursor: pointer;
 }
 
-.configurator-gym-editor-card,
-.configurator-gym-field,
-.configurator-gym-editor-actions { display: grid; gap: var(--space-md); }
+.configurator-editor-card,
+.configurator-field,
+.configurator-editor-actions { display: grid; gap: var(--space-md); }
 
-.configurator-gym-field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.configurator-gym-field:has(> input[type="checkbox"]) { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-sm); }
-.configurator-gym-field:has(> input[type="checkbox"]) > input[type="checkbox"] { order: -1; width: 1.1rem; height: 1.1rem; margin: 0; }
-.configurator-gym-input { width: 100%; min-height: var(--action-target-min-height); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); }
+.configurator-field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.configurator-field:has(> input[type="checkbox"]) { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-sm); }
+.configurator-field:has(> input[type="checkbox"]) > input[type="checkbox"] { order: -1; width: 1.1rem; height: 1.1rem; margin: 0; }
+.configurator-control { width: 100%; min-height: var(--action-target-min-height); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); }
 .configurator-load-profile-picker-trigger { text-align: left; cursor: pointer; }
 .configurator-load-profile-picker { max-height: min(82vh, 36rem); grid-template-rows: auto minmax(0, 1fr); }
 .configurator-load-profile-picker-header { display: grid; gap: var(--space-md); }
@@ -740,8 +740,8 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 .configurator-load-profile-picker-option { min-height: var(--action-target-min-height); display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
 .configurator-load-profile-picker-option--selected { border-color: var(--brand-strong); background: color-mix(in srgb, var(--brand-strong) 20%, var(--surface-input) 80%); }
 .configurator-load-profile-picker-option small { color: var(--text-secondary); }
-.configurator-gym-field-error { color: var(--status-danger-text); font-size: var(--font-size-label); }
-.configurator-gym-editor-actions { grid-template-columns: 1fr; margin-top: var(--space-sm); }
+.configurator-field-error { color: var(--status-danger-text); font-size: var(--font-size-label); }
+.configurator-editor-actions { grid-template-columns: 1fr; margin-top: var(--space-sm); }
 .configurator-station-compatibility { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--border-input); }
 .configurator-station-compatibility-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
 .configurator-station-compatibility-header h2 { margin: 0; font-size: var(--font-size-body); }
@@ -773,11 +773,11 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 .configurator-exercise-variant-compatibility-picker-gym-heading { position: sticky; top: 0; z-index: 1; margin: 0; padding: var(--space-sm) 0; background: linear-gradient(180deg, rgba(20, 26, 41, 0.99) 0%, rgba(14, 21, 36, 0.99) 100%); color: var(--text-primary); font-size: var(--font-size-body); font-weight: 750; line-height: 1.25; overflow-wrap: anywhere; }
 .configurator-exercise-variant-compatibility-picker-option--selected { border-color: var(--brand-strong); background: color-mix(in srgb, var(--brand-strong) 20%, var(--surface-input) 80%); }
 .configurator-exercise-variant-compatibility-picker-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
-.configurator-exercise-variants > .configurator-gym-editor-actions { margin-bottom: var(--space-md); }
+.configurator-exercise-variants > .configurator-editor-actions { margin-bottom: var(--space-md); }
 .configurator-exercise-variants,
-.configurator-exercise-variants > .configurator-gym-editor-actions,
-.configurator-exercise-variants > .configurator-gym-editor-actions .nav-button { width: 100%; }
-.configurator-exercise-variants > .configurator-gym-editor-actions .nav-button { border: 0; background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start)); color: var(--button-primary-text); font-weight: 700; box-shadow: 0 8px 16px var(--button-primary-shadow); }
+.configurator-exercise-variants > .configurator-editor-actions,
+.configurator-exercise-variants > .configurator-editor-actions .nav-button { width: 100%; }
+.configurator-exercise-variants > .configurator-editor-actions .nav-button { border: 0; background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start)); color: var(--button-primary-text); font-weight: 700; box-shadow: 0 8px 16px var(--button-primary-shadow); }
 .configurator-gym-save-button,
 .configurator-gym-delete-button { min-height: var(--action-target-min-height); border-radius: var(--radius-md); cursor: pointer; font-weight: 700; }
 .configurator-gym-save-button { border: 0; background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end)); color: var(--button-primary-text); }
@@ -876,22 +876,22 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   white-space: nowrap;
 }
 
-.configurator-load-profile-editor-card {
+.configurator-load-profile-editor-screen .configurator-editor-card {
   display: grid;
   gap: var(--space-xl);
 }
 
-.configurator-load-profile-field {
+.configurator-load-profile-editor-screen .configurator-field {
   display: grid;
   gap: 0.35rem;
 }
 
-.configurator-load-profile-field-grid {
+.configurator-load-profile-editor-screen .configurator-field-grid {
   display: grid;
   gap: var(--space-lg);
 }
 
-.configurator-load-profile-field-label,
+.configurator-load-profile-editor-screen .configurator-field-label,
 .configurator-load-profile-preview-label {
   color: var(--text-secondary);
   font-size: 0.78rem;
@@ -900,9 +900,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   text-transform: uppercase;
 }
 
-.configurator-load-profile-input,
-.configurator-load-profile-select,
-.configurator-load-profile-textarea {
+.configurator-load-profile-editor-screen .configurator-control {
   width: 100%;
   min-height: 2.75rem;
   border: 1px solid var(--border-input);
@@ -913,40 +911,38 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   font: inherit;
 }
 
-.configurator-load-profile-input:focus-visible,
-.configurator-load-profile-select:focus-visible,
-.configurator-load-profile-textarea:focus-visible {
+.configurator-load-profile-editor-screen .configurator-control:focus-visible {
   outline: 2px solid var(--brand-strong);
   outline-offset: 2px;
 }
 
-.configurator-load-profile-textarea {
+.configurator-load-profile-editor-screen textarea.configurator-control {
   min-height: 3.6rem;
   resize: vertical;
 }
 
-.configurator-load-profile-field-error {
+.configurator-load-profile-editor-screen .configurator-field-error {
   color: #fda4af;
   font-size: 0.82rem;
 }
 
-.configurator-load-profile-field-helper {
+.configurator-load-profile-editor-screen .configurator-field-helper {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
 
-.configurator-load-profile-metadata {
+.configurator-metadata {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-lg);
 }
 
-.configurator-load-profile-metadata div {
+.configurator-metadata div {
   min-width: 0;
 }
 
-.configurator-load-profile-metadata dt {
+.configurator-metadata dt {
   color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 700;
@@ -954,7 +950,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   text-transform: uppercase;
 }
 
-.configurator-load-profile-metadata dd {
+.configurator-metadata dd {
   margin: var(--space-2xs) 0 0;
   color: var(--text-strong);
   font-size: var(--font-size-body);
@@ -978,7 +974,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   font-size: 0.84rem;
 }
 
-.configurator-load-profile-editor-actions {
+.configurator-load-profile-editor-screen .configurator-editor-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1015,7 +1011,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 }
 
 @media (min-width: 42rem) {
-  .configurator-load-profile-field-grid {
+  .configurator-load-profile-editor-screen .configurator-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

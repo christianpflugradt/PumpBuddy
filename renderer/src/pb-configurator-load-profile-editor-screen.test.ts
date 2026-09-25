@@ -64,6 +64,18 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     expect(textarea?.value).toContain("25");
   });
 
+  it("links the fixed-list helper and validation feedback to its shared field control", () => {
+    const el = document.createElement(pbConfiguratorLoadProfileEditorScreenTag) as HTMLElement & { state: ConfiguratorLoadProfileEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), mode: "create", detail: null };
+    const textarea = el.querySelector<HTMLTextAreaElement>("#configurator-load-profile-fixed-list")!;
+    expect(textarea.classList.contains("configurator-control")).toBe(true);
+    expect(textarea.required).toBe(true);
+    expect(textarea.getAttribute("aria-describedby")).toContain("configurator-load-profile-fixed-list-helper");
+    textarea.value = "bad"; textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(textarea.getAttribute("aria-invalid")).toBe("true");
+    expect(textarea.getAttribute("aria-describedby")).toContain("configurator-load-profile-definition-error");
+  });
+
   it("keeps text fields focused through live validation renders", () => {
     const el = document.createElement(
       pbConfiguratorLoadProfileEditorScreenTag,

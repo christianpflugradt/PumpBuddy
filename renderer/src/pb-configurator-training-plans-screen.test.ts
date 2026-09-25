@@ -37,7 +37,7 @@ describe("pb-configurator-training-plans-screen", () => {
     el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") response = detail.respond; });
     (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
     expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
-    expect(el.querySelector(".configurator-gym-input[data-role=\"plan-name\"]")).toBeTruthy();
+expect(el.querySelector(".configurator-control[data-role=\"plan-name\"]")).toBeTruthy();
     const name = el.querySelector('[data-role="plan-name"]') as HTMLInputElement; name.value = "Upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]') as HTMLButtonElement).click();
     expect(el.querySelector('[role="dialog"]')).toBeTruthy();

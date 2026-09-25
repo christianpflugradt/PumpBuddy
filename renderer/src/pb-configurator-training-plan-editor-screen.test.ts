@@ -113,7 +113,7 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     respondToSaveImpact(el, false);
     expect(el.textContent).toContain("3 sets · 8–10 reps");
     expect(el.querySelector(".configurator-training-plan-editor-card")).toBeTruthy();
-    expect(el.querySelector(".configurator-gym-input[data-field=\"plan-name\"]")).toBeTruthy();
+expect(el.querySelector(".configurator-control[data-field=\"plan-name\"]")).toBeTruthy();
     expect(el.querySelector(".configurator-training-plan-exercise-card")).toBeTruthy();
     expect(el.textContent).toContain("1. Squat 1/2 variants");
     expect(el.textContent).not.toContain("Allowed Variants");

@@ -503,18 +503,23 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     const canDelete = this.#state.mode === "edit" && this.#state.detail?.status === "new";
 
     return `
-      <div class="configurator-load-profile-editor-card">
-        <label class="configurator-load-profile-field">
-          <span class="configurator-load-profile-field-label">Name</span>
+      <div class="configurator-editor-card">
+        <label class="configurator-field" for="configurator-load-profile-name">
+          <span class="configurator-field-label">Name</span>
           <input
-            class="configurator-load-profile-input"
+            id="configurator-load-profile-name"
+            class="configurator-control"
             data-field="name"
             value="${escapeHtml(this.#nameDraft)}"
+            required
+            aria-required="true"
+            aria-invalid="${nameError ? "true" : "false"}"
+            ${nameError && this.#shouldShowFieldError("name") ? 'aria-describedby="configurator-load-profile-name-error"' : ""}
             ${this.#isSaving || this.#isDeleting ? "disabled" : ""}
           />
           ${
             nameError && this.#shouldShowFieldError("name")
-              ? `<span class="configurator-load-profile-field-error">${escapeHtml(nameError)}</span>`
+              ? `<span id="configurator-load-profile-name-error" class="configurator-field-error">${escapeHtml(nameError)}</span>`
               : ""
           }
         </label>
@@ -522,24 +527,24 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
         ${
           isEditable
             ? `
-              <div class="configurator-load-profile-field-grid">
-                <label class="configurator-load-profile-field">
-                  <span class="configurator-load-profile-field-label">Weight Unit</span>
-                  <select class="configurator-load-profile-select" data-field="weight-unit" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
+              <div class="configurator-field-grid">
+                <label class="configurator-field" for="configurator-load-profile-weight-unit">
+                  <span class="configurator-field-label">Weight Unit</span>
+                  <select id="configurator-load-profile-weight-unit" class="configurator-control" data-field="weight-unit" aria-required="false" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
                     <option value="KG" ${this.#weightUnitDraft === "KG" ? "selected" : ""}>KG</option>
                     <option value="LBS" ${this.#weightUnitDraft === "LBS" ? "selected" : ""}>LBS</option>
                   </select>
                 </label>
-                <label class="configurator-load-profile-field">
-                  <span class="configurator-load-profile-field-label">Definition</span>
-                  <select class="configurator-load-profile-select" data-field="definition-kind" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
+                <label class="configurator-field" for="configurator-load-profile-definition-kind">
+                  <span class="configurator-field-label">Definition</span>
+                  <select id="configurator-load-profile-definition-kind" class="configurator-control" data-field="definition-kind" aria-required="false" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>
                     <option value="fixed_list" ${this.#definitionKindDraft === "fixed_list" ? "selected" : ""}>Fixed list</option>
                     <option value="formula" ${this.#definitionKindDraft === "formula" ? "selected" : ""}>Formula</option>
                   </select>
                 </label>
               </div>`
             : `
-              <dl class="configurator-load-profile-metadata">
+              <dl class="configurator-metadata">
                 <div><dt>Weight unit</dt><dd>${escapeHtml(this.#weightUnitDraft)}</dd></div>
                 <div><dt>Definition</dt><dd>${this.#definitionKindDraft === "fixed_list" ? "Fixed list" : "Formula"}</dd></div>
               </dl>`
@@ -551,42 +556,46 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
               ${
                 isEditable
                   ? `
-                    <label class="configurator-load-profile-field">
-                      <span class="configurator-load-profile-field-label">Values</span>
-                      <textarea class="configurator-load-profile-textarea" data-field="fixed-list" placeholder="2.5 5 7.5 10 12.5" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>${escapeHtml(this.#fixedListDraft)}</textarea>
-                      <span class="configurator-load-profile-field-helper">Separate values with spaces, commas, or line breaks.</span>
+                    <label class="configurator-field" for="configurator-load-profile-fixed-list">
+                      <span class="configurator-field-label">Values</span>
+                      <textarea id="configurator-load-profile-fixed-list" class="configurator-control" data-field="fixed-list" placeholder="2.5 5 7.5 10 12.5" required aria-required="true" aria-invalid="${definitionError ? "true" : "false"}" aria-describedby="configurator-load-profile-fixed-list-helper${definitionError && this.#shouldShowFieldError("definition") ? " configurator-load-profile-definition-error" : ""}" ${this.#isSaving || this.#isDeleting ? "disabled" : ""}>${escapeHtml(this.#fixedListDraft)}</textarea>
+                      <span id="configurator-load-profile-fixed-list-helper" class="configurator-field-helper">Separate values with spaces, commas, or line breaks.</span>
                     </label>`
                   : `
                     <section class="configurator-load-profile-read-only-values" aria-label="Values">
-                      <span class="configurator-load-profile-field-label">Values · ${this.#state.detail?.definition.values?.length ?? 0}</span>
+                      <span class="configurator-field-label">Values · ${this.#state.detail?.definition.values?.length ?? 0}</span>
                       <p>${escapeHtml(formatValues(this.#state.detail?.definition.values ?? [], this.#weightUnitDraft))}</p>
                     </section>`
               }
             `
             : isEditable
               ? `
-              <div class="configurator-load-profile-field-grid">
-                <label class="configurator-load-profile-field">
-                  <span class="configurator-load-profile-field-label">Minimum</span>
+              <div class="configurator-field-grid">
+                <label class="configurator-field" for="configurator-load-profile-formula-min">
+                  <span class="configurator-field-label">Minimum</span>
                   <input
-                    class="configurator-load-profile-input"
+                    id="configurator-load-profile-formula-min"
+                    class="configurator-control"
                     data-field="formula-min"
                     value="${escapeHtml(this.#formulaMinDraft)}"
+                    required aria-required="true" aria-invalid="${definitionError ? "true" : "false"}"${definitionError && this.#shouldShowFieldError("definition") ? ' aria-describedby="configurator-load-profile-definition-error"' : ""}
                     ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
                   />
                 </label>
-                <label class="configurator-load-profile-field">
-                  <span class="configurator-load-profile-field-label">Step</span>
+                <label class="configurator-field" for="configurator-load-profile-formula-step">
+                  <span class="configurator-field-label">Step</span>
                   <input
-                    class="configurator-load-profile-input"
+                    id="configurator-load-profile-formula-step"
+                    class="configurator-control"
                     data-field="formula-step"
                     value="${escapeHtml(this.#formulaStepDraft)}"
+                    required aria-required="true" aria-invalid="${definitionError ? "true" : "false"}"${definitionError && this.#shouldShowFieldError("definition") ? ' aria-describedby="configurator-load-profile-definition-error"' : ""}
                     ${!isEditable || this.#isSaving || this.#isDeleting ? "disabled" : ""}
                   />
                 </label>
               </div>`
               : `
-                <dl class="configurator-load-profile-metadata configurator-load-profile-formula-metadata">
+                <dl class="configurator-metadata configurator-load-profile-formula-metadata">
                   <div><dt>Minimum</dt><dd>${escapeHtml(this.#formulaMinDraft)} ${escapeHtml(this.#weightUnitDraft)}</dd></div>
                   <div><dt>Step</dt><dd>${escapeHtml(this.#formulaStepDraft)} ${escapeHtml(this.#weightUnitDraft)}</dd></div>
                 </dl>`
@@ -594,7 +603,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
 
         ${
           definitionError && this.#shouldShowFieldError("definition")
-            ? `<p class="configurator-load-profile-field-error">${escapeHtml(definitionError)}</p>`
+            ? `<p id="configurator-load-profile-definition-error" class="configurator-field-error">${escapeHtml(definitionError)}</p>`
             : ""
         }
 
@@ -617,7 +626,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
             : ""
         }
 
-        <div class="configurator-load-profile-editor-actions">
+        <div class="configurator-editor-actions">
           <button
             type="button"
             class="configurator-load-profile-save-button"

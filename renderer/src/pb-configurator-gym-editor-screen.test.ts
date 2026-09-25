@@ -33,6 +33,19 @@ describe("pb-configurator-gym-editor-screen", () => {
     expect(el.querySelector('[data-ui-action="delete-gym"]')).toBeNull();
   });
 
+  it("exposes its required name field and live validation through the shared contract", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const input = el.querySelector<HTMLInputElement>('#configurator-gym-name')!;
+    expect(input.classList.contains("configurator-control")).toBe(true);
+    expect(input.required).toBe(true);
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(input.getAttribute("aria-describedby")).toBe("configurator-gym-name-error");
+    expect(el.querySelector("#configurator-gym-name-error")?.textContent).toBe("Name is required.");
+  });
+
   it("confirms deletion only when a Draft Gym has Stations", () => {
     const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
     document.body.append(el); el.state = createState();
