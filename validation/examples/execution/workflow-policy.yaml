@@ -73,8 +73,8 @@ quality_gates:
       - implementation_verification
     rules:
       - start_once_and_wait_passively
-  hang_evidence:
-    - explicit_timeout
+    hang_evidence:
+      - explicit_timeout
 
 communication_efficiency:
   applies_to: all_workflows
