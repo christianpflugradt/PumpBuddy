@@ -59,6 +59,16 @@ class QualityGates(StrictModel):
     long_running_command_execution: LongRunningCommandExecution
 
 
+class CommunicationEfficiency(StrictModel):
+    applies_to: str
+    principle: str
+    routine_execution: List[str] = Field(min_length=1)
+    implementation: List[str] = Field(min_length=1)
+    review: List[str] = Field(min_length=1)
+    persistent_artifacts: List[str] = Field(min_length=1)
+    safeguards: List[str] = Field(min_length=1)
+
+
 class ClarificationPolicy(StrictModel):
     required_when: List[str] = Field(min_length=1)
     should_not_ask_when: List[str] = Field(min_length=1)
@@ -75,6 +85,7 @@ class WorkflowPolicyDoc(StrictModel):
     state_machine: StateMachine
     item_workflow: ItemWorkflow
     quality_gates: QualityGates
+    communication_efficiency: CommunicationEfficiency
     clarification_policy: ClarificationPolicy
     extended_reviews: ExtendedReviews
     token_efficiency: TokenEfficiency
