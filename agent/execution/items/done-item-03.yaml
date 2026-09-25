@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-071-item-03
   title: Repair Configurator option-group semantics
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -28,6 +28,7 @@ scope:
 constraints:
 - Preserve data-field names, radio names, values, checked state, disabled state, and
   existing change-driven state transitions.
+- Preserve current Active and Inactive presentation by omitting editable radio groups.
 - Keep the implementation within the Configurator field contract and global light-DOM
   stylesheet.
 - Treat pb-071-item-02 as the prerequisite contract; do not recreate a competing field
@@ -49,8 +50,8 @@ acceptance_criteria:
     expected: Focused DOM tests pass for valid grouped-radio semantics and option
       labels.
 - id: ac-02
-  statement: Existing values, defaults, checked states, historical disabled states,
-    and emitted save payload semantics remain unchanged.
+  statement: Existing values, defaults, checked states, historical read-only group
+    omission, and emitted save payload semantics remain unchanged.
   verification:
     type: command
     command: make check-renderer

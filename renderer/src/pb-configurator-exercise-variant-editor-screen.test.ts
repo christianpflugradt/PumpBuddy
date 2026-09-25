@@ -31,11 +31,31 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
     expect(document.activeElement).toBe(input); expect(input.value).toBe("Ca");
   });
+  it("uses named fieldsets with individually labelled draft options and preserves their changes", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = state();
+    const groups = [...el.querySelectorAll<HTMLFieldSetElement>("fieldset.configurator-option-group")];
+    expect(groups.map((group) => group.querySelector("legend")?.textContent)).toEqual(["Load input", "Set tracking", "Repetition kind"]);
+    expect(groups.every((group) => group.querySelectorAll("label label").length === 0)).toBe(true);
+    expect(groups.map((group) => [...group.querySelectorAll<HTMLInputElement>('input[type="radio"]')].map((input) => [input.value, input.labels?.[0]?.textContent?.trim(), input.checked]))).toEqual([
+      [["TOTAL", "Total", true], ["PER_SIDE", "Per side", false]],
+      [["BILATERAL", "Bilateral", true], ["UNILATERAL", "Unilateral", false]],
+      [["REPS", "Reps", true], ["SECS", "Seconds", false]],
+    ]);
+    for (const selector of ['[data-field="load-input-mode"][value="PER_SIDE"]', '[data-field="set-tracking-mode"][value="UNILATERAL"]', '[data-field="repetition-kind"][value="SECS"]']) {
+      const option = el.querySelector<HTMLInputElement>(selector)!;
+      option.checked = true; option.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    expect(el.querySelector<HTMLInputElement>('[data-field="load-input-mode"][value="PER_SIDE"]')?.checked).toBe(true);
+    expect(el.querySelector<HTMLInputElement>('[data-field="set-tracking-mode"][value="UNILATERAL"]')?.checked).toBe(true);
+    expect(el.querySelector<HTMLInputElement>('[data-field="repetition-kind"][value="SECS"]')?.checked).toBe(true);
+  });
   it.each(["active", "inactive"] as const)("requires confirmation before saving a renamed %s variant", (status) => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
     document.body.append(el); el.state = state(status); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     expect(el.querySelector('[data-ui-action="delete-configurator-exercise-variant"]')).toBeNull();
     expect(el.querySelector('[data-field="load-input-mode"]')).toBeNull();
+    expect(el.querySelectorAll("fieldset.configurator-option-group")).toHaveLength(0);
     const name = el.querySelector<HTMLInputElement>('[data-field="name"]')!; name.value = "Neutral"; name.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
     expect(handler).not.toHaveBeenCalled();
