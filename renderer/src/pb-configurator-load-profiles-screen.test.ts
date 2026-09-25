@@ -62,6 +62,7 @@ describe("pb-configurator-load-profiles-screen", () => {
     expect(el.textContent ?? "").toContain("Formula · LBS · 3 stations");
     expect(el.querySelector(".configurator-load-profile-card-metadata")?.textContent).not.toContain("|");
     expect(el.textContent ?? "").toContain("Inactive");
+    expect(el.querySelectorAll("pb-configurator-status")).toHaveLength(3);
     expect(el.querySelector('[data-role="load-profile-search"]')).toBeTruthy();
     expect(
       el.querySelector('[data-ui-action="navigate-workout"]'),

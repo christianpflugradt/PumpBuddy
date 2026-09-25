@@ -58,6 +58,12 @@
   --panel-shadow: 0 24px 56px rgba(2, 6, 23, 0.46);
   --status-info-bg: rgba(249, 115, 22, 0.22);
   --status-info-text: #fdba74;
+  --configurator-status-draft-bg: rgba(249, 115, 22, 0.18);
+  --configurator-status-draft-text: #fdba74;
+  --configurator-status-active-bg: rgba(52, 211, 153, 0.16);
+  --configurator-status-active-text: #6ee7b7;
+  --configurator-status-inactive-bg: rgba(148, 163, 184, 0.16);
+  --configurator-status-inactive-text: #cbd5e1;
   --dialog-backdrop: rgba(2, 6, 23, 0.78);
   --dialog-surface: rgba(18, 24, 33, 0.98);
   --dialog-border: rgba(148, 163, 184, 0.35);
@@ -359,10 +365,6 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 .configurator-exercise-card--inactive { opacity: 0.62; }
 .configurator-exercise-card-topline { display: flex; align-items: start; justify-content: space-between; gap: var(--space-md); }
 .configurator-exercise-name { min-width: 0; font-size: 0.95rem; font-weight: 750; line-height: 1.2; }
-.configurator-exercise-status { flex: 0 0 auto; padding: 0.16rem 0.42rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.configurator-exercise-status--new { background: rgba(249, 115, 22, 0.18); color: #fdba74; }
-.configurator-exercise-status--active { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
-.configurator-exercise-status--inactive { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
 .configurator-exercise-card-metadata { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.2; }
 
 .configurator-gyms-screen {
@@ -429,18 +431,19 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   line-height: 1.2;
 }
 
-.configurator-gym-status {
-  border-radius: 999px;
+.configurator-status {
+  flex: 0 0 auto;
   padding: 0.16rem 0.42rem;
+  border-radius: var(--radius-pill);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.configurator-gym-status--new { background: rgba(249, 115, 22, 0.18); color: #fdba74; }
-.configurator-gym-status--active { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
-.configurator-gym-status--inactive { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+.configurator-status--new { background: var(--configurator-status-draft-bg); color: var(--configurator-status-draft-text); }
+.configurator-status--active { background: var(--configurator-status-active-bg); color: var(--configurator-status-active-text); }
+.configurator-status--inactive { background: var(--configurator-status-inactive-bg); color: var(--configurator-status-inactive-text); }
 
 .configurator-load-profile-editor-screen {
   justify-items: stretch;
@@ -863,30 +866,6 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   line-height: 1.2;
 }
 
-.configurator-load-profile-status {
-  flex: 0 0 auto;
-  padding: 0.16rem 0.42rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.configurator-load-profile-status--new {
-  background: rgba(249, 115, 22, 0.18);
-  color: #fdba74;
-}
-
-.configurator-load-profile-status--active {
-  background: rgba(52, 211, 153, 0.16);
-  color: #6ee7b7;
-}
-
-.configurator-load-profile-status--inactive {
-  background: rgba(148, 163, 184, 0.16);
-  color: #cbd5e1;
-}
 
 .configurator-load-profile-card-metadata {
   display: flex;

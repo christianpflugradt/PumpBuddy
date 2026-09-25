@@ -30,6 +30,7 @@ describe("pb-configurator-exercises-screen", () => {
     expect(el.textContent).toContain("1 variant");
     expect(el.textContent).toContain("2 variants");
     expect(el.querySelector(".configurator-exercise-card--inactive")).toBeTruthy();
+    expect(el.querySelectorAll("pb-configurator-status")).toHaveLength(3);
 
     const search = el.querySelector<HTMLInputElement>('[data-role="exercise-search"]')!;
     search.value = "bravo";

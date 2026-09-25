@@ -132,4 +132,18 @@ describe("pb-configurator-exercise-editor-screen", () => {
     (el.querySelector('.confirm-dialog [data-ui-action="delete-configurator-exercise"]') as HTMLButtonElement).click();
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ exerciseId: "exercise-1" });
   });
+
+  it("renders nested Variant lifecycle badges through the Configurator status element", () => {
+    const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
+      state: ConfiguratorExerciseEditorScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      variants: [{ id: "variant-1", exercise_id: "exercise-1", name: "Low Bar", status: "inactive", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }],
+    };
+
+    expect(el.querySelector("pb-configurator-status")?.getAttribute("value")).toBe("inactive");
+    expect(el.querySelector("pb-configurator-status")?.textContent).toBe("Inactive");
+  });
 });

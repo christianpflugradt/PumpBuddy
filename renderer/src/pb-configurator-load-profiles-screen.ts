@@ -1,5 +1,6 @@
 import "./pb-side-menu";
 import "./pb-create-button";
+import { formatConfiguratorLifecycleStatus } from "./pb-configurator-status";
 import type { LoadProfileSummary } from "./workout-contract";
 
 export const pbConfiguratorLoadProfilesScreenTag =
@@ -24,12 +25,6 @@ type UiAction =
   | "navigate-settings"
   | "navigate-about"
   | "logout";
-
-const statusLabelByValue: Record<LoadProfileSummary["status"], string> = {
-  new: "Draft",
-  active: "Active",
-  inactive: "Inactive",
-};
 
 const definitionLabelByValue: Record<
   LoadProfileSummary["definition_kind"],
@@ -189,7 +184,7 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
               >
                 <span class="configurator-load-profile-card-topline">
                   <span class="configurator-load-profile-name">${escapeHtml(loadProfile.name)}</span>
-                  <span class="configurator-load-profile-status configurator-load-profile-status--${escapeAttribute(loadProfile.status)}">${escapeHtml(statusLabelByValue[loadProfile.status])}</span>
+                  <pb-configurator-status value="${escapeAttribute(loadProfile.status)}"></pb-configurator-status>
                 </span>
                 <span class="configurator-load-profile-card-metadata">
                   ${escapeHtml(metadataSummary)}
@@ -227,7 +222,7 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
 
     return `
       <section class="configurator-placeholder-card" aria-label="${escapeAttribute(loadProfile.name)} load profile detail">
-        <p class="configurator-placeholder-eyebrow">${escapeHtml(statusLabelByValue[loadProfile.status])}</p>
+        <p class="configurator-placeholder-eyebrow">${escapeHtml(formatConfiguratorLifecycleStatus(loadProfile.status))}</p>
         <p class="configurator-placeholder-title">${escapeHtml(loadProfile.name)}</p>
         <p class="configurator-placeholder-copy">
           ${escapeHtml(definitionLabelByValue[loadProfile.definition_kind])} in ${escapeHtml(loadProfile.weight_unit)} · Used by ${escapeHtml(pluralize(loadProfile.station_count, "station"))}

@@ -1,5 +1,6 @@
 import "./pb-side-menu";
 import "./pb-create-button";
+import { formatConfiguratorLifecycleStatus } from "./pb-configurator-status";
 import type { GymSummary } from "./workout-contract";
 
 export const pbConfiguratorGymsScreenTag = "pb-configurator-gyms-screen";
@@ -16,12 +17,6 @@ type UiAction =
   | "start-configurator-gym-create"
   | "open-configurator-gym-detail"
   | "navigate-back-from-configurator-gym-detail";
-
-const statusLabelByValue: Record<NonNullable<GymSummary["status"]>, string> = {
-  new: "Draft",
-  active: "Active",
-  inactive: "Inactive",
-};
 
 const escapeHtml = (value: string): string =>
   value
@@ -94,7 +89,7 @@ class PbConfiguratorGymsScreenElement extends HTMLElement {
         return `<button type="button" class="configurator-gym-card configurator-gym-card--${escapeAttribute(status)}" data-ui-action="open-configurator-gym-detail" data-gym-id="${escapeAttribute(gym.id)}" aria-label="Open ${escapeAttribute(gym.name)} gym">
           <span class="configurator-gym-card-topline">
             <span class="configurator-gym-name">${escapeHtml(gym.name)}</span>
-            <span class="configurator-gym-status configurator-gym-status--${escapeAttribute(status)}">${statusLabelByValue[status]}</span>
+            <pb-configurator-status value="${escapeAttribute(status)}"></pb-configurator-status>
           </span>
         </button>`;
       }).join("")}
@@ -105,7 +100,7 @@ class PbConfiguratorGymsScreenElement extends HTMLElement {
     const isCreate = this.#state.mode === "create";
     const gym = this.#state.selectedGym;
     return `<section class="configurator-placeholder-card" aria-label="${escapeAttribute(isCreate ? "New gym" : gym?.name ?? "Gym detail")}">
-      <p class="configurator-placeholder-eyebrow">${isCreate ? "Draft Flow" : escapeHtml(statusLabelByValue[gym?.status ?? "active"])}</p>
+      <p class="configurator-placeholder-eyebrow">${isCreate ? "Draft Flow" : escapeHtml(formatConfiguratorLifecycleStatus(gym?.status ?? "active"))}</p>
       <p class="configurator-placeholder-title">${escapeHtml(isCreate ? "New Gym" : gym?.name ?? "Gym")}</p>
       <p class="configurator-placeholder-copy">This route is ready for the dedicated Gym editor. It keeps users inside configurator mode while write controls are built.</p>
     </section>`;

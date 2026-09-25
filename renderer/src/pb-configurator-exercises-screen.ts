@@ -1,4 +1,5 @@
 import "./pb-side-menu";
+import { formatConfiguratorLifecycleStatus } from "./pb-configurator-status";
 import type { ExerciseSummary } from "./workout-contract";
 
 export const pbConfiguratorExercisesScreenTag = "pb-configurator-exercises-screen";
@@ -15,12 +16,6 @@ type UiAction =
   | "start-configurator-exercise-create"
   | "open-configurator-exercise-detail"
   | "navigate-back-from-configurator-exercise-detail";
-
-const statusLabelByValue: Record<ExerciseSummary["status"], string> = {
-  new: "Draft",
-  active: "Active",
-  inactive: "Inactive",
-};
 
 const escapeHtml = (value: string): string =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -68,12 +63,12 @@ class PbConfiguratorExercisesScreenElement extends HTMLElement {
     const query = this.#searchQuery.trim().toLocaleLowerCase();
     const exercises = this.#state.exercises.filter((exercise) => exercise.name.toLocaleLowerCase().includes(query));
     if (exercises.length === 0) return '<p class="start-copy" role="status">No exercises match your search.</p>';
-    return `<div class="configurator-exercise-list" aria-label="Exercises">${exercises.map((exercise) => `<button type="button" class="configurator-exercise-card configurator-exercise-card--${exercise.status}" data-ui-action="open-configurator-exercise-detail" data-exercise-id="${escapeHtml(exercise.id)}" aria-label="Open ${escapeHtml(exercise.name)} exercise"><span class="configurator-exercise-card-topline"><span class="configurator-exercise-name">${escapeHtml(exercise.name)}</span><span class="configurator-exercise-status configurator-exercise-status--${exercise.status}">${statusLabelByValue[exercise.status]}</span></span><span class="configurator-exercise-card-metadata">${exercise.variant_count === 1 ? "1 variant" : `${exercise.variant_count} variants`}</span></button>`).join("")}</div>`;
+    return `<div class="configurator-exercise-list" aria-label="Exercises">${exercises.map((exercise) => `<button type="button" class="configurator-exercise-card configurator-exercise-card--${exercise.status}" data-ui-action="open-configurator-exercise-detail" data-exercise-id="${escapeHtml(exercise.id)}" aria-label="Open ${escapeHtml(exercise.name)} exercise"><span class="configurator-exercise-card-topline"><span class="configurator-exercise-name">${escapeHtml(exercise.name)}</span><pb-configurator-status value="${exercise.status}"></pb-configurator-status></span><span class="configurator-exercise-card-metadata">${exercise.variant_count === 1 ? "1 variant" : `${exercise.variant_count} variants`}</span></button>`).join("")}</div>`;
   }
   #renderDestination(): string {
     const isCreate = this.#state.mode === "create";
     const exercise = this.#state.selectedExercise;
-    return `<section class="configurator-placeholder-card" aria-label="${escapeHtml(isCreate ? "New exercise" : exercise?.name ?? "Exercise detail")}"><p class="configurator-placeholder-eyebrow">${isCreate ? "Draft Flow" : statusLabelByValue[exercise?.status ?? "new"]}</p><p class="configurator-placeholder-title">${escapeHtml(isCreate ? "New Exercise" : exercise?.name ?? "Exercise")}</p><p class="configurator-placeholder-copy">This route is ready for the Exercise editor and its nested Variants. Variant management remains inside this Exercise flow.</p></section>`;
+    return `<section class="configurator-placeholder-card" aria-label="${escapeHtml(isCreate ? "New exercise" : exercise?.name ?? "Exercise detail")}"><p class="configurator-placeholder-eyebrow">${isCreate ? "Draft Flow" : formatConfiguratorLifecycleStatus(exercise?.status ?? "new")}</p><p class="configurator-placeholder-title">${escapeHtml(isCreate ? "New Exercise" : exercise?.name ?? "Exercise")}</p><p class="configurator-placeholder-copy">This route is ready for the Exercise editor and its nested Variants. Variant management remains inside this Exercise flow.</p></section>`;
   }
   #render(): void {
     const isList = this.#state.mode === "list";

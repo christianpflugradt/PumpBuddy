@@ -105,6 +105,7 @@ describe("pb-configurator-gym-editor-screen", () => {
     expect(el.textContent).toContain("Cable Tower");
     expect(el.textContent).toContain("Cable Stack");
     expect(el.textContent).toContain("Draft");
+    expect(el.querySelector("pb-configurator-status")?.getAttribute("value")).toBe("new");
     (el.querySelector('[data-ui-action="start-configurator-station-create"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="open-configurator-station-detail"]') as HTMLButtonElement).click();
     expect(handler.mock.calls.map((call) => call[0].detail)).toEqual([
