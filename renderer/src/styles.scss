@@ -4885,25 +4885,25 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
       color-mix(in srgb, var(--progress-line-color) 34%, transparent 66%);
 }
 
-.completion-progress--green {
-  --progress-color: #59df86;
-  --progress-line-color: #59df86;
+.completion-progress--higher {
+  --progress-color: #F59E0B;
+  --progress-line-color: #F59E0B;
   --progress-duration: 1.9s;
   --progress-line-glow-1: 10px;
   --progress-line-glow-2: 22px;
 }
 
-.completion-progress--yellow {
-  --progress-color: #f2a940;
-  --progress-line-color: #f2a940;
+.completion-progress--stable {
+  --progress-color: #22C55E;
+  --progress-line-color: #22C55E;
   --progress-duration: 3.2s;
   --progress-line-glow-1: 10px;
   --progress-line-glow-2: 22px;
 }
 
-.completion-progress--red {
-  --progress-color: #ff7c7c;
-  --progress-line-color: #ff7c7c;
+.completion-progress--lower {
+  --progress-color: #38BDF8;
+  --progress-line-color: #38BDF8;
   --progress-duration: 3.2s;
   --progress-flow-start: 3.8rem;
   --progress-flow-end: -0.75rem;
@@ -4911,7 +4911,7 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   --progress-line-glow-2: 22px;
 }
 
-.completion-progress--gray {
+.completion-progress--unavailable {
   --progress-color: #9ca3af;
   --progress-line-color: var(--brand-strong);
 }

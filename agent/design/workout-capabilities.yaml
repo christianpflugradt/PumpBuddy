@@ -4,6 +4,7 @@ source_of_truth: capabilities
 references:
   glossary: agent/design/glossary.yaml
   insights_capabilities: agent/design/workout-insights-capabilities.yaml
+  completion_result_specification: agent/design/workout-use-cases.yaml
 formatting:
   indent_spaces: 2
 
@@ -73,9 +74,15 @@ capabilities:
       - mark_workout_completed
       - transition_active_to_finished
       - preserve_recorded_sets_for_history
+      - render_historical_performance_comparison_feedback
     guarantees:
       - completed_workout_immutable_from_workout_flow_perspective
       - completion_ends_resume_and_cancel
+      - completion_result_is_a_relative_indicator_not_a_judgment_of_workout_quality
+      - lower_stable_and_higher_presentation_preserves_existing_score_calculation_and_thresholds
+      - lower_is_neutral_blue_stable_is_positive_normal_green_and_higher_is_special_gold_orange
+      - completion_copy_is_selected_uniformly_from_the_approved_category_pool
+      - directional_arrow_semantics_and_animation_behavior_remain_unchanged
 
 principles:
   - user_centered

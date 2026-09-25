@@ -74,6 +74,82 @@ Use the structured models for entity and persistence details.
 
 ---
 
+## Workout Completion Result
+
+The workout completion result compares the current workout with historical
+performance. Its score is a relative performance indicator, not a judgment of
+whether the workout was good or bad. PumpBuddy does not know the athlete's
+intent and must not infer why a session is lighter, stable, or higher.
+
+The completion result uses the existing score calculation, historical-reference
+selection, per-exercise cap, aggregation, and thresholds unchanged:
+
+- **Lower**: workout progress below `0.95`.
+- **Stable**: workout progress from `0.95` through `1.03`, inclusive.
+- **Higher**: workout progress above `1.03`.
+- **Unavailable** remains separate when comparison data is insufficient.
+
+These categories are not a red/yellow/green traffic light:
+
+- **Lower / Blue (`#38BDF8`)** is deliberately neutral. It represents a lighter
+  session without implying warning, error, failure, regression, poor
+  performance, consolation, or intent.
+- **Stable / Green (`#22C55E`)** represents the healthy positive normal case of
+  maintaining roughly the recent level.
+- **Higher / Gold/Orange (`#F59E0B`)** makes an increase feel special or
+  celebratory without making continuous increases the expected default.
+
+The existing directional arrow semantics and animation behavior are preserved.
+
+### Completion Copy Principles
+
+Completion messages must be motivating, positive, concise, natural, and human
+without judging the workout or claiming more than the score establishes.
+
+- Never assume that a lighter session was intentional.
+- Never imply that Higher is the only desirable outcome or that the athlete
+  should always do more.
+- Never claim a PR, personal best, record, or similar achievement unless the
+  underlying data establishes it.
+- Avoid exaggerated fitness-app language.
+- Avoid em dashes.
+- Do not share messages between categories.
+- Select uniformly within the matching category without weighting,
+  score-dependent subcategories, or additional message logic.
+
+Approved **Lower** messages:
+
+1. A lighter session today. That's part of the process.
+2. Not every session needs to push the limit.
+3. Some days are lighter. The work still counts.
+4. Every workout has its place.
+5. A little less today. Plenty more ahead.
+6. Another session done. Keep moving forward.
+
+Approved **Stable** messages:
+
+1. Right on track. Solid work today.
+2. Consistency looks good on you.
+3. Steady work adds up. Keep going.
+4. Another solid session in the books.
+5. You've found your rhythm. Keep it going.
+6. Showing up and staying consistent. That's how it's done.
+7. Keep doing what you're doing.
+8. Steady today. Ready for what's next.
+
+Approved **Higher** messages:
+
+1. You stepped it up today. Great work!
+2. You raised the bar today. Well done!
+3. That's progress. Enjoy it!
+4. A little more today. That's how progress builds.
+5. You brought a little extra today. Nicely done!
+6. Progress looks good on you.
+7. Another step forward. Keep building!
+8. Now that's a step up. Great work!
+
+---
+
 ## Ubiquitous Language
 
 - `TrainingPlan`: stable plan identity that groups all versions of one plan.

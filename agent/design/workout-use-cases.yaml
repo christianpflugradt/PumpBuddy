@@ -205,6 +205,9 @@ use_cases:
       - user_reaches_end_of_workout
       - user_confirms_completion
       - system_marks_workout_completed
+      - system_compares_the_workout_performance_score_with_the_existing_historical_reference
+      - system_presents_lower_stable_or_higher_feedback_when_comparison_data_is_available
+      - system_selects_one_message_uniformly_from_the_approved_category_pool
     postconditions:
       - workout_finalized
       - workout_no_longer_resumable_or_cancellable

@@ -17,7 +17,7 @@ export type CompletionScreenState = {
 };
 
 type UiAction = "return-to-start";
-type ProgressTone = "green" | "yellow" | "red" | "gray";
+export type CompletionProgressCategory = "higher" | "stable" | "lower" | "unavailable";
 type CompletionStatKey = "exercises" | "sets" | "reps" | "kg-moved";
 
 const escapeHtml = (value: string): string =>
@@ -38,31 +38,72 @@ const renderCompletionHeader = (): string => `
   </header>
 `;
 
-const progressMessageByTone: Record<ProgressTone, string> = {
-  green: "You've improved on your recent level. Great work.",
-  yellow: "You've maintained your recent level. Solid work.",
-  red: "You went a bit lighter today - that's part of the process.",
-  gray: "Not enough similar data yet for a comparison.",
+export const completionProgressMessages = {
+  lower: [
+    "A lighter session today. That's part of the process.",
+    "Not every session needs to push the limit.",
+    "Some days are lighter. The work still counts.",
+    "Every workout has its place.",
+    "A little less today. Plenty more ahead.",
+    "Another session done. Keep moving forward.",
+  ],
+  stable: [
+    "Right on track. Solid work today.",
+    "Consistency looks good on you.",
+    "Steady work adds up. Keep going.",
+    "Another solid session in the books.",
+    "You've found your rhythm. Keep it going.",
+    "Showing up and staying consistent. That's how it's done.",
+    "Keep doing what you're doing.",
+    "Steady today. Ready for what's next.",
+  ],
+  higher: [
+    "You stepped it up today. Great work!",
+    "You raised the bar today. Well done!",
+    "That's progress. Enjoy it!",
+    "A little more today. That's how progress builds.",
+    "You brought a little extra today. Nicely done!",
+    "Progress looks good on you.",
+    "Another step forward. Keep building!",
+    "Now that's a step up. Great work!",
+  ],
+} as const;
+
+const unavailableProgressMessage = "Not enough similar data yet for a comparison.";
+
+export const selectCompletionProgressMessage = (
+  category: CompletionProgressCategory,
+  random: () => number = Math.random,
+): string => {
+  if (category === "unavailable") {
+    return unavailableProgressMessage;
+  }
+
+  const messages = completionProgressMessages[category];
+  const selectedIndex = Math.floor(random() * messages.length);
+  return messages[selectedIndex] ?? messages[messages.length - 1];
 };
 
-const resolveProgressTone = (completion: CompletionScreenState["completion"]): ProgressTone => {
+const resolveProgressCategory = (
+  completion: CompletionScreenState["completion"],
+): CompletionProgressCategory => {
   if (completion.workoutProgressStatus !== "AVAILABLE" || completion.workoutProgress == null) {
-    return "gray";
+    return "unavailable";
   }
 
   if (completion.workoutProgress < 0.95) {
-    return "red";
+    return "lower";
   }
 
   if (completion.workoutProgress <= 1.03) {
-    return "yellow";
+    return "stable";
   }
 
-  return "green";
+  return "higher";
 };
 
-const renderProgressVisual = (tone: ProgressTone): string => {
-  if (tone === "gray") {
+const renderProgressVisual = (category: CompletionProgressCategory): string => {
+  if (category === "unavailable") {
     return `
       <div class="completion-progress-wave" aria-hidden="true">
         <svg viewBox="0 0 200 20" focusable="false" aria-hidden="true">
@@ -72,7 +113,7 @@ const renderProgressVisual = (tone: ProgressTone): string => {
     `;
   }
 
-  const arrowPath = tone === "red" ? "M11 2.5 L4 7 L11 11.5" : "M3 2.5 L10 7 L3 11.5";
+  const arrowPath = category === "lower" ? "M11 2.5 L4 7 L11 11.5" : "M3 2.5 L10 7 L3 11.5";
 
   return `
     <div class="completion-progress-flow" aria-hidden="true">
@@ -245,8 +286,8 @@ class PbCompletionScreenElement extends HTMLElement {
     }
 
     const { plan, completion } = state;
-    const progressTone = resolveProgressTone(completion);
-    const progressMessage = progressMessageByTone[progressTone];
+    const progressCategory = resolveProgressCategory(completion);
+    const progressMessage = selectCompletionProgressMessage(progressCategory);
     const completionStats = computeCompletionStats(plan);
     const durationMinutes = computeDurationMinutes(completion.startedAt, completion.completedAt);
     const durationDeltaText = formatDurationDeltaText(durationMinutes, completion.averageDurationMinutes);
@@ -260,11 +301,11 @@ class PbCompletionScreenElement extends HTMLElement {
         </p>
         <h2 class="completion-title">Completed</h2>
         <section
-          class="completion-progress completion-progress--${progressTone}"
+          class="completion-progress completion-progress--${progressCategory}"
           aria-label="Workout progress indicator"
-          data-progress-tone="${progressTone}"
+          data-progress-category="${progressCategory}"
         >
-          ${renderProgressVisual(progressTone)}
+          ${renderProgressVisual(progressCategory)}
           <p class="completion-progress-message">${escapeHtml(progressMessage)}</p>
         </section>
         <section class="completion-duration" aria-label="Workout duration summary">

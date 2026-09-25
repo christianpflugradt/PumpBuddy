@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { registerPbCompletionScreen, pbCompletionScreenTag } from "./pb-completion-screen";
+import {
+  completionProgressMessages,
+  registerPbCompletionScreen,
+  pbCompletionScreenTag,
+  selectCompletionProgressMessage,
+} from "./pb-completion-screen";
 import { registerPbStartScreen, pbStartScreenTag } from "./pb-start-screen";
 import type { CompletionScreenState } from "./pb-completion-screen";
 import type { WorkoutPlan } from "./workout-types";
@@ -102,11 +107,11 @@ describe("pb-completion-screen", () => {
 
     const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
     expect(indicator).not.toBeNull();
-    expect(indicator?.getAttribute("data-progress-tone")).toBe("gray");
+    expect(indicator?.getAttribute("data-progress-category")).toBe("unavailable");
     expect(el.textContent ?? "").toContain("Not enough similar data yet for a comparison.");
   });
 
-  it("renders red progress indicator when workout progress is below 0.95", () => {
+  it("renders neutral lower progress feedback when workout progress is below 0.95", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
@@ -118,11 +123,12 @@ describe("pb-completion-screen", () => {
     });
 
     const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
-    expect(indicator?.getAttribute("data-progress-tone")).toBe("red");
-    expect(el.textContent ?? "").toContain("You went a bit lighter today - that's part of the process.");
+    const message = el.querySelector(".completion-progress-message")?.textContent ?? "";
+    expect(indicator?.getAttribute("data-progress-category")).toBe("lower");
+    expect(completionProgressMessages.lower).toContain(message);
   });
 
-  it("renders yellow progress indicator when workout progress is between 0.95 and 1.03", () => {
+  it("renders positive stable progress feedback when workout progress is between 0.95 and 1.03", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
@@ -134,11 +140,12 @@ describe("pb-completion-screen", () => {
     });
 
     const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
-    expect(indicator?.getAttribute("data-progress-tone")).toBe("yellow");
-    expect(el.textContent ?? "").toContain("You've maintained your recent level. Solid work.");
+    const message = el.querySelector(".completion-progress-message")?.textContent ?? "";
+    expect(indicator?.getAttribute("data-progress-category")).toBe("stable");
+    expect(completionProgressMessages.stable).toContain(message);
   });
 
-  it("renders green progress indicator when workout progress is above 1.03", () => {
+  it("renders celebratory higher progress feedback when workout progress is above 1.03", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
@@ -150,8 +157,48 @@ describe("pb-completion-screen", () => {
     });
 
     const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
-    expect(indicator?.getAttribute("data-progress-tone")).toBe("green");
-    expect(el.textContent ?? "").toContain("You've improved on your recent level. Great work.");
+    const message = el.querySelector(".completion-progress-message")?.textContent ?? "";
+    expect(indicator?.getAttribute("data-progress-category")).toBe("higher");
+    expect(completionProgressMessages.higher).toContain(message);
+  });
+
+  it("keeps the approved completion message pools separate and exact", () => {
+    expect(completionProgressMessages.lower).toEqual([
+      "A lighter session today. That's part of the process.",
+      "Not every session needs to push the limit.",
+      "Some days are lighter. The work still counts.",
+      "Every workout has its place.",
+      "A little less today. Plenty more ahead.",
+      "Another session done. Keep moving forward.",
+    ]);
+    expect(completionProgressMessages.stable).toEqual([
+      "Right on track. Solid work today.",
+      "Consistency looks good on you.",
+      "Steady work adds up. Keep going.",
+      "Another solid session in the books.",
+      "You've found your rhythm. Keep it going.",
+      "Showing up and staying consistent. That's how it's done.",
+      "Keep doing what you're doing.",
+      "Steady today. Ready for what's next.",
+    ]);
+    expect(completionProgressMessages.higher).toEqual([
+      "You stepped it up today. Great work!",
+      "You raised the bar today. Well done!",
+      "That's progress. Enjoy it!",
+      "A little more today. That's how progress builds.",
+      "You brought a little extra today. Nicely done!",
+      "Progress looks good on you.",
+      "Another step forward. Keep building!",
+      "Now that's a step up. Great work!",
+    ]);
+  });
+
+  it("selects completion messages uniformly by category with deterministic boundaries", () => {
+    expect(selectCompletionProgressMessage("lower", () => 0)).toBe(completionProgressMessages.lower[0]);
+    expect(selectCompletionProgressMessage("stable", () => 0.5)).toBe(completionProgressMessages.stable[4]);
+    expect(selectCompletionProgressMessage("higher", () => 0.999999)).toBe(
+      completionProgressMessages.higher[7],
+    );
   });
 
   it("renders actual workout duration in minutes", () => {
