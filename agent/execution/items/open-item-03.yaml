@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-03
+  title: Repair Configurator option-group semantics
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Exercise Variant Load input, Set tracking, and Repetition kind choices
+    use valid, accessibly named grouped-radio markup.
+  rationale: The current field helper nests option labels inside an outer label and
+    does not programmatically identify the shared question for each radio group.
+scope:
+  in:
+  - Replace the three editable radio groups with fieldset and legend semantics, or
+    an equivalently accessible Configurator option-group structure.
+  - Apply the shared Configurator form vocabulary established by pb-071-item-02.
+  - Add focused DOM and interaction assertions for group names, option labels, checked
+    values, disabled historical state, and change handling.
+  out:
+  - Changing TOTAL or PER_SIDE, BILATERAL or UNILATERAL, or REPS or SECS values or
+    defaults.
+  - Changing historical read-only behavior, save behavior, compatibility pickers,
+    or other forms.
+  - Creating a generic radio-group Web Component solely to remove repeated markup.
+constraints:
+- Preserve data-field names, radio names, values, checked state, disabled state, and
+  existing change-driven state transitions.
+- Keep the implementation within the Configurator field contract and global light-DOM
+  stylesheet.
+- Treat pb-071-item-02 as the prerequisite contract; do not recreate a competing field
+  vocabulary.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/styles.scss
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Load input, Set tracking, and Repetition kind each expose one programmatic
+    group name and individually labelled radio choices without nested label elements.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused DOM tests pass for valid grouped-radio semantics and option
+      labels.
+- id: ac-02
+  statement: Existing values, defaults, checked states, historical disabled states,
+    and emitted save payload semantics remain unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing and new Exercise Variant editor interaction tests pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The narrow semantic repair and its prerequisite are fully
+    specified.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer/configurator-variant-form
+  - renderer/accessibility-semantics
+handoff:
+  review_focus:
+  - Inspect rendered HTML for valid fieldset or equivalent group semantics and absence
+    of nested labels.
+  - Confirm values, defaults, disabled behavior, and change handling did not move.
+review_feedback: []
+review_result: null

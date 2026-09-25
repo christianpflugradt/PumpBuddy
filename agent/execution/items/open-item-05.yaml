@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-05
+  title: Complete page-level create action adoption
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Every applicable top-level Configurator list, including Exercises, uses
+    the existing pb-create-button semantic role for page-level entity creation.
+  rationale: Load Profiles, Gyms, and Training Plans already use the focused component
+    while Exercises locally reproduces the same role and styling.
+scope:
+  in:
+  - Replace the local Exercises page-level New Exercise button with pb-create-button.
+  - Minimally evolve pb-create-button only if required to preserve the current Exercises
+    label, action identifier, or disabled presentation contract.
+  - Add direct component coverage and update Exercises list tests for adoption and
+    emitted action behavior.
+  out:
+  - Using pb-create-button for New Station, New Variant, Add Exercise, Add Variant,
+    or any other nested collection action.
+  - Changing create routes, create availability, labels, actions, or controller behavior.
+  - Refactoring Configurator route or component ownership.
+constraints:
+- Preserve + New Exercise text and start-configurator-exercise-create action semantics
+  exactly.
+- Keep pb-create-button narrowly defined as page-level creation for the entity represented
+  by the current Configurator list.
+- Reuse the existing light-DOM component rather than introducing a competing abstraction.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-create-button.ts
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Exercises uses pb-create-button for its page-level New Exercise action,
+    matching the existing top-level Configurator list pattern.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Exercises list and pb-create-button tests pass with component adoption.
+- id: ac-02
+  statement: The rendered label and start-configurator-exercise-create action are
+    unchanged, and nested creation controls do not adopt pb-create-button.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: DOM and interaction tests confirm unchanged action behavior and the
+      narrow page-level boundary.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow adoption of an existing semantic component.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer/configurator-page-create
+handoff:
+  review_focus:
+  - Confirm Exercises reuses the existing component without changing its action contract.
+  - Confirm no nested add control or route ownership entered scope.
+review_feedback: []
+review_result: null

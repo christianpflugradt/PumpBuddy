@@ -1,0 +1,113 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-07
+  title: Consolidate Configurator confirmation presentation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator confirmation and warning flows render through one intent-aware,
+    accessible light-DOM confirmation component while preserving every current action
+    and behavior.
+  rationale: Configurator editors duplicate confirmation markup, while the dormant
+    pb-confirm-dialog uses an incompatible Shadow Root, fixed labels, and fixed action
+    names.
+scope:
+  in:
+  - Evolve pb-confirm-dialog into a light-DOM semantic presentation component with
+    caller-supplied title or accessible name, message, button labels, action identifiers,
+    disabled state, and affirmative or destructive intent.
+  - Adopt the component for Configurator Gym, Station, Exercise, Variant, Load Profile,
+    and Training Plan confirmation or warning surfaces only.
+  - Apply the shared action roles from pb-071-item-04 so destructive confirmations
+    use danger and dismiss or keep-editing actions use their non-destructive role.
+  - Preserve each caller's existing pb-ui-action names, payload handling, response
+    callbacks, text, availability, and current backdrop, dismissal, and focus behavior.
+  - Add component contract tests and representative caller interaction tests for rename
+    and deletion confirmations.
+  out:
+  - Adopting the component in Workout, Start, or other non-Configurator screens.
+  - Adding focus trapping, initial focus placement, focus return, Escape handling,
+    changed backdrop clicks, or new dismissal paths.
+  - Changing dialog copy, confirmation eligibility, actions, workflows, state transitions,
+    or controller behavior.
+constraints:
+- Use light DOM so the shared global dialog and action styles apply.
+- Do not adopt the current dormant component contract unchanged; it must accept caller-specific
+  labels, actions, accessible naming, and intent.
+- Treat pb-071-item-04 as the prerequisite action-role contract and preserve every
+  existing caller action identifier.
+- If consistent presentation would require any behavior change, stop that caller migration
+  and surface the Class B decision.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-confirm-dialog.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: pb-confirm-dialog renders in light DOM and accepts caller-supplied accessible
+    naming, content, labels, action identifiers, disabled state, and affirmative or
+    destructive intent.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused component contract tests pass for configurable presentation
+      and action dispatch.
+- id: ac-02
+  statement: Every current Configurator confirmation or warning surface in scope uses
+    the shared component with consistent roles and appropriate non-destructive or
+    danger actions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Representative rename and Delete Draft caller tests pass with shared
+      dialog adoption.
+- id: ac-03
+  statement: Existing dialog text, action names, payloads, callbacks, availability,
+    backdrop behavior, dismissal behavior, focus behavior, and state transitions remain
+    unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing Configurator interaction coverage passes and no tests require
+      new dialog behavior.
+- id: ac-04
+  statement: Workout and Start confirmation implementations remain untouched.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Full renderer checks pass without non-Configurator confirmation migrations.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The reusable contract, callers, prerequisites, and behavioral
+    exclusions are explicit.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-confirmation-presentation
+  - renderer/accessibility-semantics
+handoff:
+  review_focus:
+  - Verify caller-specific action identifiers and every dismissal, backdrop, and focus
+    behavior are unchanged.
+  - Verify the component is light DOM and uses action roles from pb-071-item-04.
+  - Confirm Workout and Start dialogs did not enter scope.
+review_feedback: []
+review_result: null

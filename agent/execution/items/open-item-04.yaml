@@ -1,0 +1,101 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-04
+  title: Consolidate Configurator action roles
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator controls use stable semantic presentation roles for affirmative
+    submit, neutral or secondary, cancel or dismiss, nested add, and destructive actions.
+  rationale: Current Save, Create, Cancel, nested-add, and Delete Draft controls derive
+    their appearance from entity-specific button families instead of their meaning.
+scope:
+  in:
+  - Define shared Configurator action-role classes and migrate active editor footers,
+    nested add controls, and current Configurator confirmation actions.
+  - Add or map a shared danger token and treatment so every Delete Draft action is
+    red or danger and orange is not used to communicate deletion.
+  - Preserve affirmative, neutral, dismiss, nested-add, and destructive hierarchy
+    without turning the roles into a generic configurable button component.
+  - Add focused tests asserting semantic role adoption and unchanged action identifiers
+    and disabled states.
+  out:
+  - Changing button labels, available actions, delete eligibility, confirmation flows,
+    or state transitions.
+  - Changing Workout navigation button semantics or mature non-Configurator screens.
+  - Consolidating confirmation dialog structure, which is owned by pb-071-item-07.
+  - Using the page-level pb-create-button role for nested add actions.
+constraints:
+- Every Delete Draft action must use the shared red or danger destructive role even
+  though deletion is limited to Draft entities.
+- Keep orange available for genuinely secondary or neutral emphasis, never for deletion.
+- Preserve all data-ui-action names, labels, loading text, disabled conditions, event
+  payloads, and response callbacks.
+- Use shared role classes and tokens rather than a generic Web Component with a large
+  variant surface.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Active Configurator affirmative, neutral or secondary, cancel or dismiss,
+    nested-add, and destructive controls use shared semantic role classes rather than
+    entity-specific action families.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with representative DOM assertions for every action
+      role.
+- id: ac-02
+  statement: Every Configurator Delete Draft control and its confirmation action uses
+    one shared red or danger treatment, with no deletion communicated by orange styling.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Style and DOM tests pass for the destructive role across all Draft-deletion
+      flows.
+- id: ac-03
+  statement: Labels, availability rules, disabled and loading states, action identifiers,
+    payloads, callbacks, confirmations, and state transitions are unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing Configurator editor interaction tests pass without behavioral
+      regressions.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The semantic role mapping and preservation requirements are
+    explicit.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-actions
+  - renderer/configurator-destructive-presentation
+handoff:
+  review_focus:
+  - Check every Delete Draft path for the shared danger role and unchanged eligibility
+    and confirmation flow.
+  - Check nested add controls remain separate from the page-level create component.
+  - Confirm Workout and mature non-Configurator button semantics remain untouched.
+review_feedback: []
+review_result: null

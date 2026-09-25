@@ -1,0 +1,110 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-06
+  title: Consolidate Configurator header presentation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator overview, list, and editor screens use one explicit semantic
+    header pattern with consistent title, context, and optional banner markup.
+  rationale: Current headers mix app-header, a borrowed mature-detail header class,
+    missing or pseudo-element banners, and entity-specific structures for the same
+    Configurator role.
+scope:
+  in:
+  - Introduce a small light-DOM pb-configurator-header element that owns consistent
+    title, optional context or subtitle, and optional PumpBuddy banner accessibility
+    markup.
+  - Adopt it across the Configurator overview, top-level lists, and all dedicated
+    Configurator editors while preserving each screen's current title and contextual
+    copy.
+  - Remove Configurator dependence on exercise-variant-detail-header and the Variant
+    editor's component-specific pseudo-element banner workaround.
+  - Define or replace the currently undefined --font-size-section reference used by
+    the Configurator Gym Stations heading as part of the shared header and heading
+    typography cleanup.
+  - Add focused header component and representative consumer tests.
+  out:
+  - Changing navigation, back controls, routes, screen ownership, or Configurator
+    workflows.
+  - Changing mature non-Configurator detail headers or product-wide screen identity.
+  - Redesigning page copy, adding banners to unrelated screens, or introducing a generic
+    design system.
+constraints:
+- Use light DOM so the component consumes the existing global stylesheet.
+- Preserve current screen titles, subtitles or context, banner alt text, and surrounding
+  navigation behavior.
+- The header component must own a stable Configurator semantic role, not merely proxy
+  arbitrary markup variants.
+- Keep the solution Configurator-only and do not alter exercise-variant-detail-header
+  consumers outside Configurator.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-overview-screen.ts
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-overview-screen.test.ts
+  - renderer/src/pb-configurator-gyms-screen.test.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Configurator overview, lists, and editors render their title, optional
+    context, and optional banner through one Configurator-specific light-DOM header
+    component.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Header component and representative overview, list, and editor consumer
+      tests pass.
+- id: ac-02
+  statement: Configurator sources no longer borrow exercise-variant-detail-header
+    or use a component-specific pseudo-element banner workaround, while mature screens
+    remain unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass after removing only the Configurator-specific semantic
+      leakage.
+- id: ac-03
+  statement: Configurator heading typography has no undefined --font-size-section
+    reference and current titles, contextual copy, banner accessibility, and navigation
+    behavior are preserved.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Style checks and screen tests pass with the defined or replaced typography
+      token.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The component role, consumers, and preservation constraints
+    are explicit.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-header
+  - renderer/configurator-typography
+handoff:
+  review_focus:
+  - Check all active Configurator screens adopt the shared header without copy or
+    navigation drift.
+  - Confirm mature detail screens and protected Workout presentation are untouched.
+  - Confirm banner markup is accessible and no longer injected through a pseudo-element.
+review_feedback: []
+review_result: null

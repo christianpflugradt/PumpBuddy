@@ -1,0 +1,96 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-01
+  title: Consolidate Configurator lifecycle status semantics
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: All active Configurator Draft, Active, and Inactive badges use one Configurator-specific
+    value-to-label and semantic presentation abstraction.
+  rationale: Gym, Exercise, Load Profile, Station, and Variant status mappings and
+    badge styles currently duplicate the same domain meaning under entity-specific
+    names.
+scope:
+  in:
+  - Introduce a small pb-configurator-status light-DOM element, or an equivalently
+    narrow shared renderer if source evidence shows an element adds no value, that
+    owns the new/active/inactive to Draft/Active/Inactive mapping and semantic classes.
+  - Adopt the abstraction in the active Gym, Exercise, and Load Profile lists and
+    the nested Station and Variant rows rendered by their Configurator editors.
+  - Replace duplicated raw lifecycle badge colors with justified Draft, Active, and
+    Inactive semantic tokens in renderer/src/styles.scss.
+  - Add focused renderer tests for all three values and representative adoption across
+    top-level and nested Configurator rows.
+  out:
+  - Changing lifecycle values, labels, transitions, availability, or domain rules.
+  - Changing non-Configurator status presentation or mature detail screens.
+  - Consolidating Configurator entity-row layout beyond the status sub-role.
+constraints:
+- Preserve the exact labels Draft, Active, and Inactive and the existing new, active,
+  and inactive source values.
+- Keep the abstraction Configurator-specific rather than introducing a generic product-wide
+  status pill.
+- Use the renderer's global light-DOM styling model; do not introduce a Shadow Root
+  that cannot consume renderer/src/styles.scss.
+- Preserve existing row actions, metadata, disabled states, and navigation behavior.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gyms-screen.test.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: One Configurator-specific abstraction renders Draft, Active, and Inactive
+    from the existing lifecycle values and is used by every active top-level and nested
+    Configurator status badge in scope.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with focused tests covering all three lifecycle
+      mappings and representative consumers.
+- id: ac-02
+  statement: Lifecycle badge colors resolve through shared semantic tokens and equivalent
+    entity-prefixed status mappings and color rules are removed from the scoped paths.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer style and test checks pass without duplicated scoped lifecycle
+      presentation.
+- id: ac-03
+  statement: Existing lifecycle values, labels, row actions, metadata, and navigation
+    behavior remain unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing Configurator screen tests and new status-adoption tests pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The deliverable and affected semantic boundary are explicit
+    in this item.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer/configurator-status
+  - renderer/configurator-list-presentation
+handoff:
+  review_focus:
+  - Confirm one lifecycle mapping is authoritative across top-level and nested Configurator
+    rows.
+  - Confirm no non-Configurator status presentation or lifecycle behavior changed.
+  - Confirm any new element uses light DOM and has focused behavior-level coverage.
+review_feedback: []
+review_result: null

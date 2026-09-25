@@ -1,0 +1,110 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-02
+  title: Establish the accessible Configurator field contract
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Configurator editors share one correctly named and accessible field, control,
+    helper, error, metadata, and action-group markup and CSS contract.
+  rationale: Most editors reuse Gym-prefixed classes while Load Profile maintains
+    a parallel vocabulary, and visible validation is not consistently exposed to assistive
+    technology.
+scope:
+  in:
+  - Define Configurator-scoped classes and markup roles for fields, labels, inputs,
+    selects, textareas, helper text, field errors, metadata, and editor action groups.
+  - Migrate the active Gym, Station, Exercise, Variant, Load Profile, and Training
+    Plan editor markup, including Training Plan creation owned by its list screen.
+  - Give controls stable label relationships and connect helper and error content
+    with ids and aria-describedby where present; expose aria-invalid when invalid
+    and explicit required or optional semantics where the current rules require them.
+  - Preserve TextInputBinding focus and selection behavior while adapting markup and
+    selectors to the shared contract.
+  - Add or update focused tests for valid, invalid, helper, disabled, and read-only
+    examples.
+  out:
+  - Changing validation rules, required fields, server-error behavior, save eligibility,
+    or read-only lifecycle rules.
+  - Creating a field Web Component that merely wraps layout without owning a stable
+    semantic or accessibility responsibility.
+  - Changing picker architecture, picker behavior, or non-Configurator forms.
+  - Repairing Exercise Variant radio-group composition, which is isolated in pb-071-item-03.
+constraints:
+- Prefer shared CSS and a documented markup contract; introduce a helper only when
+  it materially guarantees accessible linkage without hiding domain-specific content.
+- Keep TextInputBinding as the existing input behavior primitive and preserve its
+  rerender focus and selection guarantees.
+- Do not rename data-field values, data-ui-action values, emitted events, or request
+  payloads.
+- Keep entity-specific classes only when their presentation is genuinely entity-specific.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/text-input-binding.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Active Configurator editors use Configurator-scoped field, control, helper,
+    error, metadata, and action-group roles instead of shared Gym- or Load Profile-prefixed
+    roles.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests exercising the shared contract in every
+      editor family.
+- id: ac-02
+  statement: Labels identify their controls, helper and error content is programmatically
+    associated when present, invalid controls expose aria-invalid, and current required
+    or optional meaning is explicit without changing validation behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused DOM tests pass for labelled, described, invalid, required or
+      optional, disabled, and read-only field states.
+- id: ac-03
+  statement: Input rerenders preserve focus and selection and all existing data fields,
+    actions, payloads, save eligibility, and validation messages remain behaviorally
+    unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing editor and TextInputBinding coverage passes without workflow
+      regressions.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The shared contract and complete editor migration scope are
+    explicit in this item.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-forms
+  - renderer/accessibility-semantics
+handoff:
+  review_focus:
+  - Check every active Configurator editor, including Training Plan creation, for
+    complete adoption.
+  - Verify accessible relationships remain correct after rerenders and conditional
+    error/helper changes.
+  - Verify no validation, payload, picker, lifecycle, or input-binding behavior changed.
+review_feedback: []
+review_result: null
