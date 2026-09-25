@@ -3,6 +3,7 @@ task: review-consistency
 
 context:
   required:
+    - agent/execution/workflow-policy.yaml
     - agent/strategy/tech-stack.yaml
     - agent/strategy/engineering-guardrails.yaml
     - agent/strategy/test-strategy.yaml

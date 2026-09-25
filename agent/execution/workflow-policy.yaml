@@ -70,6 +70,25 @@ quality_gates:
     - missing_required_independent_review
     - unmet_acceptance_criteria
 
+  long_running_command_execution:
+    applies_to:
+      - implementation_verification
+      - item_review
+      - plan_review
+      - finalization
+      - other_quality_gate_execution
+    rules:
+      - start_each_quality_command_once_and_use_the_longest_reasonable_blocking_wait_supported_by_the_execution_environment
+      - while_a_command_is_running_normally_do_not_poll_read_logs_emit_progress_commentary_reason_speculatively_or_start_unrelated_work
+      - treat_silence_as_normal; investigate_only_after_completion_when_the_environment_requires_another_wait_or_when_concrete_failure_or_hang_evidence_exists
+      - on_success_evaluate_exit_status_without_full_log_inspection; on_failure_inspect_relevant_output_or_a_concise_log_tail_before_expanding_investigation
+      - for_very_verbose_commands_prefer_a_temporary_log_file_in_the_system_temp_directory_such_as_/tmp_over_repeated_streamed_output_when_that_preserves_required_evidence
+    hang_evidence:
+      - established_or_clearly_abnormal_runtime_exceeded
+      - explicit_timeout_or_process_failure
+      - known_infrastructure_symptom
+      - other_concrete_evidence_of_unexpected_stalled_progress
+
 clarification_policy:
   required_when:
     - meaning_is_ambiguous_and_changes_implementation_or_acceptance

@@ -48,8 +48,15 @@ class ExtendedReviews(StrictModel):
     findings_handling: List[str] = Field(min_length=1)
 
 
+class LongRunningCommandExecution(StrictModel):
+    applies_to: List[str] = Field(min_length=1)
+    rules: List[str] = Field(min_length=1)
+    hang_evidence: List[str] = Field(min_length=1)
+
+
 class QualityGates(StrictModel):
     fail_on: List[str] = Field(min_length=1)
+    long_running_command_execution: LongRunningCommandExecution
 
 
 class ClarificationPolicy(StrictModel):

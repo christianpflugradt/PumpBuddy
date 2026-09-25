@@ -68,6 +68,13 @@ quality_gates:
     - validation_warning
     - missing_required_review
     - unmet_acceptance_criteria
+  long_running_command_execution:
+    applies_to:
+      - implementation_verification
+    rules:
+      - start_once_and_wait_passively
+    hang_evidence:
+      - explicit_timeout
 
 clarification_policy:
   required_when:
