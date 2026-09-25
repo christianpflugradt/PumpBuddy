@@ -1,23 +1,115 @@
 version: 1
 kind: plan
 id: pb-071
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Configurator UI Class A Consolidation
+goal: >-
+  Deliver the first behavior-preserving Configurator UI consistency wave by
+  consolidating stable semantic presentation roles without redesigning workflows,
+  changing domain behavior, or expanding the work into a generic design system.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - >-
+    Consolidate the Configurator-wide Draft, Active, and Inactive lifecycle status
+    mapping and presentation described by SEM-01 under a Configurator-specific
+    abstraction.
+  - >-
+    Replace entity-prefixed shared form concepts with Configurator-scoped field,
+    control, helper, error, metadata, and action-group patterns described by FORM-01,
+    using shared CSS and markup where no meaningful component responsibility exists.
+  - >-
+    Establish Configurator action roles for affirmative submit, neutral or secondary,
+    cancel or dismiss, nested add, and destructive actions as described by ACTION-01;
+    use one shared red or danger treatment for every Delete Draft action.
+  - >-
+    Adopt the existing pb-create-button page-level creation role on every applicable
+    top-level Configurator list described by COMP-03, including Exercises, while
+    keeping nested creation actions separate.
+  - >-
+    Consolidate Configurator headers described by VIS-01 under an explicit shared
+    pattern that supports the required title, context or subtitle, and optional
+    product banner semantics without borrowing unrelated screen-specific presentation.
+  - >-
+    Establish the FORM-02 accessible field validation contract for labels, controls,
+    helper and error text, required or optional state, and invalid state, and replace
+    the FORM-03 nested-label radio markup with an accessible grouped-option pattern.
+  - >-
+    Consolidate justified Configurator lifecycle and destructive semantic tokens,
+    remove avoidable raw color drift, and define or replace the undefined
+    --font-size-section reference described by VIS-03.
+  - >-
+    Consolidate Configurator confirmation-dialog presentation described by COMP-02
+    through an adoptable light-DOM component or shared rendering pattern whose
+    caller-supplied content, intent, and action contract preserve every current flow.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - COMP-04 Configurator route or component ownership and route restructuring.
+  - COMP-05 dormant Workout subcomponent integration, removal, redesign, or restructuring.
+  - COMP-06 picker architecture, behavior extraction, or picker behavior changes.
+  - Navigation changes, workflow changes, new actions, changed state transitions, or domain behavior changes.
+  - Workout execution redesign or restructuring; Workout remains a protected reference only.
+  - History, Statistics, Progress, Workout Detail, or other mature non-Configurator screen redesign or cleanup.
+  - Dialog focus trapping, Escape handling, backdrop behavior, focus return, dismissal semantics, or any other dialog behavior change.
+  - A generic design-system initiative or components created solely because markup looks similar.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - >-
+    Every active Configurator Draft, Active, and Inactive status uses one shared
+    value-to-label and semantic presentation contract with unchanged values and states.
+  - >-
+    Active Configurator editors use Configurator-scoped shared form and action roles;
+    entity-specific names remain only where the presentation is genuinely entity-specific.
+  - >-
+    Every Delete Draft action uses the shared red or danger destructive treatment,
+    orange is not used to signify deletion, and existing labels, availability rules,
+    confirmations, emitted actions, and behavior remain unchanged.
+  - >-
+    All applicable top-level Configurator lists, including Exercises, use
+    pb-create-button for page-level creation, while nested add actions do not use that role.
+  - >-
+    Configurator headers use one explicit Configurator pattern and no longer depend on
+    mature-screen classes or component-specific pseudo-element banner workarounds.
+  - >-
+    Configurator fields consistently expose accessible label, helper or error,
+    required or optional, and invalid-state relationships, and radio groups use valid
+    grouped semantics without changing values or transitions.
+  - >-
+    Lifecycle and destructive colors resolve through justified semantic tokens, raw
+    state-color duplication is removed where equivalent, and no undefined
+    --font-size-section reference remains.
+  - >-
+    Configurator confirmation dialogs share one visual and semantic presentation
+    contract while preserving their current text, actions, events, availability,
+    confirmation flows, backdrop behavior, dismissal behavior, and focus behavior.
+  - >-
+    Renderer quality checks pass through the repository make targets, with focused
+    behavior-level tests added or updated where consolidation changes rendered
+    semantics or component contracts.
 constraints:
-  - constraint 1
-  - constraint 2
+  - This is a Class A consistency and consolidation plan, not a redesign.
+  - Preserve current behavior, domain values, state transitions, available actions, event names, and controller responsibilities by default.
+  - Prefer semantic consolidation over visual similarity and reuse an existing semantic component when its role already matches.
+  - Prefer shared CSS or markup contracts over Web Components that would add no meaningful semantic, accessibility, or behavioral responsibility.
+  - Keep active screen Custom Elements and the global light-DOM styling model; do not copy dormant Shadow DOM extraction patterns.
+  - Keep changes incremental and independently reviewable, and keep the renderer thin without adding business logic.
+  - If implementation requires a Class B decision or behavior change, stop that part and surface the decision instead of expanding scope.
+  - Keep the refined plan normally within four to eight independently reviewable items and one focused workday; split an oversized area rather than bundling unrelated work.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/tmp/ui-foundations-web-components-review.md
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive small, independently reviewable execution items from this
+  plan and should not mechanically map the eight scope areas one-to-one. Couple only
+  changes whose shared contract makes them safer to implement and review together.
+
+  The temporary UI Foundations / Web Components review is planning and refinement
+  input only. During refinement, copy or restate every implementation-relevant
+  finding, source location, constraint, caveat, affected area, behavior-preservation
+  rule, and acceptance expectation into the applicable item. No executable item may
+  require or reference agent/tmp/ui-foundations-web-components-review.md as runtime
+  context or assume that the temporary file still exists.
+
+  Each item must state its intended outcome, implementation scope, explicit non-goals,
+  relevant existing files and abstractions, unchanged behavior, acceptance criteria,
+  architectural or semantic constraints, and whether it introduces or reuses a Web
+  Component, shared class or markup pattern, token, or helper and why. If refinement
+  discovers that an area needs a Class B decision or behavior change, report that gap
+  instead of changing this plan or silently broadening an item.
