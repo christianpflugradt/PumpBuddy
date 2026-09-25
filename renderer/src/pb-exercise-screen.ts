@@ -1114,22 +1114,6 @@ class PbExerciseScreenElement extends HTMLElement {
       typeof effectiveGuidance.rep_max === "number"
         ? `try ${effectiveGuidance.rep_min}-${effectiveGuidance.rep_max}`
         : null;
-    const guidanceUnit = repetitionKind === "SECS" ? "sec" : "reps";
-    const repetitionTarget =
-      typeof effectiveGuidance.rep_min === "number" &&
-      typeof effectiveGuidance.rep_max === "number"
-        ? effectiveGuidance.rep_min === effectiveGuidance.rep_max
-          ? `${effectiveGuidance.rep_min} ${guidanceUnit}`
-          : `${effectiveGuidance.rep_min}-${effectiveGuidance.rep_max} ${guidanceUnit}`
-        : typeof effectiveGuidance.rep_min === "number"
-          ? `at least ${effectiveGuidance.rep_min} ${guidanceUnit}`
-          : typeof effectiveGuidance.rep_max === "number"
-            ? `up to ${effectiveGuidance.rep_max} ${guidanceUnit}`
-            : null;
-    const advisoryGuidance = [
-      targetSets === null ? null : `${targetSets} ${targetSets === 1 ? "set" : "sets"}`,
-      repetitionTarget,
-    ].filter((part): part is string => part !== null);
     const hasStationlessFallbackLinkage = isStationlessSelection && selectedFallbackOption?.station_id === null;
     const noLoadPriorGuidance =
       hasStationlessFallbackLinkage &&
@@ -1177,11 +1161,6 @@ class PbExerciseScreenElement extends HTMLElement {
               : ""
           }
           <p class="plan-label">${escapeHtml(planAndPositionLine)}</p>
-          ${
-            advisoryGuidance.length > 0
-              ? `<p class="exercise-guidance" aria-label="Advisory guidance">Target: ${escapeHtml(advisoryGuidance.join(" · "))}</p>`
-              : ""
-          }
         </div>
 
         ${isReadMode ? '<p class="exercise-read-mode-indicator">Viewing previous exercise</p>' : ""}

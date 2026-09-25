@@ -478,7 +478,7 @@ describe("pb-exercise-screen", () => {
     expect(finishButton.disabled).toBe(true);
   });
 
-  it("renders live active-workout guidance as advisory in free mode", () => {
+  it("uses live active-workout guidance without rendering a redundant target summary", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -498,7 +498,7 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    expect(el.textContent).toContain("Target: 2 sets · 6-10 reps");
+    expect(el.textContent).not.toContain("Target:");
     const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
     expect(button.disabled).toBe(false);
     expect(button.classList.contains("action-button-primary-outlined")).toBe(true);
