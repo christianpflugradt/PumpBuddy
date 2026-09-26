@@ -337,7 +337,9 @@ export const createApp = (
       [
         "configurator-load-profile-detail",
         "configurator-exercise-detail",
+        "configurator-exercise-variant-detail",
         "configurator-gym-detail",
+        "configurator-station-detail",
         "configurator-training-plan-create",
       ].includes(source)
     ) {

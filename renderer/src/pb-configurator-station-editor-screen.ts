@@ -26,6 +26,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #loadedKey: string | null = null;
   #nameDraft = "";
   #loadProfileIdDraft = "";
+  #initialLoadProfileId = "";
   #submitError: string | null = null;
   #isSaving = false;
   #isDeleting = false;
@@ -46,7 +47,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#state = value;
     const key = value.station ? `edit:${value.station.id}` : `create:${value.gymId}`;
     if (key !== this.#loadedKey) {
-      this.#loadedKey = key; this.#nameDraft = value.station?.name ?? ""; const currentProfileId = value.station?.load_profile.id; this.#loadProfileIdDraft = currentProfileId && this.#availableProfiles().some((profile) => profile.id === currentProfileId) ? currentProfileId : value.station ? "" : this.#availableProfiles()[0]?.id ?? "";
+      this.#loadedKey = key; this.#nameDraft = value.station?.name ?? ""; const currentProfileId = value.station?.load_profile.id; this.#loadProfileIdDraft = currentProfileId && this.#availableProfiles().some((profile) => profile.id === currentProfileId) ? currentProfileId : value.station ? "" : this.#availableProfiles()[0]?.id ?? ""; this.#initialLoadProfileId = this.#loadProfileIdDraft;
       this.#submitError = null; this.#isSaving = false; this.#isDeleting = false; this.#renameWarningOpen = false; this.#touched = false; this.#loadProfilePickerOpen = false; this.#loadProfileSearch = "";
       this.#compatibilityPickerOpen = false; this.#compatibilitySearch = ""; this.#compatibilitySelectionDraft = new Set(); this.#isCompatibilitySaving = false; this.#compatibilitySubmitError = null;
     }
@@ -57,13 +58,19 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #availableProfiles(): LoadProfileSummary[] { return this.#state.loadProfiles.filter((profile) => profile.status === "new" || profile.status === "active"); }
   #nameError(): string | null { return this.#nameDraft.trim() ? null : "Name is required."; }
   #loadProfileError(): string | null { return this.#loadProfileIdDraft && this.#availableProfiles().some((profile) => profile.id === this.#loadProfileIdDraft) ? null : "Load Profile is required."; }
-  #hasChanges(): boolean { const station = this.#state.station; return !station || normalizeName(this.#nameDraft) !== normalizeName(station.name) || (!this.#isHistorical() && this.#loadProfileIdDraft !== station.load_profile.id); }
+  #hasChanges(): boolean { const station = this.#state.station; return !station ? normalizeName(this.#nameDraft) !== "" || this.#loadProfileIdDraft !== this.#initialLoadProfileId : normalizeName(this.#nameDraft) !== normalizeName(station.name) || (!this.#isHistorical() && this.#loadProfileIdDraft !== station.load_profile.id); }
+  #hasCompatibilityChanges(): boolean {
+    if (!this.#compatibilityPickerOpen) return false;
+    const enabled = new Set((this.#state.compatibility?.enabled_variants ?? []).map((variant) => variant.variant_id));
+    return enabled.size !== this.#compatibilitySelectionDraft.size || [...enabled].some((variantId) => !this.#compatibilitySelectionDraft.has(variantId));
+  }
+  #emitDraftState(): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action: "configurator-draft-state-changed", payload: { source: "configurator-station-detail", isDirty: this.#hasChanges() || this.#hasCompatibilityChanges() } } })); }
   #emit(action: string): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action } })); }
   #onTextInput = (field: string, value: string): void => {
     if (field === "load-profile-search") { this.#loadProfileSearch = value; this.#render(); return; }
     if (field === "compatibility-search") { this.#compatibilitySearch = value; this.#render(); return; }
     if (field !== "name") return;
-    this.#nameDraft = value; this.#touched = true; this.#submitError = null; this.#render();
+    this.#nameDraft = value; this.#touched = true; this.#submitError = null; this.#emitDraftState(); this.#render();
   };
   #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") return;
@@ -101,7 +108,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
       const variantId = target.closest<HTMLElement>("[data-variant-id]")?.dataset.variantId;
       if (!variantId || !(this.#state.compatibility?.eligible_variants ?? []).some((variant) => variant.variant_id === variantId)) return;
       if (this.#compatibilitySelectionDraft.has(variantId)) this.#compatibilitySelectionDraft.delete(variantId); else this.#compatibilitySelectionDraft.add(variantId);
-      this.#compatibilitySubmitError = null; this.#rerenderCompatibilityPickerPreservingScroll(); return;
+      this.#compatibilitySubmitError = null; this.#emitDraftState(); this.#rerenderCompatibilityPickerPreservingScroll(); return;
     }
     if (action === "save-configurator-station-compatibilities") {
       const stationId = this.#state.station?.id;
@@ -112,7 +119,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     if (action === "dismiss-historical-rename-warning") { this.#renameWarningOpen = false; this.#render(); return; }
     if (action === "open-load-profile-picker") { this.#loadProfilePickerOpen = true; this.#loadProfileSearch = ""; this.#render(); return; }
     if (action === "dismiss-load-profile-picker") { this.#loadProfilePickerOpen = false; this.#render(); return; }
-    if (action === "choose-load-profile") { const profileId = target.closest<HTMLElement>("[data-profile-id]")?.dataset.profileId; if (!profileId || !this.#availableProfiles().some((profile) => profile.id === profileId)) return; this.#loadProfileIdDraft = profileId; this.#touched = true; this.#submitError = null; this.#loadProfilePickerOpen = false; this.#render(); return; }
+    if (action === "choose-load-profile") { const profileId = target.closest<HTMLElement>("[data-profile-id]")?.dataset.profileId; if (!profileId || !this.#availableProfiles().some((profile) => profile.id === profileId)) return; this.#loadProfileIdDraft = profileId; this.#touched = true; this.#submitError = null; this.#loadProfilePickerOpen = false; this.#emitDraftState(); this.#render(); return; }
     if (action === "save-configurator-station") {
       const nameError = this.#nameError(); const loadProfileError = !this.#isHistorical() ? this.#loadProfileError() : null;
       if (nameError || loadProfileError) { this.#touched = true; this.#submitError = nameError ?? loadProfileError; this.#render(); return; }

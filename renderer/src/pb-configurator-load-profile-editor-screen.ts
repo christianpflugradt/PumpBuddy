@@ -272,7 +272,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
 
   #hasDraftChanges(): boolean {
     if (this.#state.mode === "create") {
-      return true;
+      return this.#nameDraft.trim().length > 0 || this.#weightUnitDraft !== "KG" || this.#definitionKindDraft !== "fixed_list" || this.#fixedListDraft.trim().length > 0 || this.#formulaMinDraft.trim().length > 0 || this.#formulaStepDraft.trim().length > 0;
     }
     const detail = this.#state.detail;
     if (!detail) {
@@ -291,6 +291,10 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       this.#formulaMinDraft !== (detail.definition.min === undefined ? "" : String(detail.definition.min)) ||
       this.#formulaStepDraft !== (detail.definition.step === undefined ? "" : String(detail.definition.step))
     );
+  }
+
+  #emitDraftState(): void {
+    this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action: "configurator-draft-state-changed", payload: { source: "configurator-load-profile-detail", isDirty: this.#hasDraftChanges() } } }));
   }
 
   #shouldShowFieldError(field: "name" | "definition"): boolean {
@@ -451,6 +455,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     }
 
     this.#submitError = null;
+    this.#emitDraftState();
     this.#render();
   };
 
@@ -474,6 +479,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     }
 
     this.#submitError = null;
+    this.#emitDraftState();
     this.#render();
   };
 

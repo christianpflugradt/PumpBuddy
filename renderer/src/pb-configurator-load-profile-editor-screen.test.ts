@@ -10,6 +10,26 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     registerPbConfiguratorLoadProfileEditorScreen();
   });
 
+  it("reports meaningful and reverted create drafts to the shared exit guard", () => {
+    const el = document.createElement(pbConfiguratorLoadProfileEditorScreenTag) as HTMLElement & { state: ConfiguratorLoadProfileEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), mode: "create", detail: null };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    let name = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    name.value = "New Profile"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    name = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    name.value = " "; name.dispatchEvent(new Event("input", { bubbles: true }));
+    let unit = el.querySelector<HTMLSelectElement>('[data-field="weight-unit"]')!;
+    unit.value = "LBS"; unit.dispatchEvent(new Event("change", { bubbles: true }));
+    unit = el.querySelector<HTMLSelectElement>('[data-field="weight-unit"]')!;
+    unit.value = "KG"; unit.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "configurator-draft-state-changed").map((call) => call[0].detail.payload)).toEqual([
+      { source: "configurator-load-profile-detail", isDirty: true },
+      { source: "configurator-load-profile-detail", isDirty: false },
+      { source: "configurator-load-profile-detail", isDirty: true },
+      { source: "configurator-load-profile-detail", isDirty: false },
+    ]);
+  });
+
   const createState = (): ConfiguratorLoadProfileEditorScreenState => ({
     mode: "edit",
     loadProfiles: [
@@ -145,8 +165,8 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     ) as HTMLButtonElement | null;
     reopenedSaveButton?.click();
 
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "save-configurator-load-profile")).toHaveLength(1);
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-load-profile")?.[0].detail.payload).toEqual({
       mode: "create",
       loadProfileId: null,
       request: {
@@ -206,7 +226,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-load-profile"]') as HTMLButtonElement).click();
 
-    expect(handler.mock.calls[0]?.[0].detail.payload.request.definition).toEqual({
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-load-profile")?.[0].detail.payload.request.definition).toEqual({
       kind: "fixed_list",
       values: [2.5, 5, 7.5, 10],
     });
@@ -229,8 +249,8 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     ) as HTMLButtonElement | null;
     deleteButton?.click();
 
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "delete-configurator-load-profile")).toHaveLength(1);
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "delete-configurator-load-profile")?.[0].detail.payload).toEqual({
       loadProfileId: "profile-1",
     });
   });
@@ -276,7 +296,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     const saveButton = el.querySelector('[data-ui-action="save-load-profile"]') as HTMLButtonElement;
     saveButton.click();
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-load-profile")).toBe(false);
     expect(el.textContent ?? "").toContain("historical workouts are understood");
 
     const keepEditingButton = Array.from(el.querySelectorAll("button")).find(
@@ -284,7 +304,7 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     ) as HTMLButtonElement | undefined;
     keepEditingButton?.click();
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-load-profile")).toBe(false);
     expect(el.textContent ?? "").not.toContain("historical workouts are understood");
 
     const reopenedSaveButton = el.querySelector(
@@ -296,8 +316,8 @@ describe("pb-configurator-load-profile-editor-screen", () => {
     ) as HTMLButtonElement | null;
     confirmButton?.click();
 
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "save-configurator-load-profile")).toHaveLength(1);
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-load-profile")?.[0].detail.payload).toEqual({
       mode: "edit",
       loadProfileId: "profile-1",
       request: {

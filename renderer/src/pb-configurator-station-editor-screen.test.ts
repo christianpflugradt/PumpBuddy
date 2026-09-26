@@ -13,6 +13,23 @@ const createState = (status: "new" | "active" | "inactive" = "new"): Configurato
 
 describe("pb-configurator-station-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorStationEditorScreen());
+  it("reports reverted fields and staged compatibility selections to the shared exit guard", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Chest Press", variant_id: "variant-1", variant_name: "Machine", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
+    const name = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    name.value = "Renamed Tower"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    name.value = "cable tower"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-1"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-1"]') as HTMLButtonElement).click();
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "configurator-draft-state-changed").map((call) => call[0].detail.payload)).toEqual([
+      { source: "configurator-station-detail", isDirty: true },
+      { source: "configurator-station-detail", isDirty: false },
+      { source: "configurator-station-detail", isDirty: true },
+      { source: "configurator-station-detail", isDirty: false },
+    ]);
+  });
 
   it("creates a trimmed Draft Station with an assignable active or new Load Profile", () => {
     const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
@@ -27,7 +44,7 @@ describe("pb-configurator-station-editor-screen", () => {
     expect(el.textContent).not.toContain("Retired Stack");
     (el.querySelector('[data-profile-id="profile-2"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: null, request: { name: "Row 1", load_profile_id: "profile-2" } });
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-station")?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: null, request: { name: "Row 1", load_profile_id: "profile-2" } });
   });
 
   it("shows client validation and server failures without leaving the editor", () => {
@@ -83,9 +100,9 @@ describe("pb-configurator-station-editor-screen", () => {
       const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
       input.value = "Renamed Tower"; input.dispatchEvent(new Event("input", { bubbles: true }));
       (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
-      expect(el.textContent).toContain("historical workouts"); expect(handler).not.toHaveBeenCalled();
+      expect(el.textContent).toContain("historical workouts"); expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-station")).toBe(false);
       (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
-      expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed Tower" });
+      expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-station")?.[0].detail.payload.request).toEqual({ name: "Renamed Tower" });
     }
   });
 
@@ -94,7 +111,7 @@ describe("pb-configurator-station-editor-screen", () => {
     document.body.append(el); el.state = createState();
     const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
     (el.querySelector('[data-ui-action="delete-configurator-station"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1" });
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "delete-configurator-station")?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1" });
   });
 
   it("searches a scrollable picker and never offers inactive profiles for a draft reassignment", () => {
@@ -165,7 +182,7 @@ describe("pb-configurator-station-editor-screen", () => {
     (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
     expect((el.querySelector('.configurator-station-compatibility-picker-options') as HTMLElement).scrollTop).toBe(96);
     expect(el.textContent).toContain("2 selected");
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-station-compatibilities")).toBe(false);
     expect(el.querySelector('.configurator-station-compatibility-picker')).toBeTruthy();
   });
 
@@ -178,15 +195,15 @@ describe("pb-configurator-station-editor-screen", () => {
     (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="dismiss-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-station-compatibilities")).toBe(false);
     (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
     expect(el.textContent).toContain("1 selected");
     el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.mock.calls.some((call) => call[0].detail.action === "save-configurator-station-compatibilities")).toBe(false);
     (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
     (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1", exerciseVariantIds: ["variant-1", "variant-2"] });
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-station-compatibilities")?.[0].detail.payload).toEqual({ gymId: "gym-1", stationId: "station-1", exerciseVariantIds: ["variant-1", "variant-2"] });
     expect(el.querySelector('[role="dialog"]')).toBeNull();
   });
 
