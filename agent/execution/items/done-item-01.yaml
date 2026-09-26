@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-072-item-01
   title: Normalize Load Profile editor field and action presentation
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -14,18 +14,18 @@ intent:
     causing presentation drift without serving different behavior.
 scope:
   in:
-  - 'Audit and remove entity-scoped restatements of `.configurator-editor-card`, `.configurator-field`,
+  - Audit and remove entity-scoped restatements of `.configurator-editor-card`, `.configurator-field`,
     `.configurator-field-label`, `.configurator-control`, `.configurator-field-error`,
     `.configurator-field-helper`, `.configurator-editor-actions`, `.configurator-action-primary`,
     and `.configurator-action-danger` in `renderer/src/styles.scss` when the shared
-    role already supplies the contract.'
+    role already supplies the contract.
   - 'Keep only demonstrated Load Profile layout roles: `.configurator-field-grid`,
     `textarea.configurator-control` sizing, `.configurator-metadata`, `.configurator-load-profile-read-only-values`,
     and `.configurator-load-profile-parsed-summary`.'
-  - 'Use the shared `.configurator-field-error` semantic color instead of the Load
-    Profile-specific hard-coded error color.'
-  - 'Retain the current two-column grid only at the existing `42rem` breakpoint and
-    preserve vertical textarea resizing.'
+  - Use the shared `.configurator-field-error` semantic color instead of the Load
+    Profile-specific hard-coded error color.
+  - Retain the current two-column grid only at the existing `42rem` breakpoint and
+    preserve vertical textarea resizing.
   out:
   - Do not change Load Profile markup, user-facing copy, actions, validation rules,
     save or delete behavior, confirmation behavior, lifecycle rules, or controller/API
