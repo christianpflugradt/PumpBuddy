@@ -1,0 +1,43 @@
+version: 1
+kind: plan
+id: pb-072
+name: Complete Configurator UI Foundations Class A Cleanup
+goal: Complete the remaining approved Class A presentation and consistency work in the Configurator UI foundations consolidation without changing application behavior or reopening Class B architecture decisions.
+scope:
+  - Normalize Load Profile editor presentation so shared Configurator field, validation, action, and token contracts are the default; retain only evidenced layout-specific differences.
+  - Establish shared Configurator visual roles for entity destination rows and list-search inputs across Exercises, Gyms, Load Profiles, and Training Plans while screens retain their own content, events, filtering, navigation, and state.
+  - Confirm and remove the narrowly identified obsolete selectors left behind by completed Configurator component adoption, plus directly related stale selectors only.
+out_of_scope:
+  - COMP-04 route and component ownership, including list/create/edit restructuring, unreachable branches, Training Plan creation ownership, routes, and navigation.
+  - COMP-05 dormant Workout subcomponents and all Workout execution work.
+  - COMP-06 picker architecture, picker interaction behavior, selection semantics, dismissal, Escape, backdrop, and focus behavior.
+  - Controller transitions, API contracts, persistence, domain models, confirmation behavior, and mature History, Statistics, Progress, or other non-Configurator screens.
+success_criteria:
+  - Load Profile fields, labels, controls, errors, and primary/destructive actions inherit shared semantic presentation by default; any retained compactness is an explicit semantic or layout role justified by the existing UI, and no hard-coded Load Profile field-error color remains.
+  - The four top-level Configurator lists use shared visual classes or patterns for equivalent destination-row/card and list-search semantics; Training Plans no longer borrow Gym-specific roles; entity-specific markup, metadata, events, navigation, filtering, and state remain local.
+  - The stale Gym and Load Profile page-create selectors and obsolete nested Exercise `.configurator-editor-actions .nav-button` selectors have no runtime producers before removal; cleanup remains limited to this completed-adoption residue.
+  - Existing editing/read-only, validation, Save/Delete, confirmation, lifecycle, filtering, navigation, and all other application behavior are preserved.
+  - "`make check-renderer` passes after the implementation items; focused renderer tests are updated only where markup contract assertions must follow the semantic-role rename."
+constraints:
+  - This is a small, presentation-only cleanup and consolidation, not a redesign or generic design-system project.
+  - Prefer shared SCSS classes and screen-owned markup; introduce or extend a Web Component only when repository evidence establishes a shared semantic and behavioral boundary beyond visual similarity.
+  - Do not invent a compact Load Profile variant. Preserve multi-column field layout and textarea sizing only where the current UI demonstrates a genuine layout requirement, and express any other retained density explicitly rather than through entity-scoped restatement of base contracts.
+  - Preserve the renderer's Web Components plus global-SCSS architecture, keep user-facing copy in English, and do not add dependencies.
+  - Implementation items must be self-contained and must not require the temporary follow-up review document.
+inputs:
+  - renderer/src/styles.scss
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/strategy/engineering-guardrails.yaml
+refinement_note: |
+  Refine into three independently reviewable implementation items in this order:
+  1. Load Profile residual field/action/token normalization. Audit the entity-scoped rules against the existing shared Configurator field/action contracts; remove accidental drift and retain only justified layout rules. Preserve all form and lifecycle behavior.
+  2. Shared Configurator entity-row and list-search presentation. Replace entity-specific and borrowed Gym visual roles with semantic shared SCSS roles across all four top-level lists. Keep screens as the owners of content and behavior; do not extract a rigid row Web Component without new evidence of shared behavior.
+  3. Obsolete selector cleanup. Verify no current markup produces the identified pre-adoption selectors, remove only those and directly related completed-adoption residue, and retain all active selector contracts.
+
+  Each item must state exact affected files and classes, semantic roles, behavior-preservation requirements, non-goals, acceptance criteria, and `make check-renderer` as the quality gate. The temporary review material may inform refinement but must not be cited as a required implementation input.
