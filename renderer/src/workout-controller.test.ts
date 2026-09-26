@@ -7,6 +7,7 @@ import {
   createLoadProfile,
   deleteGym,
   deleteLoadProfile,
+  loadConfiguratorExerciseVariantCompatibilities,
   loadConfiguratorStations,
   loadConfiguratorStationCompatibilities,
   loadConfiguratorExerciseVariants,
@@ -84,6 +85,7 @@ vi.mock("./workout-api", async () => {
     createLoadProfile: vi.fn(),
     deleteLoadProfile: vi.fn(),
     deleteGym: vi.fn(),
+    loadConfiguratorExerciseVariantCompatibilities: vi.fn(),
     loadGymDetail: vi.fn(),
     loadConfiguratorStations: vi.fn(),
     loadConfiguratorStationCompatibilities: vi.fn(),
@@ -112,6 +114,7 @@ const createLoadProfileMock = vi.mocked(createLoadProfile);
 const createGymMock = vi.mocked(createGym);
 const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
 const deleteGymMock = vi.mocked(deleteGym);
+const loadConfiguratorExerciseVariantCompatibilitiesMock = vi.mocked(loadConfiguratorExerciseVariantCompatibilities);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadConfiguratorStationsMock = vi.mocked(loadConfiguratorStations);
@@ -481,6 +484,7 @@ describe("workout-controller (createApp)", () => {
     deleteGymMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
     loadConfiguratorStationsMock.mockResolvedValue([]);
+    loadConfiguratorExerciseVariantCompatibilitiesMock.mockResolvedValue({ exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [] });
     loadConfiguratorExerciseVariantsMock.mockResolvedValue([]);
     loadConfiguratorStationCompatibilitiesMock.mockResolvedValue({ gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [] });
     loadExerciseSummariesMock.mockResolvedValue([]);
@@ -911,6 +915,86 @@ describe("workout-controller (createApp)", () => {
       dispatchAction(app, "discard-configurator-draft");
       expect(app.state?.viewState).toEqual(flow.destination);
     }
+  });
+
+  it("returns from a Variant-compatible Station to that Variant without retaining the origin for later Gym visits", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    loadExerciseSummariesMock.mockResolvedValue([
+      { id: "exercise-1", name: "Squat", status: "active", variant_count: 1 },
+    ]);
+    loadConfiguratorExerciseVariantsMock.mockResolvedValue([
+      { id: "variant-1", exercise_id: "exercise-1", name: "Back Squat", status: "active", requires_station: true, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" },
+    ]);
+    loadGymSummariesMock.mockResolvedValue([
+      { id: "gym-1", name: "Downtown", status: "active" },
+    ]);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-exercises");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-exercise-detail",
+      payload: { exerciseId: "exercise-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-exercise-variant-detail",
+      payload: { exerciseId: "exercise-1", variantId: "variant-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-exercise-variant-compatible-station",
+      payload: { gymId: "gym-1", stationId: "station-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-station-detail",
+      gymId: "gym-1",
+      stationId: "station-1",
+      returnExerciseId: "exercise-1",
+      returnVariantId: "variant-1",
+    });
+
+    dispatchActionWithDetail(app, {
+      action: "configurator-draft-state-changed",
+      payload: { source: "configurator-station-detail", isDirty: true },
+    });
+    dispatchAction(app, "navigate-back-from-configurator-station-detail");
+    expect(app.state?.configuratorExitGuard).toEqual({
+      source: "configurator-station-detail",
+    });
+
+    dispatchAction(app, "discard-configurator-draft");
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-exercise-variant-detail",
+      exerciseId: "exercise-1",
+      variantId: "variant-1",
+    });
+    expect(loadConfiguratorExerciseVariantCompatibilitiesMock).toHaveBeenLastCalledWith(
+      expect.any(Function),
+      "exercise-1",
+      "variant-1",
+    );
+
+    dispatchAction(app, "navigate-back-from-configurator-exercise-variant-detail");
+    dispatchSideMenuAction(app, "navigate-configurator-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    dispatchActionWithDetail(app, {
+      action: "open-configurator-station-detail",
+      payload: { stationId: "station-1" },
+    });
+    dispatchAction(app, "navigate-back-from-configurator-station-detail");
+
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-gym-detail",
+      gymId: "gym-1",
+    });
   });
 
   it("keeps a successfully created training plan in the Configurator detail flow", async () => {

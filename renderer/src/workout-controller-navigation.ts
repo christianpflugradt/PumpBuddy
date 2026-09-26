@@ -322,7 +322,7 @@ export const handleScreenNavigationAction = (
       const gymId = typeof payload?.gymId === "string" ? payload.gymId.trim() : "";
       const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
       if (state.viewState.screen !== "configurator-exercise-variant-detail" || !gymId || !stationId) return true;
-      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: true, errorMessage: null }, viewState: { screen: "configurator-station-detail", gymId, stationId } });
+      setState({ ...state, configuratorGymDetailScreen: { gymId, detail: null, stations: [], isLoading: true, errorMessage: null }, viewState: { screen: "configurator-station-detail", gymId, stationId, returnExerciseId: state.viewState.exerciseId, returnVariantId: state.viewState.variantId ?? undefined } });
       render();
       void loadConfiguratorGymDetailScreenData(gymId);
       void loadConfiguratorLoadProfilesScreenData();
@@ -386,6 +386,12 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-back-from-configurator-station-detail": {
       const state = getState(); if (state.viewState.screen !== "configurator-station-detail") return true;
+      if (state.viewState.returnExerciseId && state.viewState.returnVariantId) {
+        setState({ ...state, viewState: { screen: "configurator-exercise-variant-detail", exerciseId: state.viewState.returnExerciseId, variantId: state.viewState.returnVariantId } });
+        render();
+        void loadConfiguratorExerciseVariantCompatibilityScreenData(state.viewState.returnExerciseId, state.viewState.returnVariantId);
+        return true;
+      }
       setState({ ...state, viewState: { screen: "configurator-gym-detail", gymId: state.viewState.gymId } }); render(); return true;
     }
     case "start-configurator-load-profile-create": {
