@@ -2,6 +2,7 @@ import {
   configuratorNavigationEntries,
   type ConfiguratorNavigationAction,
 } from "./pb-side-menu";
+import "./pb-configurator-header";
 
 export const pbConfiguratorOverviewScreenTag = "pb-configurator-overview-screen";
 
@@ -95,11 +96,7 @@ class PbConfiguratorOverviewScreenElement extends HTMLElement {
     this.innerHTML = `<div class="app-screen-shell">
       <pb-side-menu mode="configurator" active-screen="configurator-overview" menu-id="configurator-overview-side-menu"></pb-side-menu>
       <section class="screen-panel configurator-overview-screen" aria-label="Configurator overview">
-        <header class="app-header configurator-app-header">
-          <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
-          <h1 class="app-title">Configurator</h1>
-          <p class="start-copy">Manage the building blocks of your workout setup.</p>
-        </header>
+        <pb-configurator-header title="Configurator" context="Manage the building blocks of your workout setup." banner></pb-configurator-header>
         ${status}
         <div class="configurator-overview-list" aria-label="Configurator inventory">${rows}</div>
         <button type="button" class="configurator-overview-configure-button nav-button nav-button-primary action-button action-button-primary" data-configurator-navigation-toggle>Configure</button>

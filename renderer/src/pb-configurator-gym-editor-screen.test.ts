@@ -19,6 +19,7 @@ describe("pb-configurator-gym-editor-screen", () => {
     input.value = "  New Gym  "; input.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
     expect(el.querySelector("h1")?.textContent).toBe("Gym");
+    expect(el.querySelector("pb-configurator-header [alt='PumpBuddy banner']")).not.toBeNull();
     expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ mode: "create", gymId: null, request: { name: "New Gym" } });
   });
 

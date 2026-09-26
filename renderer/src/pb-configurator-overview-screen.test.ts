@@ -21,6 +21,7 @@ describe("pb-configurator-overview-screen", () => {
 
     expect(el.querySelector("h1")?.textContent).toBe("Configurator");
     expect(el.textContent).toContain("Manage the building blocks of your workout setup.");
+    expect(el.querySelector("pb-configurator-header [alt='PumpBuddy banner']")).not.toBeNull();
     const rows = Array.from(el.querySelectorAll<HTMLButtonElement>(".configurator-overview-row"));
     expect(rows.map((row) => row.textContent?.trim())).toEqual([
       "Load Profiles8›", "Exercises37›", "Exercise Variants45›", "Training Plans6›", "Gyms4›", "Stations23›",

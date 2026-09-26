@@ -5,6 +5,7 @@ import type {
   LoadProfileUpdateRequest,
 } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
+import "./pb-configurator-header";
 
 export const pbConfiguratorLoadProfileEditorScreenTag =
   "pb-configurator-load-profile-editor-screen";
@@ -717,10 +718,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           class="screen-panel configurator-load-profile-editor-screen"
           aria-label="Load profile editor"
         >
-          <header class="exercise-variant-detail-header configurator-app-header configurator-load-profile-detail-header">
-            <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
-            <h1 class="exercise-variant-detail-header-title">${escapeHtml(title)}</h1>
-          </header>
+          <pb-configurator-header title="${escapeHtml(title)}" banner></pb-configurator-header>
           ${this.#renderForm()}
         </section>
         ${this.#renderHistoricalRenameWarning()}

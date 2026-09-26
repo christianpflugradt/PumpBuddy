@@ -34,6 +34,7 @@ describe("pb-configurator-gyms-screen", () => {
     expect(el.textContent).not.toContain("station");
     expect(el.querySelector(".configurator-gym-card--inactive")).toBeTruthy();
     expect(el.querySelectorAll("pb-configurator-status")).toHaveLength(3);
+    expect(el.querySelector("pb-configurator-header h1")?.textContent).toBe("Gyms");
   });
 
   it("renders loading, error, and empty states", () => {

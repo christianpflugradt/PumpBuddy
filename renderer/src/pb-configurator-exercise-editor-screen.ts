@@ -6,6 +6,7 @@ import type {
 } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
 import { formatConfiguratorLifecycleStatus } from "./pb-configurator-status";
+import "./pb-configurator-header";
 
 export const pbConfiguratorExerciseEditorScreenTag =
   "pb-configurator-exercise-editor-screen";
@@ -267,7 +268,7 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
       : this.#deleteWarningOpen
         ? `<div class="confirm-dialog-layer" role="presentation"><div class="confirm-dialog-backdrop" role="presentation"></div><section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-exercise-warning-title"><h2 class="confirm-dialog-title" id="delete-exercise-warning-title">Delete draft exercise?</h2><p class="confirm-dialog-message">This will also delete ${(this.#state.variants ?? []).length} ${(this.#state.variants ?? []).length === 1 ? "variant" : "variants"}.</p><div class="confirm-dialog-actions"><button type="button" class="configurator-action-dismiss" data-ui-action="dismiss-delete-exercise-warning">Cancel</button><button type="button" class="configurator-action-danger" data-ui-action="delete-configurator-exercise">Delete</button></div></section></div>`
         : "";
-    this.innerHTML = `<div class="app-screen-shell"><button type="button" class="side-menu-toggle detail-back-button" data-ui-action="navigate-back-from-configurator-exercise-detail" aria-label="Back"><span aria-hidden="true">←</span></button><section class="screen-panel configurator-gym-editor-screen" aria-label="Exercise editor"><header class="exercise-variant-detail-header configurator-app-header"><img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" /><h1 class="exercise-variant-detail-header-title">${isCreate ? "New Exercise" : "Exercise"}</h1></header>${body}</section>${warning}</div>`;
+    this.innerHTML = `<div class="app-screen-shell"><button type="button" class="side-menu-toggle detail-back-button" data-ui-action="navigate-back-from-configurator-exercise-detail" aria-label="Back"><span aria-hidden="true">←</span></button><section class="screen-panel configurator-gym-editor-screen" aria-label="Exercise editor"><pb-configurator-header title="${isCreate ? "New Exercise" : "Exercise"}" banner></pb-configurator-header>${body}</section>${warning}</div>`;
   }
 }
 
