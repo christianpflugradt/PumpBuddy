@@ -384,11 +384,6 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   max-width: 42rem;
 }
 
-.configurator-gyms-screen .configurator-gym-create-button {
-  width: 100%;
-  margin: 0 0 1rem;
-}
-
 .configurator-status {
   flex: 0 0 auto;
   padding: 0.16rem 0.42rem;
@@ -739,9 +734,7 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
 .configurator-exercise-variant-compatibility-picker-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
 .configurator-exercise-variants > .configurator-editor-actions { margin-bottom: var(--space-md); }
 .configurator-exercise-variants,
-.configurator-exercise-variants > .configurator-editor-actions,
-.configurator-exercise-variants > .configurator-editor-actions .nav-button { width: 100%; }
-.configurator-exercise-variants > .configurator-editor-actions .nav-button { border: 0; background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start)); color: var(--button-primary-text); font-weight: 700; box-shadow: 0 8px 16px var(--button-primary-shadow); }
+.configurator-exercise-variants > .configurator-editor-actions { width: 100%; }
 .configurator-action-primary,
 .configurator-action-secondary,
 .configurator-action-dismiss,
@@ -767,14 +760,6 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
 .configurator-gym-station-row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text-primary); text-align: left; cursor: pointer; }
 .configurator-gym-station-row > span:first-child { display: grid; gap: var(--space-xs); }
 .configurator-gym-station-row small { color: var(--text-secondary); }
-
-.configurator-load-profiles-screen .configurator-load-profile-create-button {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: var(--radius-md);
-  box-shadow: 0 0.45rem 0.9rem var(--button-primary-shadow);
-}
 
 .configurator-load-profile-editor-screen .configurator-field-grid {
   display: grid;
