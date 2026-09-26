@@ -1,0 +1,81 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-072-item-01
+  title: Normalize Load Profile editor field and action presentation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Make the Load Profile editor inherit shared Configurator field, validation,
+    and action presentation while retaining only demonstrated layout-specific rules.
+  rationale: The editor repeats shared contracts and hard-codes a field-error color,
+    causing presentation drift without serving different behavior.
+scope:
+  in:
+  - 'Audit and remove entity-scoped restatements of `.configurator-editor-card`, `.configurator-field`,
+    `.configurator-field-label`, `.configurator-control`, `.configurator-field-error`,
+    `.configurator-field-helper`, `.configurator-editor-actions`, `.configurator-action-primary`,
+    and `.configurator-action-danger` in `renderer/src/styles.scss` when the shared
+    role already supplies the contract.'
+  - 'Keep only demonstrated Load Profile layout roles: `.configurator-field-grid`,
+    `textarea.configurator-control` sizing, `.configurator-metadata`, `.configurator-load-profile-read-only-values`,
+    and `.configurator-load-profile-parsed-summary`.'
+  - 'Use the shared `.configurator-field-error` semantic color instead of the Load
+    Profile-specific hard-coded error color.'
+  - 'Retain the current two-column grid only at the existing `42rem` breakpoint and
+    preserve vertical textarea resizing.'
+  out:
+  - Do not change Load Profile markup, user-facing copy, actions, validation rules,
+    save or delete behavior, confirmation behavior, lifecycle rules, or controller/API
+    contracts.
+  - Do not introduce a compact Load Profile variant, a new component, dependencies,
+    or a general design-system project.
+constraints:
+- Preserve the renderer Web Components and global-SCSS architecture.
+- Keep the existing field IDs, data attributes, ARIA relationships, focus preservation,
+  and disabled-state behavior intact.
+- Express any retained density as a proven layout need rather than an entity-scoped
+  restatement of a shared control contract.
+inputs:
+  required:
+  - renderer/src/styles.scss
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  - agent/strategy/test-strategy.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Load Profile fields, labels, controls, validation messages, primary action,
+    and destructive action use the shared Configurator semantic contracts by default;
+    no entity-scoped field-error color remains.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality gate passes.
+- id: ac-02
+  statement: The demonstrated two-column layout and textarea sizing remain explicit
+    Load Profile layout rules without changing the form's observable behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Load Profile editor tests pass, including shared control, validation,
+      focus, and action behavior.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Normal implementation does not require a persisted sub-plan.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer presentation styles
+  - Load Profile editor markup contract
+handoff:
+  review_focus:
+  - Verify retained Load Profile rules are layout-specific rather than duplicate semantic
+    styling.
+  - Verify field validation, focus preservation, Save/Delete state, historical rename
+    confirmation, and read-only rendering are unchanged.
+review_feedback: []
+review_result: null

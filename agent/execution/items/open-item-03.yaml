@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-072-item-03
+  title: Remove obsolete Configurator adoption selectors
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Remove the verified obsolete Configurator selector residue without changing
+    any active selector contract.
+  rationale: 'Completed component adoption left page-create and nested `nav-button`
+    rules with no current markup producer.'
+scope:
+  in:
+  - 'Verify no renderer markup produces `.configurator-gyms-screen .configurator-gym-create-button`,
+    `.configurator-load-profiles-screen .configurator-load-profile-create-button`,
+    or `.configurator-exercise-variants > .configurator-editor-actions .nav-button`.'
+  - 'Remove only those selectors and directly related completed-adoption residue from
+    `renderer/src/styles.scss`.'
+  - 'Use `renderer/src/pb-configurator-exercise-editor-screen.ts` as the producer
+    check for the active nested Variant action, which uses `.configurator-action-nested-add`
+    rather than `.nav-button`.'
+  out:
+  - 'Do not remove `.nav-button` base contracts or selectors with active producers.'
+  - Do not change renderer markup, routes, controls, create behavior, editor behavior,
+    or any Class B architecture work.
+  - Do not perform unrelated stylesheet cleanup or visual redesign.
+constraints:
+- Treat the no-producer check as mandatory before deleting each selector.
+- Limit cleanup to completed-adoption residue from the approved Configurator consolidation.
+- Preserve all active shared Configurator action and list contracts.
+inputs:
+  required:
+  - renderer/src/styles.scss
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: 'The obsolete Gym page-create, Load Profile page-create, and nested Exercise
+    `.nav-button` selectors are absent only after source inspection confirms no runtime
+    markup producers.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality gate passes after the narrow selector cleanup.
+- id: ac-02
+  statement: 'Active Configurator action, list, editor, and `nav-button` contracts
+    remain intact.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing renderer tests pass without changes unrelated to removed obsolete
+      selectors.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Normal implementation does not require a persisted sub-plan.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer stylesheet cleanup
+handoff:
+  review_focus:
+  - 'Confirm every deleted selector has no current producer and that no broad `.nav-button`
+    contract was removed.'
+  - Reject unrelated cleanup, markup changes, or behavior changes.
+review_feedback: []
+review_result: null

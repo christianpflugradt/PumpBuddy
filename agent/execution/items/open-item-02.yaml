@@ -1,0 +1,91 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-072-item-02
+  title: Unify Configurator entity-row and list-search presentation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Give the four top-level Configurator lists shared semantic entity-row and
+    list-search visual roles while keeping each screen's content and behavior local.
+  rationale: Exercises, Gyms, Load Profiles, and Training Plans render equivalent
+    destinations with separate or borrowed visual role names.
+scope:
+  in:
+  - 'Define shared SCSS roles in `renderer/src/styles.scss`: `.configurator-entity-list`,
+    `.configurator-entity-row`, `.configurator-entity-row--inactive`, `.configurator-entity-row-topline`,
+    `.configurator-entity-row-name`, `.configurator-entity-row-metadata`, `.configurator-list-search`,
+    and `.configurator-list-search-input`.'
+  - 'Replace equivalent list and search class usage in `renderer/src/pb-configurator-exercises-screen.ts`,
+    `renderer/src/pb-configurator-gyms-screen.ts`, `renderer/src/pb-configurator-load-profiles-screen.ts`,
+    and `renderer/src/pb-configurator-training-plans-screen.ts` with those semantic
+    roles.'
+  - 'Remove Training Plans'' borrowed `.configurator-gym-list` and `.configurator-gym-card`
+    roles, while preserving its Training Plan-specific metadata classes where they
+    still represent content rather than shared row presentation.'
+  - 'Update focused markup-contract assertions only in `renderer/src/pb-configurator-exercises-screen.test.ts`,
+    `renderer/src/pb-configurator-gyms-screen.test.ts`, `renderer/src/pb-configurator-load-profiles-screen.test.ts`,
+    and `renderer/src/pb-configurator-training-plans-screen.test.ts` when selectors
+    are renamed.'
+  out:
+  - Do not extract a row Web Component or move filtering, navigation, event dispatch,
+    state ownership, lifecycle status mapping, or entity metadata between screens.
+  - Do not alter create, detail, picker, selection, dismissal, Escape, or focus behavior.
+  - Do not change application routes, controller transitions, APIs, persistence, user-facing
+    copy, or non-Configurator screens.
+constraints:
+- Treat the shared roles as presentation-only contracts; every screen remains the
+  owner of its markup and behavior.
+- Preserve current row content, ARIA labels, data attributes, filtering semantics,
+  inactive presentation, and status rendering.
+- Keep user-facing copy in English and add no dependencies.
+inputs:
+  required:
+  - renderer/src/styles.scss
+  - renderer/src/pb-configurator-exercises-screen.ts
+  - renderer/src/pb-configurator-gyms-screen.ts
+  - renderer/src/pb-configurator-load-profiles-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-exercises-screen.test.ts
+  - renderer/src/pb-configurator-gyms-screen.test.ts
+  - renderer/src/pb-configurator-load-profiles-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Exercises, Gyms, Load Profiles, and Training Plans use the shared entity-list
+    and entity-row presentation roles; both searchable lists use the shared list-search
+    role.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer quality gate passes with any renamed markup assertions
+      updated.
+- id: ac-02
+  statement: Training Plans no longer use Gym-specific list or card roles, and all
+    four screens retain their existing content, events, filtering, navigation, and
+    state behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused list-screen tests pass for lifecycle rows, searches, detail
+      actions, and Training Plan creation entry.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Normal implementation does not require a persisted sub-plan.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - Configurator list-screen markup
+  - renderer presentation styles
+handoff:
+  review_focus:
+  - Verify the semantic role rename covers only equivalent presentation and does not
+    conceal a behavior abstraction.
+  - Verify status, filtering, data attributes, ARIA labels, event actions, and Training
+    Plan-specific metadata remain screen-owned and unchanged.
+review_feedback: []
+review_result: null
