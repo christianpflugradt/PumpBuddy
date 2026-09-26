@@ -21,18 +21,33 @@ const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void 
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
-  it("uses stable required guidance fields and connects validation errors", () => {
+  it("uses stable optional guidance fields and connects validation errors", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
     const planName = el.querySelector<HTMLInputElement>("#configurator-training-plan-name")!;
     expect(planName.required).toBe(true); expect(planName.getAttribute("aria-required")).toBe("true"); expect(planName.getAttribute("aria-invalid")).toBe("false");
     (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    const targetSets = el.querySelector<HTMLInputElement>("#configurator-training-plan-guidance-target-sets")!;
     const min = el.querySelector<HTMLInputElement>("#configurator-training-plan-guidance-min-reps")!;
-    expect(min.required).toBe(true); expect(min.getAttribute("aria-invalid")).toBe("false");
+    const max = el.querySelector<HTMLInputElement>("#configurator-training-plan-guidance-max-reps")!;
+    for (const input of [targetSets, min, max]) { expect(input.required).toBe(false); expect(input.getAttribute("aria-required")).toBe("false"); expect(input.getAttribute("aria-invalid")).toBe("false"); }
     min.value = "12"; min.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
     expect(el.querySelector("#configurator-training-plan-guidance-min-reps")?.getAttribute("aria-describedby")).toBe("configurator-training-plan-guidance-error");
     expect(el.querySelector("#configurator-training-plan-guidance-error")?.textContent).toContain("cannot exceed");
+    el.remove();
+  });
+  it("saves all-blank optional guidance as null values", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state(); respondToSaveImpact(el, false);
+    const saves: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "save-configurator-training-plan") saves.push(detail.payload.request); });
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    for (const field of ["guidance-targetSets", "guidance-repMin", "guidance-repMax"]) { const input = el.querySelector<HTMLInputElement>(`[data-field="${field}"]`)!; input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); }
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(saves).toEqual([expect.objectContaining({ guidance: { exercises: [{ exercise_id: "exercise-1", defaults: { target_sets: null, rep_min: null, rep_max: null }, variant_overrides: [] }] } })]);
     el.remove();
   });
   it("stages validated default guidance locally and includes it only in Save Training Plan", () => {
