@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-11
+  title: Prevent compatibility picker dismissal during save
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Compatibility saves have an unambiguous completion state and cannot be
+    mistaken for cancellation.
+  rationale: Station and Variant compatibility dialogs still dismiss on Escape, backdrop,
+    or Cancel while a reconcile request is in flight. Their dismiss methods reset
+    the saving flag and close the picker even though the request can later commit,
+    so the user can believe staged changes were cancelled while they are saved.
+scope:
+  in:
+  - Keep both compatibility dialogs open or otherwise visibly pending until their
+    in-flight save resolves; block unsafe dismissal and duplicate saves during that
+    interval.
+  - Cover Escape, backdrop, and Cancel during a deferred successful or failed reconcile
+    response.
+  out:
+  - No change to compatibility selection, reconciliation payloads, or committed outcomes.
+constraints:
+- Preserve safe dismissal before a save begins and after a failed save.
+inputs:
+  required:
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: While a compatibility save is pending, Escape and dismiss controls cannot
+    close the dialog or permit a second save; after resolution the visible state matches
+    the actual result.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Deferred-save interaction tests and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Station compatibility dialog
+  - Variant compatibility dialog
+handoff:
+  review_focus:
+  - Confirm a pending successful request cannot appear cancelled and a failed request
+    stays recoverable.

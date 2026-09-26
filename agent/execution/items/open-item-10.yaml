@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-10
+  title: Restore focus after a picker removes its invoker
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Closing a picker after selection puts focus on a sensible surviving control.
+  rationale: ModalFocus.close prefers the stored invoker selector and does not try
+    its fallback when that selector no longer matches. Selecting the last available
+    Variant removes the Add Variant button before close, leaving focus on the document
+    body.
+scope:
+  in:
+  - Make picker focus restoration use a surviving control when the original invoker
+    disappears after selection or commit.
+  - Cover Training Plan create and edit Variant pickers and other covered pickers
+    with conditional invokers.
+  out:
+  - No change to selection, add, or commit outcomes.
+constraints:
+- Never focus detached, hidden, or disabled controls.
+inputs:
+  required:
+  - renderer/src/modal-focus.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Selecting the final available Variant closes its picker and focuses a
+    visible, enabled control in the parent editor.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focus return regression tests and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - shared modal focus
+  - Training Plan pickers
+handoff:
+  review_focus:
+  - Exercise both surviving and disappearing invokers after owner rerenders.

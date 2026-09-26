@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-12
+  title: Restore the renderer browser smoke gate
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: The full renderer quality gate passes on the completed plan.
+  rationale: The fresh finalize review ran make check-renderer. All 580 renderer unit
+    tests passed, but all four Playwright browser smoke cases failed, so the plan's
+    required renderer gate does not pass. The failures include absent mocked Exercise
+    and Training Plan entries and a fallback selection that remains visible.
+scope:
+  in:
+  - Diagnose the four browser smoke failures and correct the application or smoke
+    fixtures as evidence warrants.
+  - Run the complete renderer gate after the correction.
+  out:
+  - No unrelated product or test-suite redesign.
+constraints:
+- Preserve the intended browser behavior and existing API contracts; do not weaken
+  smoke assertions merely to pass the gate.
+inputs:
+  required:
+  - renderer/ui-smoke/zzz-hpp.spec.js
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/workout-controller-navigation.ts
+  optional:
+  - renderer/playwright.config.cjs
+acceptance_criteria:
+- id: ac-01
+  statement: All four browser smoke cases pass and the full renderer quality gate
+    succeeds.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Successful exit with no failed browser smoke cases.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer browser smoke verification
+  - Configurator navigation and screen data
+handoff:
+  review_focus:
+  - Identify a concrete cause for each browser failure and verify it independently
+    of the unit suite.

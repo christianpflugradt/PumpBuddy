@@ -1,0 +1,47 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-09
+  title: Keep focus while typing in Training Plan creation
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Training Plan creation inputs remain usable for continuous keyboard entry.
+  rationale: The create screen replaces its entire DOM on every input event, including
+    the plan name and both picker searches, but uses no text-input focus restoration.
+    After one character the active input is detached, so normal typing stops.
+scope:
+  in:
+  - Preserve focus and caret across create name, Exercise search, and Variant search
+    updates.
+  - Add browser-representative keyboard tests that type multiple characters into each
+    field and verify focus and filtering.
+  out:
+  - No change to create validation, picker selections, or save behavior.
+constraints:
+- Keep the existing modal focus contract and draft guard behavior.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  - renderer/src/text-input-binding.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Typing successive characters in the plan name and both create picker
+    searches retains focus and caret, and search results update correctly.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Keyboard input regression tests and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Training Plan creation
+  - Configurator picker keyboard interaction
+handoff:
+  review_focus:
+  - Confirm the active input survives or regains focus after each create-screen render.
