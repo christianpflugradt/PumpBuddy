@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-10
+  title: Correct optional Training Plan guidance field semantics
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Training Plan guidance inputs expose their existing optional semantics
+    through the shared Configurator field contract.
+  rationale: The prior field-contract follow-up added native required and aria-required=true
+    to Target sets, Min reps, and Max reps even though the existing save logic accepts
+    blank values as null; this misstates the current rule and violates behavior preservation.
+scope:
+  in:
+  - Restore explicit optional semantics for the three Training Plan guidance inputs
+    while retaining their labels, identifiers, invalid-state handling, and conditional
+    error association.
+  - Add focused DOM and interaction coverage proving an all-blank guidance submission
+    remains accepted and the controls expose optional rather than required semantics.
+  out:
+  - Changing guidance validation, null handling, save payloads, workflows, or picker
+    behavior.
+constraints:
+- Preserve the existing positive-integer validation for supplied values and the paired
+  repetition-bound rule.
+- Retain the Configurator-scoped classes and light-DOM field markup established by
+  this plan.
+inputs:
+  required:
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  optional:
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Target sets, Min reps, and Max reps are explicitly optional and their
+    labels, invalid state, and conditional error linkage remain correct.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused DOM assertions and renderer checks pass.
+- id: ac-02
+  statement: Saving all-blank guidance still sends the existing null-valued guidance
+    and does not introduce a required-field validation failure.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused interaction coverage and renderer checks pass with unchanged
+      guidance behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-forms
+  - renderer/training-plan-guidance
+handoff:
+  review_focus:
+  - Verify the accessibility contract reflects actual optional validation rules.
+  - Verify no changed payload or save eligibility behavior for blank guidance.

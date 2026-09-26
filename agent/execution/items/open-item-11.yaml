@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-11
+  title: Complete Station nested-add action role migration
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: The New Station control uses only the shared Configurator nested-add role
+    and no legacy button-family class.
+  rationale: The action-role migration retained the legacy action-button class and
+    its matching stylesheet selector on New Station, leaving an active nested Configurator
+    action dependent on the old presentation family.
+scope:
+  in:
+  - Remove the legacy action-button dependency from New Station and update its scoped
+    layout selector to target the shared nested-add role.
+  - Add or update focused assertions that the control preserves its label and action
+    identifier while using only the shared role.
+  out:
+  - Changing Station creation availability, navigation, labels, actions, or controller
+    behavior.
+constraints:
+- Preserve the start-configurator-station-create action and existing layout behavior.
+- Do not change non-Configurator action-button consumers.
+inputs:
+  required:
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: New Station uses the shared Configurator nested-add role without the
+    legacy action-button class or selector dependency.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused DOM assertions and renderer checks pass.
+- id: ac-02
+  statement: New Station retains its existing label, action identifier, availability,
+    and layout.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing Gym editor behavior coverage and renderer checks pass.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - renderer/configurator-actions
+  - renderer/configurator-gym-editor
+handoff:
+  review_focus:
+  - Verify the shared nested-add role is the only presentation contract on New Station.
+  - Verify no non-Configurator button styling changes.
