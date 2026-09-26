@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-072-item-04
+  title: Restore nested Exercise Variant row presentation
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Keep the active Variant list in the Exercise editor styled after the top-level
+    Exercise list adopts shared entity roles.
+  rationale: The shared-row change removed the .configurator-exercise-list and .configurator-exercise-card
+    rule family from renderer/src/styles.scss, but renderer/src/pb-configurator-exercise-editor-screen.ts
+    still renders those classes for nested Variants. The nested list has lost its
+    grid spacing, card surface, inactive treatment, focus outline, and text hierarchy.
+    make check-renderer passes because the existing assertions do not check this styling.
+scope:
+  in:
+  - Restore the active nested Variant list and card presentation in renderer/src/styles.scss,
+    scoped to the Exercise editor or its Variant section.
+  - Cover the active list, card, inactive, topline, name, and metadata classes still
+    emitted by renderer/src/pb-configurator-exercise-editor-screen.ts.
+  - Verify the nested Variant action and row presentation together with the shared
+    top-level Exercise row styles.
+  out:
+  - Do not change nested Variant markup, navigation, lifecycle, actions, or other
+    behavior.
+  - Do not reopen the top-level shared entity-row design or unrelated Configurator
+    architecture.
+constraints:
+- Preserve the approved presentation-only scope and global-SCSS architecture.
+- Keep active nested Variant selectors distinct from the obsolete selectors removed
+  by item 03.
+inputs:
+  required:
+  - renderer/src/styles.scss
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: The Exercise editor's nested Variant list has its card layout, spacing,
+    text hierarchy, focus state, and inactive state restored while the four top-level
+    Configurator lists retain shared entity-row roles.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The renderer gate passes after source and visual verification of active
+      nested Variant styles.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - Exercise editor nested Variant presentation
+  - Configurator stylesheet contracts
+handoff:
+  review_focus:
+  - Confirm every active nested Variant class has an effective CSS rule and that no
+    behavior or top-level list role changes.
