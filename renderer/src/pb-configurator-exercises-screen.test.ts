@@ -56,6 +56,10 @@ describe("pb-configurator-exercises-screen", () => {
     el.state = createState();
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
+    const createButton = el.querySelector("pb-create-button");
+    expect(createButton?.getAttribute("action")).toBe("start-configurator-exercise-create");
+    expect(createButton?.getAttribute("label")).toBe("New Exercise");
+    expect(el.querySelector(".configurator-exercise-create-button")).toBeNull();
     (el.querySelector('[data-ui-action="start-configurator-exercise-create"]') as HTMLButtonElement).click();
     (el.querySelector('[data-exercise-id="exercise-active"]') as HTMLButtonElement).click();
     el.state = { ...createState(), mode: "detail", selectedExercise: createState().exercises[1] };
