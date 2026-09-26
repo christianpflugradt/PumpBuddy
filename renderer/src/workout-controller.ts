@@ -1,4 +1,4 @@
-import type { AppState, SessionUser } from "./workout-types";
+import type { AppState, ConfiguratorDraftSource, SessionUser } from "./workout-types";
 import {
   createLoadProfile,
   createConfiguratorStation,
@@ -226,6 +226,11 @@ export const createApp = (
       confirmActionLabel: null,
       onConfirm: null,
     },
+    configuratorDraft: {
+      source: null,
+      isDirty: false,
+    },
+    configuratorExitGuard: null,
     activeWorkout: {
       id: null,
       startedAt: null,
@@ -298,6 +303,57 @@ export const createApp = (
   };
 
   secsTimerController = createSecsTimerController({ getState, render });
+
+  let pendingConfiguratorExit: { detail: unknown } | null = null;
+
+  const isActiveConfiguratorDraftSource = (
+    source: ConfiguratorDraftSource,
+  ): boolean =>
+    source === "configurator-training-plan-create"
+      ? state.viewState.screen === "configurator-training-plans"
+      : state.viewState.screen === source;
+
+  const exitsConfiguratorDraft = (
+    source: ConfiguratorDraftSource,
+    action: string,
+  ): boolean => {
+    const commonExitActions = [
+      "navigate-configurator-overview",
+      "navigate-configurator-load-profiles",
+      "navigate-configurator-gyms",
+      "navigate-configurator-exercises",
+      "navigate-configurator-training-plans",
+      "navigate-workout",
+      "navigate-settings",
+      "navigate-history",
+      "navigate-progress",
+      "navigate-exercises",
+      "navigate-gyms",
+      "navigate-training-plans",
+      "navigate-about",
+    ];
+    if (
+      commonExitActions.includes(action) &&
+      [
+        "configurator-load-profile-detail",
+        "configurator-exercise-detail",
+        "configurator-gym-detail",
+        "configurator-training-plan-create",
+      ].includes(source)
+    ) {
+      return true;
+    }
+
+    return (
+      (source === "configurator-load-profile-detail" && action === "navigate-back-from-configurator-load-profile-detail") ||
+      (source === "configurator-exercise-detail" && ["navigate-back-from-configurator-exercise-detail", "start-configurator-exercise-variant-create", "open-configurator-exercise-variant-detail"].includes(action)) ||
+      (source === "configurator-exercise-variant-detail" && ["navigate-back-from-configurator-exercise-variant-detail", "open-configurator-exercise-variant-compatible-station"].includes(action)) ||
+      (source === "configurator-gym-detail" && ["navigate-back-from-configurator-gym-detail", "start-configurator-station-create", "open-configurator-station-detail"].includes(action)) ||
+      (source === "configurator-station-detail" && action === "navigate-back-from-configurator-station-detail") ||
+      (source === "configurator-training-plan-detail" && action === "navigate-back-from-configurator-training-plan-detail") ||
+      (source === "configurator-training-plan-create" && action === "navigate-back-from-configurator-training-plan-create")
+    );
+  };
 
   const screenDataController = createScreenDataController({
     getState,
@@ -557,6 +613,70 @@ export const createApp = (
     const action = customEvent.detail?.action;
 
     if (!action) {
+      return;
+    }
+
+    if (action === "configurator-draft-state-changed") {
+      const draft = customEvent.detail?.payload as {
+        source?: unknown;
+        isDirty?: unknown;
+      } | undefined;
+      if (
+        typeof draft?.source !== "string" ||
+        typeof draft.isDirty !== "boolean" ||
+        !isActiveConfiguratorDraftSource(draft.source as ConfiguratorDraftSource)
+      ) {
+        return;
+      }
+      state = {
+        ...state,
+        configuratorDraft: {
+          source: draft.source as ConfiguratorDraftSource,
+          isDirty: draft.isDirty,
+        },
+      };
+      return;
+    }
+
+    if (action === "continue-configurator-draft-editing") {
+      if (state.configuratorExitGuard) {
+        pendingConfiguratorExit = null;
+        state = { ...state, configuratorExitGuard: null };
+        render();
+      }
+      return;
+    }
+
+    if (action === "discard-configurator-draft") {
+      const pending = pendingConfiguratorExit;
+      pendingConfiguratorExit = null;
+      state = {
+        ...state,
+        configuratorDraft: { source: null, isDirty: false },
+        configuratorExitGuard: null,
+      };
+      render();
+      if (pending) {
+        app.dispatchEvent(new CustomEvent("pb-ui-action", { detail: pending.detail }));
+      }
+      return;
+    }
+
+    const draft = state.configuratorDraft;
+    if (
+      !state.configuratorExitGuard &&
+      draft.isDirty &&
+      draft.source &&
+      isActiveConfiguratorDraftSource(draft.source) &&
+      exitsConfiguratorDraft(draft.source, action)
+    ) {
+      pendingConfiguratorExit = { detail: customEvent.detail };
+      state = { ...state, configuratorExitGuard: { source: draft.source } };
+      render();
+      return;
+    }
+
+    if (state.configuratorExitGuard) {
       return;
     }
 

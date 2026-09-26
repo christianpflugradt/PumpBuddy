@@ -1,4 +1,5 @@
 import type { AppState } from "./workout-types";
+import "./pb-configurator-exit-guard";
 import { pbStartScreenTag, registerPbStartScreen } from "./pb-start-screen";
 import type { CompletionScreenState } from "./pb-completion-screen";
 import { pbCompletionScreenTag, registerPbCompletionScreen } from "./pb-completion-screen";
@@ -139,7 +140,14 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
-    this.innerHTML = `<div class="pb-app-root"></div>`;
+    this.innerHTML = `<div class="pb-app-root"></div><pb-configurator-exit-guard></pb-configurator-exit-guard>`;
+
+    const exitGuard = this.querySelector("pb-configurator-exit-guard") as HTMLElement & {
+      state: { open: boolean };
+    } | null;
+    if (exitGuard) {
+      exitGuard.state = { open: state.configuratorExitGuard !== null };
+    }
 
     const container = this.querySelector(".pb-app-root");
     if (!(container instanceof HTMLElement)) {

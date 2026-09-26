@@ -169,6 +169,15 @@ export type StartScreenState = {
 
 export type GymDetailActiveSheet = "stations" | "exercises";
 
+export type ConfiguratorDraftSource =
+  | "configurator-load-profile-detail"
+  | "configurator-exercise-detail"
+  | "configurator-exercise-variant-detail"
+  | "configurator-gym-detail"
+  | "configurator-station-detail"
+  | "configurator-training-plan-detail"
+  | "configurator-training-plan-create";
+
 export type GymStationChooserState = {
   variantId: string;
   exerciseName: string;
@@ -332,6 +341,13 @@ export type AppState = {
     confirmActionLabel: string | null;
     onConfirm: (() => void | Promise<void>) | null;
   };
+  configuratorDraft: {
+    source: ConfiguratorDraftSource | null;
+    isDirty: boolean;
+  };
+  configuratorExitGuard: {
+    source: ConfiguratorDraftSource;
+  } | null;
   activeWorkout: {
     id: string | null;
     startedAt: string | null;

@@ -780,6 +780,75 @@ describe("workout-controller (createApp)", () => {
     expect(loadLoadProfileDetailMock).toHaveBeenCalledWith(expect.any(Function), "profile-1");
   });
 
+  it("guards a meaningful Configurator draft until it is discarded", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    dispatchAction(app, "start-configurator-load-profile-create");
+    dispatchActionWithDetail(app, {
+      action: "configurator-draft-state-changed",
+      payload: {
+        source: "configurator-load-profile-detail",
+        isDirty: true,
+      },
+    });
+
+    dispatchAction(app, "navigate-back-from-configurator-load-profile-detail");
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-load-profile-detail",
+      loadProfileId: null,
+    });
+    expect(app.state?.configuratorExitGuard).toEqual({
+      source: "configurator-load-profile-detail",
+    });
+
+    dispatchAction(app, "continue-configurator-draft-editing");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({
+      screen: "configurator-load-profile-detail",
+      loadProfileId: null,
+    });
+
+    dispatchAction(app, "navigate-back-from-configurator-load-profile-detail");
+    dispatchAction(app, "discard-configurator-draft");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+  });
+
+  it("allows a clean or reverted Configurator draft to exit immediately", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    document.body.append(app);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    dispatchAction(app, "start-configurator-load-profile-create");
+    dispatchActionWithDetail(app, {
+      action: "configurator-draft-state-changed",
+      payload: {
+        source: "configurator-load-profile-detail",
+        isDirty: true,
+      },
+    });
+    dispatchActionWithDetail(app, {
+      action: "configurator-draft-state-changed",
+      payload: {
+        source: "configurator-load-profile-detail",
+        isDirty: false,
+      },
+    });
+
+    dispatchAction(app, "navigate-back-from-configurator-load-profile-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+  });
+
   it("keeps a successfully created training plan in the Configurator detail flow", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & {
       state?: any;
