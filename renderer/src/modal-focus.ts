@@ -18,9 +18,9 @@ export class ModalFocus {
   }
 
   close(fallbackSelector?: string): void {
-    const selector = this.#returnFocusSelector ?? fallbackSelector;
+    const returnFocusSelector = this.#returnFocusSelector;
     this.#returnFocusSelector = null;
-    this.#focus(selector);
+    if (!this.#focus(returnFocusSelector)) this.#focus(fallbackSelector);
   }
 
   focusInitial(selector: string): void {
@@ -54,9 +54,11 @@ export class ModalFocus {
       .filter((element) => !element.closest('[hidden], [aria-hidden="true"], [inert]'));
   }
 
-  #focus(selector: string | null | undefined): void {
-    if (!selector) return;
+  #focus(selector: string | null | undefined): boolean {
+    if (!selector) return false;
     const control = this.#root.querySelector<HTMLElement>(selector);
-    if (control?.isConnected && !control.matches(":disabled") && !control.hidden && !control.closest('[hidden], [aria-hidden="true"], [inert]')) control.focus();
+    if (!control?.isConnected || control.matches(":disabled") || control.hidden || control.closest('[hidden], [aria-hidden="true"], [inert]')) return false;
+    control.focus();
+    return true;
   }
 }

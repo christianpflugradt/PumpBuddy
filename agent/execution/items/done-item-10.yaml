@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-073-item-10
   title: Restore focus after a picker removes its invoker
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

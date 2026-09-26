@@ -153,4 +153,19 @@ expect(el.querySelector(".configurator-control[data-role=\"plan-name\"]")).toBeT
     expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]'));
     el.remove();
   });
+
+  it("focuses the plan name after selecting the final Variant removes its picker trigger", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+    el.state = createState(); document.body.append(el);
+    (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="select-create-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-create-plan-variant-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-1"][data-ui-action="select-create-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-create-plan-variant-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-2"][data-ui-action="select-create-plan-variant"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[data-ui-action="open-create-plan-variant-picker"]')).toBeNull();
+    expect(document.activeElement).toBe(el.querySelector('[data-field="plan-name"]'));
+    el.remove();
+  });
 });

@@ -205,6 +205,7 @@ expect(el.querySelector(".configurator-control[data-field=\"plan-name\"]")).toBe
     expect(el.textContent).toContain("1. Squat 2/2 variants");
     expect(el.querySelector('[data-exercise-id="exercise-1"][data-ui-action="open-plan-variant-picker"]')).toBeNull();
     expect((el.querySelector('[data-variant-id="variant-1"][data-ui-action="remove-plan-variant"]') as HTMLButtonElement).disabled).toBe(false);
+    expect(document.activeElement).toBe(el.querySelector('[data-field="plan-name"]'));
     el.remove();
   });
 
