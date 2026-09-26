@@ -50,6 +50,18 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     expect(el.querySelector<HTMLInputElement>('[data-field="set-tracking-mode"][value="UNILATERAL"]')?.checked).toBe(true);
     expect(el.querySelector<HTMLInputElement>('[data-field="repetition-kind"][value="SECS"]')?.checked).toBe(true);
   });
+  it("provides stable required and optional field semantics", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = state();
+    const name = el.querySelector<HTMLInputElement>("#configurator-exercise-variant-name")!;
+    expect(name.required).toBe(true); expect(name.getAttribute("aria-required")).toBe("true"); expect(name.getAttribute("aria-invalid")).toBe("false");
+    expect(el.querySelector<HTMLInputElement>("#configurator-exercise-variant-requires-station")?.getAttribute("aria-required")).toBe("false");
+    expect(el.querySelector<HTMLInputElement>("#configurator-exercise-variant-load-input-mode-total")?.labels?.[0]?.textContent?.trim()).toBe("Total");
+    name.value = ""; name.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(name.getAttribute("aria-describedby")).toBe("configurator-exercise-variant-name-error");
+    expect(el.querySelector("#configurator-exercise-variant-name-error")?.textContent).toBe("Name is required.");
+    el.remove();
+  });
   it.each(["active", "inactive"] as const)("requires confirmation before saving a renamed %s variant", (status) => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
     document.body.append(el); el.state = state(status); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);

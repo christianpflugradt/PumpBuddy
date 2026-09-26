@@ -18,6 +18,18 @@ const createState = (): ConfiguratorTrainingPlansScreenState => ({
 
 describe("pb-configurator-training-plans-screen", () => {
   registerPbConfiguratorTrainingPlansScreen();
+  it("marks required creation fields invalid only when their matching error is shown", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+    el.state = createState(); document.body.append(el);
+    (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
+    const name = el.querySelector<HTMLInputElement>("#configurator-training-plan-create-name")!;
+    const exercise = el.querySelector<HTMLButtonElement>("#configurator-training-plan-create-exercise")!;
+    expect(name.required).toBe(true); expect(name.getAttribute("aria-invalid")).toBe("false"); expect(exercise.getAttribute("aria-required")).toBe("true");
+    (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();
+    expect(el.querySelector("#configurator-training-plan-create-name")?.getAttribute("aria-describedby")).toBe("configurator-training-plan-create-error");
+    expect(el.querySelector("#configurator-training-plan-create-error")?.textContent).toBe("Plan name is required.");
+    el.remove();
+  });
   it("lists current plans and opens one", () => {
     const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
     el.state = createState(); document.body.append(el);

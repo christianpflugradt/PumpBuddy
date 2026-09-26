@@ -21,6 +21,20 @@ const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void 
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
+  it("uses stable required guidance fields and connects validation errors", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    const planName = el.querySelector<HTMLInputElement>("#configurator-training-plan-name")!;
+    expect(planName.required).toBe(true); expect(planName.getAttribute("aria-required")).toBe("true"); expect(planName.getAttribute("aria-invalid")).toBe("false");
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    const min = el.querySelector<HTMLInputElement>("#configurator-training-plan-guidance-min-reps")!;
+    expect(min.required).toBe(true); expect(min.getAttribute("aria-invalid")).toBe("false");
+    min.value = "12"; min.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(el.querySelector("#configurator-training-plan-guidance-min-reps")?.getAttribute("aria-describedby")).toBe("configurator-training-plan-guidance-error");
+    expect(el.querySelector("#configurator-training-plan-guidance-error")?.textContent).toContain("cannot exceed");
+    el.remove();
+  });
   it("stages validated default guidance locally and includes it only in Save Training Plan", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state(); respondToSaveImpact(el, false);

@@ -43,6 +43,33 @@ describe("pb-configurator-station-editor-screen", () => {
     expect(el.querySelector('[data-field="name"]')).toBeTruthy();
   });
 
+  it("exposes stable required field semantics and only links visible validation errors", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const name = el.querySelector<HTMLInputElement>("#configurator-station-name")!;
+    const profile = el.querySelector<HTMLButtonElement>("#configurator-station-load-profile")!;
+    expect(name.required).toBe(true); expect(name.getAttribute("aria-required")).toBe("true"); expect(name.getAttribute("aria-invalid")).toBe("false");
+    expect(profile.getAttribute("aria-required")).toBe("true"); expect(profile.getAttribute("aria-invalid")).toBe("false");
+    name.value = " "; name.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(el.querySelector("#configurator-station-name")?.getAttribute("aria-describedby")).toBe("configurator-station-name-error");
+    expect(el.querySelector("#configurator-station-name-error")?.textContent).toBe("Name is required.");
+    el.remove();
+  });
+
+  it("preserves the contract while controls are disabled and historical fields are read-only", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), station: null };
+    const name = el.querySelector<HTMLInputElement>("#configurator-station-name")!;
+    name.value = "Row 1"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
+    expect(el.querySelector<HTMLInputElement>("#configurator-station-name")?.disabled).toBe(true);
+    expect(el.querySelector<HTMLButtonElement>("#configurator-station-load-profile")?.disabled).toBe(true);
+    el.state = createState("active");
+    expect(el.querySelector("#configurator-station-load-profile")).toBeNull();
+    expect(el.textContent).toContain("Cable Stack");
+    el.remove();
+  });
+
   it("limits active and inactive Stations to rename after a historical warning", () => {
     for (const status of ["active", "inactive"] as const) {
       const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };

@@ -77,6 +77,18 @@ describe("pb-configurator-exercise-editor-screen", () => {
     expect(el.querySelector('[data-field="name"]')).toBeTruthy();
   });
 
+  it("exposes the name field's stable accessible validation contract", () => {
+    const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const input = el.querySelector<HTMLInputElement>("#configurator-exercise-name")!;
+    expect(input.required).toBe(true); expect(input.getAttribute("aria-required")).toBe("true"); expect(input.getAttribute("aria-invalid")).toBe("false");
+    input.value = "Bench Press"; input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(input.getAttribute("aria-describedby")).toBe("configurator-exercise-name-error");
+    expect(el.querySelector("#configurator-exercise-name-error")?.textContent).toBe("Name must be unique.");
+    el.remove();
+  });
+
   it("requires confirmation before renaming active and inactive Exercises", () => {
     for (const status of ["active", "inactive"] as const) {
       const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
