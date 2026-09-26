@@ -166,7 +166,7 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
     }
 
     return `
-      <div class="configurator-load-profile-list" aria-label="Load profiles">
+      <div class="configurator-entity-list" aria-label="Load profiles">
         ${visibleLoadProfiles
           .map((loadProfile) => {
             const usageSummary =
@@ -178,16 +178,16 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
             return `
               <button
                 type="button"
-                class="configurator-load-profile-card"
+                class="configurator-entity-row${loadProfile.status === "inactive" ? " configurator-entity-row--inactive" : ""}"
                 data-ui-action="open-configurator-load-profile-detail"
                 data-load-profile-id="${escapeAttribute(loadProfile.id)}"
                 aria-label="Open ${escapeAttribute(loadProfile.name)} load profile"
               >
-                <span class="configurator-load-profile-card-topline">
-                  <span class="configurator-load-profile-name">${escapeHtml(loadProfile.name)}</span>
+                <span class="configurator-entity-row-topline">
+                  <span class="configurator-entity-row-name">${escapeHtml(loadProfile.name)}</span>
                   <pb-configurator-status value="${escapeAttribute(loadProfile.status)}"></pb-configurator-status>
                 </span>
-                <span class="configurator-load-profile-card-metadata">
+                <span class="configurator-entity-row-metadata">
                   ${escapeHtml(metadataSummary)}
                 </span>
               </button>
@@ -261,8 +261,9 @@ class PbConfiguratorLoadProfilesScreenElement extends HTMLElement {
             isList
               ? `
                 <pb-create-button action="start-configurator-load-profile-create" label="New Load Profile"></pb-create-button>
-                <label class="configurator-load-profile-search" aria-label="Search load profiles">
+                <label class="configurator-list-search" aria-label="Search load profiles">
                   <input
+                    class="configurator-list-search-input"
                     type="search"
                     data-role="load-profile-search"
                     value="${escapeAttribute(this.#searchQuery)}"

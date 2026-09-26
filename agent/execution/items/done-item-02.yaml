@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-072-item-02
   title: Unify Configurator entity-row and list-search presentation
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -18,17 +18,17 @@ scope:
     `.configurator-entity-row`, `.configurator-entity-row--inactive`, `.configurator-entity-row-topline`,
     `.configurator-entity-row-name`, `.configurator-entity-row-metadata`, `.configurator-list-search`,
     and `.configurator-list-search-input`.'
-  - 'Replace equivalent list and search class usage in `renderer/src/pb-configurator-exercises-screen.ts`,
+  - Replace equivalent list and search class usage in `renderer/src/pb-configurator-exercises-screen.ts`,
     `renderer/src/pb-configurator-gyms-screen.ts`, `renderer/src/pb-configurator-load-profiles-screen.ts`,
     and `renderer/src/pb-configurator-training-plans-screen.ts` with those semantic
-    roles.'
-  - 'Remove Training Plans'' borrowed `.configurator-gym-list` and `.configurator-gym-card`
+    roles.
+  - Remove Training Plans' borrowed `.configurator-gym-list` and `.configurator-gym-card`
     roles, while preserving its Training Plan-specific metadata classes where they
-    still represent content rather than shared row presentation.'
-  - 'Update focused markup-contract assertions only in `renderer/src/pb-configurator-exercises-screen.test.ts`,
+    still represent content rather than shared row presentation.
+  - Update focused markup-contract assertions only in `renderer/src/pb-configurator-exercises-screen.test.ts`,
     `renderer/src/pb-configurator-gyms-screen.test.ts`, `renderer/src/pb-configurator-load-profiles-screen.test.ts`,
     and `renderer/src/pb-configurator-training-plans-screen.test.ts` when selectors
-    are renamed.'
+    are renamed.
   out:
   - Do not extract a row Web Component or move filtering, navigation, event dispatch,
     state ownership, lifecycle status mapping, or entity metadata between screens.

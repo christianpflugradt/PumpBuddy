@@ -329,7 +329,11 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   text-align: left;
 }
 
-.configurator-exercise-search input {
+.configurator-list-search {
+  display: block;
+}
+
+.configurator-list-search-input {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
@@ -339,18 +343,22 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   color: var(--text-primary);
 }
 
-.configurator-exercise-search input:focus-visible,
-.configurator-exercise-card:focus-visible {
+.configurator-list-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.configurator-list-search-input:focus-visible,
+.configurator-entity-row:focus-visible {
   outline: 2px solid var(--brand-strong);
   outline-offset: 2px;
 }
 
-.configurator-exercise-list {
+.configurator-entity-list {
   display: grid;
   gap: var(--space-sm);
 }
 
-.configurator-exercise-card {
+.configurator-entity-row {
   display: grid;
   width: 100%;
   min-height: 4.5rem;
@@ -364,11 +372,11 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   cursor: pointer;
 }
 
-.configurator-exercise-card:hover { border-color: var(--border-input); }
-.configurator-exercise-card--inactive { opacity: 0.62; }
-.configurator-exercise-card-topline { display: flex; align-items: start; justify-content: space-between; gap: var(--space-md); }
-.configurator-exercise-name { min-width: 0; font-size: 0.95rem; font-weight: 750; line-height: 1.2; }
-.configurator-exercise-card-metadata { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.2; }
+.configurator-entity-row:hover { border-color: var(--border-input); }
+.configurator-entity-row--inactive { opacity: 0.62; }
+.configurator-entity-row-topline { display: flex; align-items: start; justify-content: space-between; gap: var(--space-md); }
+.configurator-entity-row-name { min-width: 0; font-size: 0.95rem; font-weight: 750; line-height: 1.2; }
+.configurator-entity-row-metadata { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.2; }
 
 .configurator-gyms-screen {
   justify-items: stretch;
@@ -379,59 +387,6 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
 .configurator-gyms-screen .configurator-gym-create-button {
   width: 100%;
   margin: 0 0 1rem;
-}
-
-.configurator-gym-list {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.configurator-gym-card {
-  width: 100%;
-  min-height: 4.5rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  color: var(--text-strong);
-  text-align: left;
-  cursor: pointer;
-}
-
-.configurator-gym-card:hover { border-color: var(--border-input); }
-.configurator-gym-card:focus-visible { outline: 2px solid var(--brand-strong); outline-offset: 2px; }
-
-.configurator-gym-card--inactive {
-  opacity: 0.62;
-}
-
-.configurator-gym-card-topline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-}
-
-.configurator-gym-name {
-  font-weight: 750;
-}
-
-.configurator-training-plan-card {
-  display: grid;
-  align-content: center;
-  gap: var(--space-xs);
-}
-
-.configurator-training-plan-card-name {
-  font-size: 0.95rem;
-  font-weight: 750;
-  line-height: 1.2;
-}
-
-.configurator-training-plan-card-exercise-count {
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-  line-height: 1.2;
 }
 
 .configurator-status {
@@ -821,81 +776,6 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   box-shadow: 0 0.45rem 0.9rem var(--button-primary-shadow);
 }
 
-.configurator-load-profile-search {
-  display: block;
-}
-
-.configurator-load-profile-search input {
-  width: 100%;
-  min-height: 2.75rem;
-  border: 1px solid var(--border-input);
-  border-radius: var(--radius-md);
-  background: var(--surface-input);
-  color: var(--text-primary);
-  padding: 0.55rem 0.75rem;
-}
-
-.configurator-load-profile-search input::placeholder {
-  color: var(--text-muted);
-}
-
-.configurator-load-profile-search input:focus-visible {
-  outline: 2px solid var(--brand-strong);
-  outline-offset: 2px;
-}
-
-.configurator-load-profile-list {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.configurator-load-profile-card {
-  width: 100%;
-  min-height: 4.5rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  color: var(--text-strong);
-  display: grid;
-  gap: var(--space-xs);
-  text-align: left;
-  cursor: pointer;
-}
-
-.configurator-load-profile-card:hover {
-  border-color: var(--border-input);
-}
-
-.configurator-load-profile-card:focus-visible {
-  outline: 2px solid var(--brand-strong);
-  outline-offset: 2px;
-}
-
-.configurator-load-profile-card-topline {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: var(--space-md);
-}
-
-.configurator-load-profile-name {
-  min-width: 0;
-  font-size: 0.95rem;
-  font-weight: 750;
-  line-height: 1.2;
-}
-
-
-.configurator-load-profile-card-metadata {
-  display: flex;
-  flex-wrap: nowrap;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 .configurator-load-profile-editor-screen .configurator-field-grid {
   display: grid;
   gap: var(--space-lg);
@@ -907,6 +787,12 @@ pb-configurator-exercise-variant-editor-screen .app-screen-shell {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.configurator-entity-row-metadata {
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .configurator-load-profile-editor-screen textarea.configurator-control {

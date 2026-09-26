@@ -84,12 +84,12 @@ class PbConfiguratorGymsScreenElement extends HTMLElement {
     if (this.#state.errorMessage) return `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>`;
     if (this.#state.gyms.length === 0) return '<p class="start-copy">No gyms available yet.</p>';
 
-    return `<div class="configurator-gym-list" aria-label="Gyms">
+    return `<div class="configurator-entity-list" aria-label="Gyms">
       ${this.#state.gyms.map((gym) => {
         const status = gym.status ?? "active";
-        return `<button type="button" class="configurator-gym-card configurator-gym-card--${escapeAttribute(status)}" data-ui-action="open-configurator-gym-detail" data-gym-id="${escapeAttribute(gym.id)}" aria-label="Open ${escapeAttribute(gym.name)} gym">
-          <span class="configurator-gym-card-topline">
-            <span class="configurator-gym-name">${escapeHtml(gym.name)}</span>
+        return `<button type="button" class="configurator-entity-row${status === "inactive" ? " configurator-entity-row--inactive" : ""}" data-ui-action="open-configurator-gym-detail" data-gym-id="${escapeAttribute(gym.id)}" aria-label="Open ${escapeAttribute(gym.name)} gym">
+          <span class="configurator-entity-row-topline">
+            <span class="configurator-entity-row-name">${escapeHtml(gym.name)}</span>
             <pb-configurator-status value="${escapeAttribute(status)}"></pb-configurator-status>
           </span>
         </button>`;

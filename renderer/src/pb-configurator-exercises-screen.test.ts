@@ -29,7 +29,9 @@ describe("pb-configurator-exercises-screen", () => {
     expect(el.textContent).toContain("Draft");
     expect(el.textContent).toContain("1 variant");
     expect(el.textContent).toContain("2 variants");
-    expect(el.querySelector(".configurator-exercise-card--inactive")).toBeTruthy();
+    expect(el.querySelector(".configurator-entity-row--inactive")).toBeTruthy();
+    expect(el.querySelector(".configurator-entity-list")).toBeTruthy();
+    expect(el.querySelector(".configurator-list-search-input")).toBeTruthy();
     expect(el.querySelectorAll("pb-configurator-status")).toHaveLength(3);
 
     const search = el.querySelector<HTMLInputElement>('[data-role="exercise-search"]')!;
