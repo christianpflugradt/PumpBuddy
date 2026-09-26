@@ -1,23 +1,101 @@
 version: 1
 kind: plan
 id: pb-073
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Configurator interaction safety and navigation
+goal: >-
+  Protect meaningful unsaved Configurator work, make current dialogs usable by
+  keyboard, and preserve the next task or return context in the approved parent
+  creation and Variant-to-Station flows without changing domain semantics.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - >-
+    UX-01: Guard ordinary in-app exits from Exercise, Exercise Variant, Gym,
+    Station, Load Profile, and Training Plan editors when the current draft
+    differs meaningfully from its original or persisted state. Review Training
+    Plan creation for meaningful local state and cover it when applicable.
+    Clean exits stay immediate; dirty exits offer exactly Continue Editing and
+    Discard Changes, and discard only after explicit confirmation.
+  - >-
+    UX-02: After successful creation of an Exercise or Gym, navigate to that
+    newly created parent's detail so New Variant or New Station is available.
+    Preserve the destination and save behavior of existing parent edits.
+  - >-
+    UX-04: Apply a small shared focus and keyboard contract to current
+    Configurator confirmations and modal picker/dialog families: useful initial
+    focus, Tab containment, safe Escape dismissal, focus return to an existing
+    invoker, and an accessible name from the visible title. Keep each picker's
+    current selection and commit behavior.
+  - >-
+    UX-06: When a Station is opened from an Exercise Variant's Compatible
+    Stations section, Back returns to that Variant. The ordinary
+    Gym-to-Station-to-Gym Back path stays unchanged.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - UX-03 prerequisite guidance or navigation; UX-05 Training Plan reorder; UX-07 historical read-only explanation; UX-08 Load Profile formula guidance.
+  - General Configurator redesign, unrelated route restructuring, universal picker consolidation, or an application-wide navigation history system.
+  - Workout, History, Statistics, Progress, domain model, persistence, or API contract changes.
+  - New CRUD capabilities, automatic saving, undo/redo, a wizard, or automatic Variant or Station creation.
+  - Browser-history guarding if it requires materially broader architecture than the existing navigation model supports.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - >-
+    Covered in-app exit paths retain meaningful unsaved editor work unless the
+    user explicitly chooses Discard Changes; Continue Editing keeps the draft,
+    semantically unchanged drafts exit without a guard, and no Save action is
+    added to the guard.
+  - >-
+    Creating an Exercise lands on its detail with New Variant available;
+    creating a Gym lands on its detail with New Station available. Existing
+    Exercise and Gym edit-save destinations remain unchanged.
+  - >-
+    Covered Configurator dialogs receive useful focus on open, contain Tab,
+    dismiss with Escape where safe, return focus to an existing invoker on
+    close, and expose an accessible name from their visible title. Existing
+    selection, commit, confirmation, validation, and save outcomes remain intact.
+  - >-
+    Variant-to-Station Back returns to the originating Variant, while
+    Gym-to-Station Back still returns to the Gym.
+  - >-
+    Renderer behavior tests cover clean and dirty exits, both guard choices,
+    create destinations, modal focus and keyboard behavior, and both Station
+    return paths; the relevant make check-renderer gate passes.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Preserve existing validation, save, API, read-only, and unrelated confirmation behavior.
+  - >-
+    Prefer the smallest reusable dirty-state and exit-guard mechanism across
+    editors; compare meaningful draft state with its relevant baseline where
+    practical, rather than treating every input event as dirty. Do not build a
+    generic form framework.
+  - >-
+    Share only modal interaction behavior that genuinely applies across
+    confirmations and picker families. Preserve single-select, staged
+    multi-select, compatibility, and guidance-editing semantics. Document any
+    modal whose existing safety rule prevents Escape dismissal.
+  - >-
+    Keep Variant-to-Station return context explicit and bounded. Do not expand
+    it into generic navigation history unless the existing architecture makes
+    that strictly simpler.
+  - >-
+    Keep the implementation proportional to the current single-user app and
+    the approved findings. Surface any newly required product or architecture
+    decision before expanding behavior or contracts.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/tmp/configurator-ux-review-2026-09-26.md
+  - agent/strategy/test-strategy.yaml
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-confirm-dialog.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Derive a bounded implementation sequence from the current renderer, usually
+  4-8 items rather than one item per finding. In particular, separate the
+  reusable unsaved-exit mechanism from editor adoption where that makes
+  review safer; keep modal behavior and the two narrow navigation changes
+  independently testable. Check whether the combined work fits one focused
+  workday and surface a split if it clearly does not.
+
+  Each item must stand alone: identify affected screens/components, behavior
+  and preserved behavior, non-goals, implementation boundary, acceptance
+  criteria, and relevant make check-renderer verification. Copy the relevant
+  evidence and constraints from the temporary UX review into the items; no
+  item may depend on agent/tmp/ remaining available. Do not create items
+  during discuss-plan. If the plan is unclear or incomplete, refinement must
+  report the gap instead of changing this file.
