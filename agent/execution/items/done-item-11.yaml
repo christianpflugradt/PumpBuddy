@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-071-item-11
   title: Complete Station nested-add action role migration
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

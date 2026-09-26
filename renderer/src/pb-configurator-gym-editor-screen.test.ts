@@ -133,7 +133,10 @@ describe("pb-configurator-gym-editor-screen", () => {
     document.body.append(el); el.state = createState();
     expect(el.querySelector('[data-ui-action="save-gym"]')?.classList.contains("configurator-action-primary")).toBe(true);
     expect(el.querySelector('[data-ui-action="delete-gym"]')?.classList.contains("configurator-action-danger")).toBe(true);
-    expect(el.querySelector('[data-ui-action="start-configurator-station-create"]')?.classList.contains("configurator-action-nested-add")).toBe(true);
+    const newStation = el.querySelector('[data-ui-action="start-configurator-station-create"]');
+    expect(newStation?.textContent).toBe("+ New Station");
+    expect(newStation?.classList.contains("configurator-action-nested-add")).toBe(true);
+    expect(newStation?.classList.contains("action-button")).toBe(false);
     (el.querySelector('[data-ui-action="delete-gym"]') as HTMLButtonElement).click();
     expect(el.querySelector('[data-ui-action="dismiss-delete-gym-warning"]')?.classList.contains("configurator-action-dismiss")).toBe(true);
     expect(el.querySelector('.confirm-dialog [data-ui-action="delete-gym"]')?.classList.contains("configurator-action-danger")).toBe(true);
