@@ -1,14 +1,17 @@
 export const pbConfirmDialogTag = "pb-confirm-dialog";
 
 export type ConfirmDialogState = {
-  message: string | null;
-  confirmActionLabel: string | null;
-  controlsDisabled: boolean;
+  accessibleName: string;
+  message: string;
+  dismissAction: string;
+  dismissLabel: string;
+  confirmAction: string;
+  confirmLabel: string;
+  controlsDisabled?: boolean;
+  backdrop?: boolean;
+  intent?: "affirmative" | "destructive";
+  title?: string | null;
 };
-
-type UiAction =
-  | "confirm-dialog-dismiss"
-  | "confirm-dialog-confirm";
 
 const escapeHtml = (value: string): string =>
   value
@@ -20,15 +23,9 @@ const escapeHtml = (value: string): string =>
 
 class PbConfirmDialogElement extends HTMLElement {
   #state: ConfirmDialogState | null = null;
-  #shadow = this.attachShadow({ mode: "open" });
 
   connectedCallback(): void {
     this.#render();
-    this.#shadow.addEventListener("click", this.#onClick);
-  }
-
-  disconnectedCallback(): void {
-    this.#shadow.removeEventListener("click", this.#onClick);
   }
 
   set state(value: ConfirmDialogState | null) {
@@ -40,77 +37,33 @@ class PbConfirmDialogElement extends HTMLElement {
     return this.#state;
   }
 
-  #emitUiAction(action: UiAction): void {
-    this.dispatchEvent(
-      new CustomEvent("pb-ui-action", {
-        bubbles: true,
-        composed: true,
-        detail: { action },
-      }),
-    );
-  }
-
-  #onClick = (event: Event): void => {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const actionElement = target.closest<HTMLElement>("[data-ui-action]");
-    if (!actionElement || !this.#shadow.contains(actionElement)) {
-      return;
-    }
-
-    const action = actionElement.dataset.uiAction as UiAction | undefined;
-    if (!action) {
-      return;
-    }
-
-    this.#emitUiAction(action);
-  };
-
   #render(): void {
     const state = this.#state;
-    if (!state || !state.message) {
-      this.#shadow.innerHTML = "";
+    if (!state) {
+      this.innerHTML = "";
       return;
     }
 
-    const controlsDisabled = state.controlsDisabled ? "disabled" : "";
+    const disabled = state.controlsDisabled ? "disabled" : "";
+    const title = state.title
+      ? `<h2 class="confirm-dialog-title">${escapeHtml(state.title)}</h2>`
+      : "";
+    const confirmClass = state.intent === "destructive"
+      ? "configurator-action-danger"
+      : "configurator-action-primary";
+    const backdrop = state.backdrop === false
+      ? ""
+      : '<div class="confirm-dialog-backdrop" role="presentation"></div>';
 
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: contents;
-        }
-      </style>
-
+    this.innerHTML = `
       <div class="confirm-dialog-layer" role="presentation">
-        <div class="confirm-dialog-backdrop" role="presentation"></div>
-        <section
-          class="confirm-dialog"
-          role="alertdialog"
-          aria-modal="true"
-          aria-label="Confirmation dialog"
-        >
+        ${backdrop}
+        <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-label="${escapeHtml(state.accessibleName)}">
+          ${title}
           <p class="confirm-dialog-message">${escapeHtml(state.message)}</p>
           <div class="confirm-dialog-actions">
-            <button
-              type="button"
-              class="nav-button"
-              data-ui-action="confirm-dialog-dismiss"
-              ${controlsDisabled}
-            >
-              Keep Editing
-            </button>
-            <button
-              type="button"
-              class="nav-button"
-              data-ui-action="confirm-dialog-confirm"
-              ${controlsDisabled}
-            >
-              ${escapeHtml(state.confirmActionLabel ?? "Confirm")}
-            </button>
+            <button type="button" class="configurator-action-dismiss" data-ui-action="${escapeHtml(state.dismissAction)}" ${disabled}>${escapeHtml(state.dismissLabel)}</button>
+            <button type="button" class="${confirmClass}" data-ui-action="${escapeHtml(state.confirmAction)}" ${disabled}>${escapeHtml(state.confirmLabel)}</button>
           </div>
         </section>
       </div>
@@ -119,7 +72,9 @@ class PbConfirmDialogElement extends HTMLElement {
 }
 
 export const registerPbConfirmDialog = (): void => {
-  if (!customElements.get(pbConfirmDialogTag)) {
+  if (typeof customElements !== "undefined" && !customElements.get(pbConfirmDialogTag)) {
     customElements.define(pbConfirmDialogTag, PbConfirmDialogElement);
   }
 };
+
+registerPbConfirmDialog();

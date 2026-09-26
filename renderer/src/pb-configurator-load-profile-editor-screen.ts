@@ -6,6 +6,7 @@ import type {
 } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
 import "./pb-configurator-header";
+import "./pb-confirm-dialog";
 
 export const pbConfiguratorLoadProfileEditorScreenTag =
   "pb-configurator-load-profile-editor-screen";
@@ -668,37 +669,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
       return "";
     }
 
-    return `
-      <div class="confirm-dialog-layer" role="presentation">
-        <div class="confirm-dialog-backdrop" role="presentation"></div>
-        <section
-          class="confirm-dialog"
-          role="alertdialog"
-          aria-modal="true"
-          aria-label="Historical rename warning"
-        >
-          <p class="confirm-dialog-message">
-            Renaming an active or inactive load profile can affect how historical workouts are understood. Save this name change?
-          </p>
-          <div class="confirm-dialog-actions">
-            <button
-              type="button"
-              class="configurator-action-dismiss"
-              data-ui-action="dismiss-historical-rename-warning"
-            >
-              Keep Editing
-            </button>
-            <button
-              type="button"
-              class="configurator-action-primary"
-              data-ui-action="save-load-profile"
-            >
-              Save Name
-            </button>
-          </div>
-        </section>
-      </div>
-    `;
+    return "<pb-confirm-dialog></pb-confirm-dialog>";
   }
 
   #render(): void {
@@ -724,6 +695,8 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
         ${this.#renderHistoricalRenameWarning()}
       </div>
     `;
+    const dialog = this.querySelector<HTMLElement>("pb-confirm-dialog") as HTMLElement & { state: import("./pb-confirm-dialog").ConfirmDialogState } | null;
+    if (dialog) dialog.state = { accessibleName: "Historical rename warning", message: "Renaming an active or inactive load profile can affect how historical workouts are understood. Save this name change?", dismissAction: "dismiss-historical-rename-warning", dismissLabel: "Keep Editing", confirmAction: "save-load-profile", confirmLabel: "Save Name" };
   }
 }
 
