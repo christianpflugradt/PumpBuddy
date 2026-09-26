@@ -69,6 +69,7 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.#textInput.connect();
+    this.#emitDraftState();
   }
 
   disconnectedCallback(): void {
@@ -121,10 +122,22 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
   }
 
   #hasChanges(): boolean {
-    return (
-      this.#state.mode === "create" ||
-      normalizeName(this.#nameDraft) !==
-        normalizeName(this.#state.detail?.name ?? "")
+    return normalizeName(this.#nameDraft) !== normalizeName(this.#state.detail?.name ?? "");
+  }
+
+  #emitDraftState(): void {
+    this.dispatchEvent(
+      new CustomEvent("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        detail: {
+          action: "configurator-draft-state-changed",
+          payload: {
+            source: "configurator-exercise-detail",
+            isDirty: this.#hasChanges(),
+          },
+        },
+      }),
     );
   }
 
@@ -143,6 +156,7 @@ class PbConfiguratorExerciseEditorScreenElement extends HTMLElement {
     this.#nameDraft = value;
     this.#touched = true;
     this.#submitError = null;
+    this.#emitDraftState();
     const error = this.#nameError();
     const fieldElement = this.querySelector('[data-field="name"]')?.closest(".configurator-field");
     fieldElement?.querySelector(".configurator-field-error")?.remove();

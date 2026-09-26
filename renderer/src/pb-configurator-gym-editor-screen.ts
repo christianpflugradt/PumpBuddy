@@ -42,7 +42,7 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
   #touched = false;
   #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
-  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); }
+  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); this.#emitDraftState(); }
   disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.#textInput.disconnect(); }
   set state(value: ConfiguratorGymEditorScreenState) {
     this.#state = value;
@@ -61,11 +61,12 @@ class PbConfiguratorGymEditorScreenElement extends HTMLElement {
     return this.#state.gyms.some((gym) => gym.id !== currentId && normalizeName(gym.name) === normalizeName(name)) ? "Name must be unique." : null;
   }
   #isHistorical(): boolean { return this.#state.detail?.status === "active" || this.#state.detail?.status === "inactive"; }
-  #hasChanges(): boolean { return this.#state.mode === "create" || normalizeName(this.#nameDraft) !== normalizeName(this.#state.detail?.name ?? ""); }
+  #hasChanges(): boolean { return normalizeName(this.#nameDraft) !== normalizeName(this.#state.detail?.name ?? ""); }
+  #emitDraftState(): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action: "configurator-draft-state-changed", payload: { source: "configurator-gym-detail", isDirty: this.#hasChanges() } } })); }
   #emit(action: string, payload?: Record<string, string>): void { this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: payload ? { action, payload } : { action } })); }
   #onTextInput = (field: string, value: string): void => {
     if (field !== "name") return;
-    this.#nameDraft = value; this.#touched = true; this.#submitError = null; const error = this.#nameError();
+    this.#nameDraft = value; this.#touched = true; this.#submitError = null; this.#emitDraftState(); const error = this.#nameError();
     const fieldElement = this.querySelector('[data-field="name"]')?.closest(".configurator-field"); fieldElement?.querySelector(".configurator-field-error")?.remove();
     const input = this.querySelector<HTMLInputElement>('[data-field="name"]');
     if (input) { input.setAttribute("aria-invalid", `${!!error}`); if (error) input.setAttribute("aria-describedby", "configurator-gym-name-error"); else input.removeAttribute("aria-describedby"); }

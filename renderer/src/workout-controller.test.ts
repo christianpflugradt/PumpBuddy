@@ -849,6 +849,50 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
   });
 
+  it("guards Exercise and Gym parent drafts until each is continued or discarded", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    createApp(app);
+    await flush();
+
+    for (const flow of [
+      {
+        navigate: "navigate-configurator-exercises",
+        start: "start-configurator-exercise-create",
+        source: "configurator-exercise-detail",
+        back: "navigate-back-from-configurator-exercise-detail",
+        editor: { screen: "configurator-exercise-detail", exerciseId: null },
+        destination: { screen: "configurator-exercises" },
+      },
+      {
+        navigate: "navigate-configurator-gyms",
+        start: "start-configurator-gym-create",
+        source: "configurator-gym-detail",
+        back: "navigate-back-from-configurator-gym-detail",
+        editor: { screen: "configurator-gym-detail", gymId: null },
+        destination: { screen: "configurator-gyms" },
+      },
+    ] as const) {
+      dispatchSideMenuAction(app, flow.navigate);
+      dispatchAction(app, flow.start);
+      dispatchActionWithDetail(app, {
+        action: "configurator-draft-state-changed",
+        payload: { source: flow.source, isDirty: true },
+      });
+      dispatchAction(app, flow.back);
+      expect(app.state?.viewState).toEqual(flow.editor);
+      expect(app.state?.configuratorExitGuard).toEqual({ source: flow.source });
+
+      dispatchAction(app, "continue-configurator-draft-editing");
+      expect(app.state?.viewState).toEqual(flow.editor);
+      expect(app.state?.configuratorExitGuard).toBeNull();
+
+      dispatchAction(app, flow.back);
+      dispatchAction(app, "discard-configurator-draft");
+      expect(app.state?.viewState).toEqual(flow.destination);
+    }
+  });
+
   it("keeps a successfully created training plan in the Configurator detail flow", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & {
       state?: any;

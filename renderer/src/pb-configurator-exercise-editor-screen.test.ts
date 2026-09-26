@@ -21,6 +21,36 @@ const createState = (
 describe("pb-configurator-exercise-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorExerciseEditorScreen());
 
+  it("reports meaningful create and reverted edit drafts to the shared exit guard", () => {
+    const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
+      state: ConfiguratorExerciseEditorScreenState;
+    };
+    document.body.append(el);
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    el.state = { ...createState(), mode: "create", detail: null };
+    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.value = "Deadlift";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.value = "  ";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.state = createState();
+    const editInput = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    editInput.value = "Changed Squat";
+    editInput.dispatchEvent(new Event("input", { bubbles: true }));
+    editInput.value = "BARBELL SQUAT";
+    editInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(handler.mock.calls.map((call) => call[0].detail.payload)).toEqual([
+      { source: "configurator-exercise-detail", isDirty: true },
+      { source: "configurator-exercise-detail", isDirty: false },
+      { source: "configurator-exercise-detail", isDirty: true },
+      { source: "configurator-exercise-detail", isDirty: false },
+    ]);
+  });
+
   it("creates a trimmed Draft Exercise and presents its read-only lifecycle detail", () => {
     const el = document.createElement(pbConfiguratorExerciseEditorScreenTag) as HTMLElement & {
       state: ConfiguratorExerciseEditorScreenState;
@@ -33,7 +63,7 @@ describe("pb-configurator-exercise-editor-screen", () => {
     input.value = "  Deadlift  ";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="save-configurator-exercise"]') as HTMLButtonElement).click();
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-exercise")?.[0].detail.payload).toEqual({
       mode: "create",
       exerciseId: null,
       request: { name: "Deadlift" },
@@ -103,9 +133,9 @@ describe("pb-configurator-exercise-editor-screen", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       (el.querySelector('[data-ui-action="save-configurator-exercise"]') as HTMLButtonElement).click();
       expect(el.textContent).toContain("historical workouts");
-      expect(handler).not.toHaveBeenCalled();
+      expect(handler.mock.calls.map((call) => call[0].detail.action)).not.toContain("save-configurator-exercise");
       (el.querySelector('[data-ui-action="save-configurator-exercise"]') as HTMLButtonElement).click();
-      expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed Squat" });
+      expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-exercise")?.[0].detail.payload.request).toEqual({ name: "Renamed Squat" });
     }
   });
 

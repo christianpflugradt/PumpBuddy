@@ -125,12 +125,26 @@ class PbAppRootElement extends HTMLElement {
   }
 
   set state(value: AppRootState | null) {
+    const previous = this.#state;
     this.#state = value;
+    if (previous && value && previous.viewState === value.viewState) {
+      this.#renderExitGuard(value);
+      return;
+    }
     this.#render();
   }
 
   get state(): AppRootState | null {
     return this.#state;
+  }
+
+  #renderExitGuard(state: AppRootState): void {
+    const exitGuard = this.querySelector("pb-configurator-exit-guard") as HTMLElement & {
+      state: { open: boolean };
+    } | null;
+    if (exitGuard) {
+      exitGuard.state = { open: state.configuratorExitGuard !== null };
+    }
   }
 
   #render(): void {
@@ -142,12 +156,7 @@ class PbAppRootElement extends HTMLElement {
 
     this.innerHTML = `<div class="pb-app-root"></div><pb-configurator-exit-guard></pb-configurator-exit-guard>`;
 
-    const exitGuard = this.querySelector("pb-configurator-exit-guard") as HTMLElement & {
-      state: { open: boolean };
-    } | null;
-    if (exitGuard) {
-      exitGuard.state = { open: state.configuratorExitGuard !== null };
-    }
+    this.#renderExitGuard(state);
 
     const container = this.querySelector(".pb-app-root");
     if (!(container instanceof HTMLElement)) {

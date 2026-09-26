@@ -11,6 +11,34 @@ const createState = (status: "new" | "active" | "inactive" = "new"): Configurato
 describe("pb-configurator-gym-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorGymEditorScreen());
 
+  it("reports meaningful create and reverted edit drafts to the shared exit guard", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el);
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    el.state = { ...createState(), mode: "create", detail: null };
+    const input = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    input.value = "New Gym";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.value = "  ";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.state = createState();
+    const editInput = el.querySelector<HTMLInputElement>('[data-field="name"]')!;
+    editInput.value = "Changed";
+    editInput.dispatchEvent(new Event("input", { bubbles: true }));
+    editInput.value = "ALPHA";
+    editInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(handler.mock.calls.map((call) => call[0].detail.payload)).toEqual([
+      { source: "configurator-gym-detail", isDirty: true },
+      { source: "configurator-gym-detail", isDirty: false },
+      { source: "configurator-gym-detail", isDirty: true },
+      { source: "configurator-gym-detail", isDirty: false },
+    ]);
+  });
+
   it("creates a trimmed Draft Gym with its single name field", () => {
     const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
     document.body.append(el); el.state = { ...createState(), mode: "create", detail: null };
@@ -20,7 +48,7 @@ describe("pb-configurator-gym-editor-screen", () => {
     (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
     expect(el.querySelector("h1")?.textContent).toBe("Gym");
     expect(el.querySelector("pb-configurator-header [alt='PumpBuddy banner']")).not.toBeNull();
-    expect(handler.mock.calls[0]?.[0].detail.payload).toEqual({ mode: "create", gymId: null, request: { name: "New Gym" } });
+    expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-gym")?.[0].detail.payload).toEqual({ mode: "create", gymId: null, request: { name: "New Gym" } });
   });
 
   it("shows client name feedback and keeps Draft-only deletion", () => {
@@ -96,9 +124,9 @@ describe("pb-configurator-gym-editor-screen", () => {
       input.value = "Renamed"; input.dispatchEvent(new Event("input", { bubbles: true }));
       (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
       expect(el.textContent).toContain("historical workouts");
-      expect(handler).not.toHaveBeenCalled();
+      expect(handler.mock.calls.map((call) => call[0].detail.action)).not.toContain("save-configurator-gym");
       (el.querySelector('[data-ui-action="save-gym"]') as HTMLButtonElement).click();
-      expect(handler.mock.calls[0]?.[0].detail.payload.request).toEqual({ name: "Renamed" });
+      expect(handler.mock.calls.find((call) => call[0].detail.action === "save-configurator-gym")?.[0].detail.payload.request).toEqual({ name: "Renamed" });
     }
   });
 
