@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-15
+  title: Restore focus to the exact Training Plan dialog invoker
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Preserve keyboard context by returning focus to the actual surviving control
+    that opened a Training Plan editor dialog.
+  rationale: ModalFocus identifies an invoker only by its data-ui-action after a rerender.
+    Multiple Training Plan rows share open-variant-guidance and open-plan-variant-picker
+    actions, so closing a dialog opened from a later row focuses the first matching
+    control instead of the originating row. This violates the plan's focus-return
+    contract.
+scope:
+  in:
+  - Give ModalFocus a stable, per-invocation return-target strategy that distinguishes
+    controls sharing the same action after owner rerenders.
+  - Apply and test the strategy for Training Plan guidance and Variant picker dialogs
+    opened from multiple Exercise rows.
+  out:
+  - No changes to dialog selection, guidance save, Training Plan persistence, or unrelated
+    navigation behavior.
+constraints:
+- Preserve the current fallback behavior when the original invoker is intentionally
+  removed, and never focus a detached, hidden, or disabled control.
+inputs:
+  required:
+  - renderer/src/modal-focus.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional:
+  - renderer/src/pb-configurator-training-plans-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Closing a guidance or Variant picker dialog opened from the second of
+    multiple Training Plan Exercise rows returns focus to that same row's surviving
+    invoker.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer interaction tests cover repeated dialog actions and the renderer
+      gate passes.
+- id: ac-02
+  statement: When a selection removes the originating invoker, focus moves to the
+    documented usable fallback rather than a detached or unrelated control.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing disappearing-invoker regressions and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - shared modal focus restoration
+  - Training Plan editor dialogs
+handoff:
+  review_focus:
+  - Verify each repeated action has an unambiguous rerender-safe identity and that
+    focus remains inside the correct editor context.
