@@ -2,12 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
   createTrainingPlan,
+  createExercise,
   createGym,
   createLoadProfile,
   deleteGym,
   deleteLoadProfile,
   loadConfiguratorStations,
   loadConfiguratorStationCompatibilities,
+  loadConfiguratorExerciseVariants,
   loadExerciseSummaries,
   loadActiveWorkout,
   loadGymDetail,
@@ -23,6 +25,7 @@ import {
   loadWorkoutHistory,
   loadWorkoutProgress,
   updateLoadProfile,
+  updateExercise,
   updateGym,
 } from "./workout-api";
 import type {
@@ -75,6 +78,7 @@ vi.mock("./workout-api", async () => {
   return {
     ...actual,
     createTrainingPlan: vi.fn(),
+    createExercise: vi.fn(),
     createGym: vi.fn(),
     loadActiveWorkout: vi.fn(),
     createLoadProfile: vi.fn(),
@@ -83,6 +87,7 @@ vi.mock("./workout-api", async () => {
     loadGymDetail: vi.fn(),
     loadConfiguratorStations: vi.fn(),
     loadConfiguratorStationCompatibilities: vi.fn(),
+    loadConfiguratorExerciseVariants: vi.fn(),
     loadExerciseSummaries: vi.fn(),
     loadGymSummaries: vi.fn(),
     loadLoadProfileDetail: vi.fn(),
@@ -96,11 +101,13 @@ vi.mock("./workout-api", async () => {
     loadWorkoutHistory: vi.fn(),
     loadWorkoutProgress: vi.fn(),
     updateLoadProfile: vi.fn(),
+    updateExercise: vi.fn(),
     updateGym: vi.fn(),
   };
 });
 
 const createTrainingPlanMock = vi.mocked(createTrainingPlan);
+const createExerciseMock = vi.mocked(createExercise);
 const createLoadProfileMock = vi.mocked(createLoadProfile);
 const createGymMock = vi.mocked(createGym);
 const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
@@ -109,6 +116,7 @@ const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadConfiguratorStationsMock = vi.mocked(loadConfiguratorStations);
 const loadConfiguratorStationCompatibilitiesMock = vi.mocked(loadConfiguratorStationCompatibilities);
+const loadConfiguratorExerciseVariantsMock = vi.mocked(loadConfiguratorExerciseVariants);
 const loadExerciseSummariesMock = vi.mocked(loadExerciseSummaries);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadLoadProfileDetailMock = vi.mocked(loadLoadProfileDetail);
@@ -124,6 +132,7 @@ const loadWorkoutExercisesPerformanceMock = vi.mocked(
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 const updateLoadProfileMock = vi.mocked(updateLoadProfile);
+const updateExerciseMock = vi.mocked(updateExercise);
 const updateGymMock = vi.mocked(updateGym);
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -468,9 +477,11 @@ describe("workout-controller (createApp)", () => {
     });
     deleteLoadProfileMock.mockResolvedValue();
     createGymMock.mockResolvedValue({ id: "created-gym", name: "Created Gym", status: "new" });
+    createExerciseMock.mockResolvedValue({ id: "created-exercise", name: "Created Exercise", status: "new", variant_count: 0 });
     deleteGymMock.mockResolvedValue();
     loadGymSummariesMock.mockResolvedValue([]);
     loadConfiguratorStationsMock.mockResolvedValue([]);
+    loadConfiguratorExerciseVariantsMock.mockResolvedValue([]);
     loadConfiguratorStationCompatibilitiesMock.mockResolvedValue({ gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [] });
     loadExerciseSummariesMock.mockResolvedValue([]);
     loadLoadProfileDetailMock.mockResolvedValue({
@@ -504,6 +515,7 @@ describe("workout-controller (createApp)", () => {
       weight_unit: "LBS",
       station_count: 0,
     });
+    updateExerciseMock.mockResolvedValue({ id: "created-exercise", name: "Renamed Exercise", status: "new", variant_count: 0 });
     updateGymMock.mockResolvedValue({ id: "gym-1", name: "Downtown Renamed", status: "active" });
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
@@ -1008,7 +1020,9 @@ describe("workout-controller (createApp)", () => {
 
     expect(createGymMock).toHaveBeenCalledWith({ name: "Created Gym" });
     expect(createRespond).toHaveBeenCalledWith({ ok: true });
-    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "created-gym" });
+    expect(loadGymDetailMock).toHaveBeenCalledWith(expect.any(Function), "created-gym");
+    expect(loadConfiguratorStationsMock).toHaveBeenCalledWith(expect.any(Function), "created-gym");
 
     dispatchActionWithDetail(app, {
       action: "open-configurator-gym-detail",
@@ -1031,6 +1045,7 @@ describe("workout-controller (createApp)", () => {
       name: "Downtown Renamed",
     });
     expect(updateRespond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
 
     dispatchActionWithDetail(app, {
       action: "open-configurator-gym-detail",
@@ -1048,6 +1063,66 @@ describe("workout-controller (createApp)", () => {
     expect(deleteGymMock).toHaveBeenCalledWith("gym-1");
     expect(deleteRespond).toHaveBeenCalledWith({ ok: true });
     expect(app.state?.viewState).toEqual({ screen: "configurator-gyms" });
+  });
+
+  it("opens a newly created Exercise detail and keeps edits on the list", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-exercises");
+    await flush();
+    dispatchAction(app, "start-configurator-exercise-create");
+    const createRespond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-exercise",
+      payload: { mode: "create", exerciseId: null, request: { name: "Created Exercise" } },
+      respond: createRespond,
+    });
+    await flush();
+
+    expect(createExerciseMock).toHaveBeenCalledWith({ name: "Created Exercise" });
+    expect(createRespond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: "created-exercise" });
+    expect(loadConfiguratorExerciseVariantsMock).toHaveBeenCalledWith(expect.any(Function), "created-exercise");
+
+    const updateRespond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-configurator-exercise",
+      payload: { mode: "edit", exerciseId: "created-exercise", request: { name: "Renamed Exercise" } },
+      respond: updateRespond,
+    });
+    await flush();
+
+    expect(updateExerciseMock).toHaveBeenCalledWith("created-exercise", { name: "Renamed Exercise" });
+    expect(updateRespond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercises" });
+  });
+
+  it("keeps failed Exercise and Gym creates on their editable forms", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    createGymMock.mockRejectedValueOnce(new RequestError(409, { message: "Name must be unique." }));
+    createExerciseMock.mockRejectedValueOnce(new RequestError(409, { message: "Name must be unique." }));
+    createApp(app);
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-configurator-gyms");
+    dispatchAction(app, "start-configurator-gym-create");
+    const gymRespond = vi.fn();
+    dispatchActionWithDetail(app, { action: "save-configurator-gym", payload: { mode: "create", gymId: null, request: { name: "Duplicate Gym" } }, respond: gymRespond });
+    await flush();
+    expect(gymRespond).toHaveBeenCalledWith({ ok: false, errorMessage: "Name must be unique." });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: null });
+
+    dispatchSideMenuAction(app, "navigate-configurator-exercises");
+    dispatchAction(app, "start-configurator-exercise-create");
+    const exerciseRespond = vi.fn();
+    dispatchActionWithDetail(app, { action: "save-configurator-exercise", payload: { mode: "create", exerciseId: null, request: { name: "Duplicate Exercise" } }, respond: exerciseRespond });
+    await flush();
+    expect(exerciseRespond).toHaveBeenCalledWith({ ok: false, errorMessage: "Name must be unique." });
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: null });
   });
 
   it("saves a draft load profile and returns to the configurator list", async () => {

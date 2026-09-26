@@ -928,9 +928,14 @@ export const createApp = (
                 ...(state.configuratorGymsScreen ?? { gyms: [], isLoading: false, errorMessage: null, hasLoaded: false }),
                 gyms: payload.mode === "create" ? [...(state.configuratorGymsScreen?.gyms ?? []), summary] : (state.configuratorGymsScreen?.gyms ?? []).map((gym) => gym.id === summary.id ? summary : gym),
               },
-              viewState: { screen: "configurator-gyms" },
+              viewState: payload.mode === "create"
+                ? { screen: "configurator-gym-detail", gymId: summary.id }
+                : { screen: "configurator-gyms" },
             };
-            render(); detail.respond?.({ ok: true }); void loadConfiguratorGymsScreenData();
+            render(); detail.respond?.({ ok: true });
+            void (payload.mode === "create"
+              ? loadConfiguratorGymDetailScreenData(summary.id)
+              : loadConfiguratorGymsScreenData());
           } catch (error) { detail.respond?.({ ok: false, errorMessage: getRequestErrorMessage(error, "Unable to save Gym right now.") }); }
         })();
         return;
@@ -980,11 +985,15 @@ export const createApp = (
                   : (state.configuratorExercisesScreen?.exercises ?? []).map((exercise) =>
                       exercise.id === summary.id ? summary : exercise),
               },
-              viewState: { screen: "configurator-exercises" },
+              viewState: payload.mode === "create"
+                ? { screen: "configurator-exercise-detail", exerciseId: summary.id }
+                : { screen: "configurator-exercises" },
             };
             render();
             respond({ ok: true });
-            void loadConfiguratorExercisesScreenData();
+            void (payload.mode === "create"
+              ? loadConfiguratorExerciseDetailScreenData(summary.id)
+              : loadConfiguratorExercisesScreenData());
           } catch (error) {
             respond({
               ok: false,
