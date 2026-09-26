@@ -91,6 +91,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#modalFocus.open(invoker, '[data-field="compatibility-search"]');
   }
   #dismissCompatibilityPicker(): void {
+    if (this.#isCompatibilitySaving) return;
     this.#compatibilityPickerOpen = false;
     this.#compatibilitySearch = "";
     this.#compatibilitySubmitError = null;

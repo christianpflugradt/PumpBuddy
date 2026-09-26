@@ -166,4 +166,27 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     search.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]'));
   });
+
+  it.each([true, false])("keeps the compatible Stations picker pending through every dismissal path until a deferred save resolves (%s)", (ok) => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el);
+    el.state = { ...state(), compatibility: { exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }] } };
+    let respond: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
+    const handler = vi.fn((event: Event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-exercise-variant-compatibilities") respond = detail.respond; });
+    el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-station-id="station-1"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]') as HTMLButtonElement).click();
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    (el.querySelector('.secs-picker-backdrop') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="dismiss-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "save-configurator-exercise-variant-compatibilities")).toHaveLength(1);
+    respond!({ ok, errorMessage: "Station is no longer eligible." });
+    if (ok) expect(el.querySelector('[role="dialog"]')).toBeNull();
+    else {
+      expect(el.textContent).toContain("Station is no longer eligible.");
+      expect(el.querySelector('[data-ui-action="dismiss-configurator-exercise-variant-compatibility-picker"]')).toBeTruthy();
+    }
+  });
 });

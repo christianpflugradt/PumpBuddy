@@ -220,6 +220,30 @@ describe("pb-configurator-station-editor-screen", () => {
     expect((el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).getAttribute("aria-checked")).toBe("true");
   });
 
+  it.each([true, false])("keeps the compatibility picker pending through every dismissal path until a deferred save resolves (%s)", (ok) => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el);
+    el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [{ exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    let respond: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
+    const handler = vi.fn((event: Event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-station-compatibilities") respond = detail.respond; });
+    el.addEventListener("pb-ui-action", handler);
+    (el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
+    expect(el.querySelector('.configurator-action-dismiss[data-ui-action="dismiss-configurator-station-compatibility-picker"]')).toHaveProperty("disabled", true);
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    (el.querySelector('.secs-picker-backdrop') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="dismiss-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(handler.mock.calls.filter((call) => call[0].detail.action === "save-configurator-station-compatibilities")).toHaveLength(1);
+    respond!({ ok, errorMessage: "Selection is no longer eligible." });
+    if (ok) expect(el.querySelector('[role="dialog"]')).toBeNull();
+    else {
+      expect(el.textContent).toContain("Selection is no longer eligible.");
+      expect(el.querySelector('.configurator-action-dismiss[data-ui-action="dismiss-configurator-station-compatibility-picker"]')).toHaveProperty("disabled", false);
+    }
+  });
+
   it("keeps the summary failure-safe while compatibility data is loading or unavailable", () => {
     const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
     document.body.append(el); el.state = { ...createState(), isCompatibilityLoading: true };
