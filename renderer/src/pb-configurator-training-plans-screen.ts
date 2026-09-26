@@ -1,6 +1,7 @@
 import "./pb-side-menu";
 import "./pb-create-button";
 import "./pb-configurator-header";
+import { ModalFocus } from "./modal-focus";
 import type { ConfiguratorExerciseVariant, ExerciseSummary, TrainingPlanDefinitionRequest, TrainingPlanSummary } from "./workout-contract";
 
 export const pbConfiguratorTrainingPlansScreenTag = "pb-configurator-training-plans-screen";
@@ -27,6 +28,7 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
   #variantQuery = "";
   #submitError: string | null = null;
   #isSaving = false;
+  #modalFocus = new ModalFocus(this);
 
   connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.addEventListener("input", this.#onInput); this.addEventListener("keydown", this.#onKeyDown); this.#emitDraftState(); }
   disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.removeEventListener("input", this.#onInput); this.removeEventListener("keydown", this.#onKeyDown); }
@@ -49,7 +51,16 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
     else return;
     this.#submitError = null; this.#render();
   };
-  #onKeyDown = (event: KeyboardEvent): void => { if (event.key !== "Escape") return; if (this.#variantPickerOpen) { event.preventDefault(); this.#variantPickerOpen = false; this.#variantQuery = ""; this.#render(); return; } if (this.#exercisePickerOpen) { event.preventDefault(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#render(); } };
+  #onKeyDown = (event: KeyboardEvent): void => {
+    this.#modalFocus.handleKeyDown(event, this.querySelector<HTMLElement>("[role=dialog]"), () => {
+      if (this.#variantPickerOpen) this.#dismissVariantPicker();
+      else if (this.#exercisePickerOpen) this.#dismissExercisePicker();
+    });
+  };
+  #openExercisePicker(invoker: HTMLElement): void { this.#exercisePickerOpen = true; this.#exerciseQuery = ""; this.#render(); this.#modalFocus.open(invoker, '[data-role="exercise-search"]'); }
+  #dismissExercisePicker(): void { this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#render(); this.#modalFocus.close(); }
+  #openVariantPicker(invoker: HTMLElement): void { this.#variantPickerOpen = true; this.#variantQuery = ""; this.#render(); this.#modalFocus.open(invoker, '[data-role="variant-search"]'); }
+  #dismissVariantPicker(): void { this.#variantPickerOpen = false; this.#variantQuery = ""; this.#render(); this.#modalFocus.close(); }
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return;
     const button = target.closest<HTMLElement>("[data-ui-action]"); if (!button || !this.contains(button)) return;
@@ -57,12 +68,12 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
     if (action === "start-configurator-training-plan-create") { this.#state = { ...this.#state, mode: "create" }; this.#name = ""; this.#exerciseId = ""; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); return; }
     if (action === "navigate-back-from-configurator-training-plan-create") { this.#emit(action); return; }
     if (action === "open-configurator-training-plan-detail") { const trainingPlanId = button.dataset.trainingPlanId?.trim(); if (trainingPlanId) this.#emit(action, { trainingPlanId }); return; }
-    if (action === "open-create-plan-exercise-picker") { this.#exercisePickerOpen = true; this.#exerciseQuery = ""; this.#render(); return; }
-    if (action === "dismiss-create-plan-exercise-picker") { this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#render(); return; }
-    if (action === "select-create-plan-exercise") { const exerciseId = button.dataset.exerciseId ?? ""; if (this.#state.exercises.some((exercise) => exercise.id === exerciseId)) { this.#exerciseId = exerciseId; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
-    if (action === "open-create-plan-variant-picker") { if (this.#selectedExercise()) { this.#variantPickerOpen = true; this.#variantQuery = ""; this.#render(); } return; }
-    if (action === "dismiss-create-plan-variant-picker") { this.#variantPickerOpen = false; this.#variantQuery = ""; this.#render(); return; }
-    if (action === "select-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; const exercise = this.#selectedExercise(); if (exercise?.variants.some((variant) => variant.id === variantId) && !this.#variantIds.has(variantId)) { this.#variantIds.add(variantId); this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
+    if (action === "open-create-plan-exercise-picker") { this.#openExercisePicker(button); return; }
+    if (action === "dismiss-create-plan-exercise-picker") { this.#dismissExercisePicker(); return; }
+    if (action === "select-create-plan-exercise") { const exerciseId = button.dataset.exerciseId ?? ""; if (this.#state.exercises.some((exercise) => exercise.id === exerciseId)) { this.#exerciseId = exerciseId; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); this.#modalFocus.close(); } return; }
+    if (action === "open-create-plan-variant-picker") { if (this.#selectedExercise()) this.#openVariantPicker(button); return; }
+    if (action === "dismiss-create-plan-variant-picker") { this.#dismissVariantPicker(); return; }
+    if (action === "select-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; const exercise = this.#selectedExercise(); if (exercise?.variants.some((variant) => variant.id === variantId) && !this.#variantIds.has(variantId)) { this.#variantIds.add(variantId); this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); this.#modalFocus.close(); } return; }
     if (action === "remove-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; if (this.#variantIds.delete(variantId)) { this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
     if (action !== "save-configurator-training-plan" || this.#isSaving) return;
     const name = this.#name.trim();

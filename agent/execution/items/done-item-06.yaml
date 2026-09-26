@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-073-item-06
   title: Apply modal interaction behavior to current pickers and guidance dialogs
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

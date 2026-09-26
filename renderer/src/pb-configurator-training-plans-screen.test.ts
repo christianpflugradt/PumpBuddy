@@ -109,4 +109,17 @@ expect(el.querySelector(".configurator-control[data-role=\"plan-name\"]")).toBeT
     expect(el.querySelector('[role="alert"]')?.textContent).toContain("Choose at least one allowed variant.");
     el.remove();
   });
+
+  it("focuses and restores the create Exercise picker trigger after keyboard dismissal", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+    el.state = createState(); document.body.append(el);
+    (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-create-plan-exercise-picker"]')!;
+    trigger.click();
+    const search = el.querySelector<HTMLInputElement>('[data-role="exercise-search"]')!;
+    expect(document.activeElement).toBe(search);
+    search.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]'));
+    el.remove();
+  });
 });

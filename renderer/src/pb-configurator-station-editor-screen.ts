@@ -1,5 +1,6 @@
 import type { ConfiguratorStation, ConfiguratorStationCompatibilityResponse, ConfiguratorStationCreateRequest, ConfiguratorStationUpdateRequest, LoadProfileSummary } from "./workout-contract";
 import { TextInputBinding } from "./text-input-binding";
+import { ModalFocus } from "./modal-focus";
 import { formatConfiguratorLifecycleStatus } from "./pb-configurator-status";
 import "./pb-configurator-header";
 import "./pb-confirm-dialog";
@@ -39,6 +40,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #compatibilitySelectionDraft = new Set<string>();
   #isCompatibilitySaving = false;
   #compatibilitySubmitError: string | null = null;
+  #modalFocus = new ModalFocus(this);
   #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
   connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); this.addEventListener("keydown", this.#onKeyDown); }
@@ -73,17 +75,20 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#nameDraft = value; this.#touched = true; this.#submitError = null; this.#emitDraftState(); this.#render();
   };
   #onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") return;
-    if (this.#compatibilityPickerOpen) { event.preventDefault(); this.#dismissCompatibilityPicker(); return; }
-    if (this.#loadProfilePickerOpen) { event.preventDefault(); this.#loadProfilePickerOpen = false; this.#render(); }
+    const dialog = this.querySelector<HTMLElement>("[role=dialog]");
+    this.#modalFocus.handleKeyDown(event, dialog, () => {
+      if (this.#compatibilityPickerOpen) this.#dismissCompatibilityPicker();
+      else if (this.#loadProfilePickerOpen) this.#dismissLoadProfilePicker();
+    });
   };
-  #openCompatibilityPicker(): void {
+  #openCompatibilityPicker(invoker: HTMLElement): void {
     const enabled = this.#state.compatibility?.enabled_variants ?? [];
     this.#compatibilitySelectionDraft = new Set(enabled.map((variant) => variant.variant_id));
     this.#compatibilitySearch = "";
     this.#compatibilitySubmitError = null;
     this.#compatibilityPickerOpen = true;
     this.#render();
+    this.#modalFocus.open(invoker, '[data-field="compatibility-search"]');
   }
   #dismissCompatibilityPicker(): void {
     this.#compatibilityPickerOpen = false;
@@ -91,7 +96,10 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#compatibilitySubmitError = null;
     this.#isCompatibilitySaving = false;
     this.#render();
+    this.#modalFocus.close();
   }
+  #openLoadProfilePicker(invoker: HTMLElement): void { this.#loadProfilePickerOpen = true; this.#loadProfileSearch = ""; this.#render(); this.#modalFocus.open(invoker, '[data-field="load-profile-search"]'); }
+  #dismissLoadProfilePicker(): void { this.#loadProfilePickerOpen = false; this.#render(); this.#modalFocus.close(); }
   #rerenderCompatibilityPickerPreservingScroll(): void {
     const scrollTop = this.querySelector<HTMLElement>(".configurator-station-compatibility-picker-options")?.scrollTop ?? 0;
     this.#render();
@@ -101,7 +109,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return; const action = target.closest<HTMLElement>("[data-ui-action]")?.dataset.uiAction; if (!action) return;
     if (action === "navigate-back-from-configurator-station-detail") { this.#emit(action); return; }
-    if (action === "open-configurator-station-compatibility-picker") { this.#openCompatibilityPicker(); return; }
+    if (action === "open-configurator-station-compatibility-picker") { this.#openCompatibilityPicker(target.closest<HTMLElement>("[data-ui-action]")!); return; }
     if (action === "dismiss-configurator-station-compatibility-picker") { this.#dismissCompatibilityPicker(); return; }
     if (action === "toggle-configurator-station-compatibility") {
       if (this.#isCompatibilitySaving) return;
@@ -117,9 +125,9 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
       this.dispatchEvent(new CustomEvent<SaveCompatibilityDetail>("pb-ui-action", { bubbles: true, composed: true, detail: { action, payload: { gymId: this.#state.gymId, stationId, exerciseVariantIds: [...this.#compatibilitySelectionDraft] }, respond: (result) => { this.#isCompatibilitySaving = false; if (result.ok) this.#dismissCompatibilityPicker(); else { this.#compatibilitySubmitError = result.errorMessage ?? "Unable to save compatible Exercise Variants right now."; this.#render(); } } } })); return;
     }
     if (action === "dismiss-historical-rename-warning") { this.#renameWarningOpen = false; this.#render(); return; }
-    if (action === "open-load-profile-picker") { this.#loadProfilePickerOpen = true; this.#loadProfileSearch = ""; this.#render(); return; }
-    if (action === "dismiss-load-profile-picker") { this.#loadProfilePickerOpen = false; this.#render(); return; }
-    if (action === "choose-load-profile") { const profileId = target.closest<HTMLElement>("[data-profile-id]")?.dataset.profileId; if (!profileId || !this.#availableProfiles().some((profile) => profile.id === profileId)) return; this.#loadProfileIdDraft = profileId; this.#touched = true; this.#submitError = null; this.#loadProfilePickerOpen = false; this.#emitDraftState(); this.#render(); return; }
+    if (action === "open-load-profile-picker") { this.#openLoadProfilePicker(target.closest<HTMLElement>("[data-ui-action]")!); return; }
+    if (action === "dismiss-load-profile-picker") { this.#dismissLoadProfilePicker(); return; }
+    if (action === "choose-load-profile") { const profileId = target.closest<HTMLElement>("[data-profile-id]")?.dataset.profileId; if (!profileId || !this.#availableProfiles().some((profile) => profile.id === profileId)) return; this.#loadProfileIdDraft = profileId; this.#touched = true; this.#submitError = null; this.#loadProfilePickerOpen = false; this.#emitDraftState(); this.#render(); this.#modalFocus.close(); return; }
     if (action === "save-configurator-station") {
       const nameError = this.#nameError(); const loadProfileError = !this.#isHistorical() ? this.#loadProfileError() : null;
       if (nameError || loadProfileError) { this.#touched = true; this.#submitError = nameError ?? loadProfileError; this.#render(); return; }

@@ -153,4 +153,17 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     expect(headings[1].textContent).toBe("South Gym with a deliberately long name");
     expect(headings[1].nextElementSibling?.getAttribute("data-station-id")).toBe("station-2");
   });
+
+  it("labels, focuses, and safely dismisses the compatible Stations dialog", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = state();
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]')!;
+    trigger.click();
+    const dialog = el.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.getAttribute("aria-labelledby")).toBe("configurator-exercise-variant-compatibility-picker-title");
+    const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    expect(document.activeElement).toBe(search);
+    search.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]'));
+  });
 });

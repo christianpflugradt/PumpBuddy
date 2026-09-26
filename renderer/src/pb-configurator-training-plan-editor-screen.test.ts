@@ -519,4 +519,19 @@ expect(el.querySelector(".configurator-control[data-field=\"plan-name\"]")).toBe
     expect((el.querySelector('[data-field="plan-name"]') as HTMLInputElement).value).toBe("Renamed Upper");
     el.remove();
   });
+
+  it("focuses, traps, and restores guidance dialog controls without committing changes", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-exercise-guidance"]')!;
+    trigger.click();
+    const first = el.querySelector<HTMLInputElement>('[data-field="guidance-targetSets"]')!;
+    expect(document.activeElement).toBe(first);
+    const save = el.querySelector<HTMLButtonElement>('[data-ui-action="save-guidance-overlay"]')!;
+    save.focus(); save.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    expect(document.activeElement).toBe(first);
+    first.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-exercise-guidance"]'));
+    el.remove();
+  });
 });

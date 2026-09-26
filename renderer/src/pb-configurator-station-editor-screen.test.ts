@@ -228,4 +228,20 @@ describe("pb-configurator-station-editor-screen", () => {
     expect(el.textContent).toContain("Unable to load compatible Exercise Variants right now.");
     expect(el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]')).toBeNull();
   });
+
+  it("gives the Load Profile picker focus, traps Tab, and restores its trigger after Escape", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = createState();
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-load-profile-picker"]')!;
+    trigger.click();
+    const search = el.querySelector<HTMLInputElement>('[data-field="load-profile-search"]')!;
+    expect(document.activeElement).toBe(search);
+    const last = el.querySelectorAll<HTMLElement>('[role="dialog"] button').item(1)!;
+    last.focus(); last.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    expect(document.activeElement).toBe(search);
+    search.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(last);
+    search.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-load-profile-picker"]'));
+  });
 });
