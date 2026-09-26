@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-14
+  title: Keep keyboard focus inside compatibility pickers after rerender
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Keyboard focus remains usable inside open Station and Variant compatibility
+    dialogs through selection and save states.
+  rationale: Toggling a compatibility option rebuilds the dialog with innerHTML in
+    both editors. The clicked control is detached and neither path restores focus.
+    Starting or failing a reconcile also rebuilds the open dialog. Focus can fall
+    to the document body, so the next Tab no longer starts in the modal and the promised
+    keyboard containment is lost.
+scope:
+  in:
+  - Restore focus to a surviving dialog control after compatibility option toggles
+    and in-flight or failed save rerenders in both editors.
+  - Cover forward and reverse Tab and Escape after a toggle, including a filtered
+    list and a failed save.
+  out:
+  - No change to option selection, commit, cancellation, or focus return after the
+    dialog closes.
+constraints:
+- Never focus detached, hidden, or disabled controls.
+- Preserve the pending-save dismissal block and existing search text and scroll position.
+inputs:
+  required:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/modal-focus.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: After toggling an option or entering a pending or failed save state,
+    focus stays on a usable control in the open compatibility dialog and both Tab
+    directions remain contained.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Keyboard interaction regression tests and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Variant compatibility dialog
+  - Station compatibility dialog
+handoff:
+  review_focus:
+  - Verify focus after DOM replacement, especially option toggles and deferred save
+    failure.

@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-13
+  title: Synchronize editor draft state after picker dismissal and editor mount
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: The shared exit guard reflects the currently visible Variant, Station,
+    and Load Profile draft.
+  rationale: Variant and Station compatibility toggles emit a dirty state, but their
+    dismiss methods close the staged picker without emitting the resulting clean state.
+    The controller therefore warns about discarded changes after Cancel or Escape.
+    These editors and the Load Profile editor also omit an initial draft-state emission
+    when mounted, so a dirty flag left by a previously saved instance of the same
+    screen can warn on a clean Back. This violates clean-exit behavior after both
+    cancellation and save.
+scope:
+  in:
+  - Recalculate and publish the current semantic draft state after compatibility picker
+    dismissal and completed reconcile outcomes in Variant and Station editors.
+  - Initialize the controller's draft state when a Variant, Station, or Load Profile
+    editor mounts, including a clean editor opened after a prior save of the same
+    screen type.
+  - Add controller-level regression coverage for toggle then Cancel or Escape then
+    Back, and save then open another clean editor then Back.
+  out:
+  - No change to compatibility selection, reconciliation payloads, save destinations,
+    or domain rules.
+constraints:
+- A still-dirty form field must continue to trigger the guard when staged compatibility
+  changes are cancelled.
+- A successful reconcile must not be presented as unsaved work.
+inputs:
+  required:
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/workout-controller.test.ts
+  optional:
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: After staged compatibility changes are cancelled, Back exits immediately
+    when the remaining form matches its baseline; it still guards when another form
+    field differs.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Both compatibility families and their exit guard regression tests pass.
+- id: ac-02
+  statement: After a successful save, opening a clean Variant, Station, or Load Profile
+    editor of the same type and pressing Back does not show a stale discard guard.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Clean remount regression tests and the renderer gate pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - Configurator editor draft reporting
+  - Shared in-app exit guard
+handoff:
+  review_focus:
+  - Check that picker close, successful reconcile, and editor remount report the semantic
+    state actually visible to the user.
