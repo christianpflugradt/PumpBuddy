@@ -167,6 +167,32 @@ describe("pb-configurator-exercise-variant-editor-screen", () => {
     expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]'));
   });
 
+  it("keeps focus contained after a filtered compatibility toggle and failed save", () => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = { ...state(), compatibility: { exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }] } };
+    let respond: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-exercise-variant-compatibilities") respond = detail.respond; });
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]')!;
+    trigger.click();
+    const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    search.value = "tower"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    const option = el.querySelector<HTMLButtonElement>('[data-station-id="station-1"]')!;
+    option.click();
+    const selected = el.querySelector<HTMLButtonElement>('[data-station-id="station-1"]')!;
+    expect(document.activeElement).toBe(selected);
+    (el.querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]') as HTMLButtonElement).click();
+    expect(document.activeElement).toBe(el.querySelector('[data-field="compatibility-search"]'));
+    respond!({ ok: false, errorMessage: "Station is no longer eligible." });
+    const restoredSearch = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    expect(document.activeElement).toBe(restoredSearch);
+    restoredSearch.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]'));
+    (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-field="compatibility-search"]'));
+    restoredSearch.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]'));
+  });
+
   it.each([true, false])("keeps the compatible Stations picker pending through every dismissal path until a deferred save resolves (%s)", (ok) => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
     document.body.append(el);

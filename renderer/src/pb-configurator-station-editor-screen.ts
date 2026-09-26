@@ -102,11 +102,12 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   }
   #openLoadProfilePicker(invoker: HTMLElement): void { this.#loadProfilePickerOpen = true; this.#loadProfileSearch = ""; this.#render(); this.#modalFocus.open(invoker, '[data-field="load-profile-search"]'); }
   #dismissLoadProfilePicker(): void { this.#loadProfilePickerOpen = false; this.#render(); this.#modalFocus.close(); }
-  #rerenderCompatibilityPickerPreservingScroll(): void {
+  #rerenderCompatibilityPickerPreservingScroll(focusSelector?: string): void {
     const scrollTop = this.querySelector<HTMLElement>(".configurator-station-compatibility-picker-options")?.scrollTop ?? 0;
     this.#render();
     const options = this.querySelector<HTMLElement>(".configurator-station-compatibility-picker-options");
     if (options) options.scrollTop = scrollTop;
+    if (focusSelector) this.#modalFocus.focusInitial(focusSelector);
   }
   #onClick = (event: Event): void => {
     const target = event.target; if (!(target instanceof Element)) return; const action = target.closest<HTMLElement>("[data-ui-action]")?.dataset.uiAction; if (!action) return;
@@ -118,13 +119,13 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
       const variantId = target.closest<HTMLElement>("[data-variant-id]")?.dataset.variantId;
       if (!variantId || !(this.#state.compatibility?.eligible_variants ?? []).some((variant) => variant.variant_id === variantId)) return;
       if (this.#compatibilitySelectionDraft.has(variantId)) this.#compatibilitySelectionDraft.delete(variantId); else this.#compatibilitySelectionDraft.add(variantId);
-      this.#compatibilitySubmitError = null; this.#emitDraftState(); this.#rerenderCompatibilityPickerPreservingScroll(); return;
+      this.#compatibilitySubmitError = null; this.#emitDraftState(); this.#rerenderCompatibilityPickerPreservingScroll(`[data-variant-id="${CSS.escape(variantId)}"]`); return;
     }
     if (action === "save-configurator-station-compatibilities") {
       const stationId = this.#state.station?.id;
       if (!stationId || this.#isCompatibilitySaving) return;
-      this.#isCompatibilitySaving = true; this.#compatibilitySubmitError = null; this.#render();
-      this.dispatchEvent(new CustomEvent<SaveCompatibilityDetail>("pb-ui-action", { bubbles: true, composed: true, detail: { action, payload: { gymId: this.#state.gymId, stationId, exerciseVariantIds: [...this.#compatibilitySelectionDraft] }, respond: (result) => { this.#isCompatibilitySaving = false; if (result.ok) this.#dismissCompatibilityPicker(); else { this.#compatibilitySubmitError = result.errorMessage ?? "Unable to save compatible Exercise Variants right now."; this.#render(); } } } })); return;
+      this.#isCompatibilitySaving = true; this.#compatibilitySubmitError = null; this.#render(); this.#modalFocus.focusInitial('[data-field="compatibility-search"]');
+      this.dispatchEvent(new CustomEvent<SaveCompatibilityDetail>("pb-ui-action", { bubbles: true, composed: true, detail: { action, payload: { gymId: this.#state.gymId, stationId, exerciseVariantIds: [...this.#compatibilitySelectionDraft] }, respond: (result) => { this.#isCompatibilitySaving = false; if (result.ok) this.#dismissCompatibilityPicker(); else { this.#compatibilitySubmitError = result.errorMessage ?? "Unable to save compatible Exercise Variants right now."; this.#render(); this.#modalFocus.focusInitial('[data-field="compatibility-search"]'); } } } })); return;
     }
     if (action === "dismiss-historical-rename-warning") { this.#renameWarningOpen = false; this.#render(); return; }
     if (action === "open-load-profile-picker") { this.#openLoadProfilePicker(target.closest<HTMLElement>("[data-ui-action]")!); return; }

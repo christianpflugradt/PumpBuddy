@@ -220,6 +220,32 @@ describe("pb-configurator-station-editor-screen", () => {
     expect((el.querySelector('[data-variant-id="variant-2"]') as HTMLButtonElement).getAttribute("aria-checked")).toBe("true");
   });
 
+  it("keeps focus contained after a filtered compatibility toggle and failed save", () => {
+    const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
+    document.body.append(el); el.state = { ...createState(), compatibility: { gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [{ exercise_id: "exercise-2", exercise_name: "Seated Row", variant_id: "variant-2", variant_name: "Cable", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] } };
+    let respond: ((result: { ok: boolean; errorMessage?: string }) => void) | undefined;
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent<any>).detail; if (detail.action === "save-configurator-station-compatibilities") respond = detail.respond; });
+    const trigger = el.querySelector<HTMLButtonElement>('[data-ui-action="open-configurator-station-compatibility-picker"]')!;
+    trigger.click();
+    const search = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    search.value = "row"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    const option = el.querySelector<HTMLButtonElement>('[data-variant-id="variant-2"]')!;
+    option.click();
+    const selected = el.querySelector<HTMLButtonElement>('[data-variant-id="variant-2"]')!;
+    expect(document.activeElement).toBe(selected);
+    (el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
+    expect(document.activeElement).toBe(el.querySelector('[data-field="compatibility-search"]'));
+    respond!({ ok: false, errorMessage: "Selection is no longer eligible." });
+    const restoredSearch = el.querySelector<HTMLInputElement>('[data-field="compatibility-search"]')!;
+    expect(document.activeElement).toBe(restoredSearch);
+    restoredSearch.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="save-configurator-station-compatibilities"]'));
+    (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-field="compatibility-search"]'));
+    restoredSearch.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.activeElement).toBe(el.querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]'));
+  });
+
   it.each([true, false])("keeps the compatibility picker pending through every dismissal path until a deferred save resolves (%s)", (ok) => {
     const el = document.createElement(pbConfiguratorStationEditorScreenTag) as HTMLElement & { state: ConfiguratorStationEditorScreenState };
     document.body.append(el);
