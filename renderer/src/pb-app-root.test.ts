@@ -107,6 +107,30 @@ describe("pb-app-root", () => {
     expect(el.innerHTML).toContain("pb-app-root");
   });
 
+  it("updates visible data on the current screen while preserving it for draft-only changes", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+    const state = createState();
+    state.viewState = { screen: "configurator-exercises" };
+    state.configuratorExercisesScreen = { exercises: [], isLoading: false, errorMessage: null, hasLoaded: false };
+    el.state = state;
+
+    const loaded: AppState = {
+      ...state,
+      configuratorExercisesScreen: {
+        exercises: [{ id: "squat", name: "Squat", status: "active", variant_count: 1 }],
+        isLoading: false, errorMessage: null, hasLoaded: true,
+      },
+    };
+    el.state = loaded;
+    const screen = el.querySelector("pb-configurator-exercises-screen");
+    expect(screen?.textContent).toContain("Squat");
+
+    el.state = { ...loaded, configuratorDraft: { source: "configurator-training-plan-create", isDirty: true } };
+    expect(el.querySelector("pb-configurator-exercises-screen")).toBe(screen);
+    el.remove();
+  });
+
   it("passes session user to start screen for personalized greeting", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

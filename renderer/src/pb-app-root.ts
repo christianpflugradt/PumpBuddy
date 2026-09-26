@@ -127,7 +127,10 @@ class PbAppRootElement extends HTMLElement {
   set state(value: AppRootState | null) {
     const previous = this.#state;
     this.#state = value;
-    if (previous && value && previous.viewState === value.viewState) {
+    const onlyGuardOrDraftChanged = previous && value && previous.viewState === value.viewState &&
+      Object.keys(value).every((key) => key === "configuratorDraft" || key === "configuratorExitGuard" ||
+        previous[key as keyof AppRootState] === value[key as keyof AppRootState]);
+    if (onlyGuardOrDraftChanged) {
       this.#renderExitGuard(value);
       return;
     }

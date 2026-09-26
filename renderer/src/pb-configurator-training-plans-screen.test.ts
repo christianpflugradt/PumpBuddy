@@ -18,6 +18,37 @@ const createState = (): ConfiguratorTrainingPlansScreenState => ({
 
 describe("pb-configurator-training-plans-screen", () => {
   registerPbConfiguratorTrainingPlansScreen();
+  it("keeps the active input and caret while typing the name and both picker searches", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+    el.state = createState(); document.body.append(el);
+    (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
+
+    const type = (role: string, text: string): HTMLInputElement => {
+      const input = el.querySelector<HTMLInputElement>(`[data-role="${role}"]`)!;
+      input.focus();
+      for (const character of text) {
+        const caret = input.selectionStart ?? input.value.length;
+        input.setRangeText(character, caret, input.selectionEnd ?? caret, "end");
+        input.dispatchEvent(new InputEvent("input", { bubbles: true, data: character, inputType: "insertText" }));
+        expect(el.querySelector(`[data-role="${role}"]`)).toBe(input);
+        expect(document.activeElement).toBe(input);
+        expect(input.selectionStart).toBe(caret + character.length);
+      }
+      return input;
+    };
+
+    expect(type("plan-name", "Upper").value).toBe("Upper");
+    (el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]') as HTMLButtonElement).click();
+    expect(type("exercise-search", "bench").value).toBe("bench");
+    expect(el.querySelector('[role="listbox"]')?.textContent).toContain("Bench press");
+    expect(el.querySelector('[role="listbox"]')?.textContent).not.toContain("Squat");
+    (el.querySelector('[data-ui-action="select-create-plan-exercise"][data-exercise-id="exercise-1"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-create-plan-variant-picker"]') as HTMLButtonElement).click();
+    expect(type("variant-search", "barbell").value).toBe("barbell");
+    expect(el.querySelector('[role="listbox"]')?.textContent).toContain("Barbell");
+    expect(el.querySelector('[role="listbox"]')?.textContent).not.toContain("Dumbbell");
+    el.remove();
+  });
   it("reports only meaningful creation fields as a discardable draft", () => {
     const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
     el.state = createState(); document.body.append(el);

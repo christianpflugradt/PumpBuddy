@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-073-item-09
   title: Keep focus while typing in Training Plan creation
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
