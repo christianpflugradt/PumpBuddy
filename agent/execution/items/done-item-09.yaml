@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-071-item-09
   title: Remove remaining ad hoc Configurator lifecycle mappings
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

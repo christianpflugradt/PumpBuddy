@@ -22,6 +22,8 @@ describe("pb-configurator-station-editor-screen", () => {
     input.value = "  Row 1  "; input.dispatchEvent(new Event("input", { bubbles: true }));
     (el.querySelector('[data-ui-action="open-load-profile-picker"]') as HTMLButtonElement).click();
     expect(el.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(el.querySelector('[data-profile-id="profile-1"]')?.textContent).toContain("Active");
+    expect(el.querySelector('[data-profile-id="profile-2"]')?.textContent).toContain("Draft");
     expect(el.textContent).not.toContain("Retired Stack");
     (el.querySelector('[data-profile-id="profile-2"]') as HTMLButtonElement).click();
     (el.querySelector('[data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();

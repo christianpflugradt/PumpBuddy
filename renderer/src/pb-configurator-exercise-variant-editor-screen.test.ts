@@ -8,6 +8,13 @@ const state = (status: "new" | "active" | "inactive" = "new"): ConfiguratorExerc
 
 describe("pb-configurator-exercise-variant-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorExerciseVariantEditorScreen());
+  it.each(["new", "active", "inactive"] as const)("renders the %s lifecycle label in metadata", (status) => {
+    const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
+    document.body.append(el); el.state = state(status);
+    const metadata = el.querySelector(".configurator-metadata")!;
+    expect(metadata.querySelector("dt")?.textContent).toBe("Status");
+    expect(metadata.querySelector("dd")?.textContent).toBe(({ new: "Draft", active: "Active", inactive: "Inactive" } as const)[status]);
+  });
   it("emits parent-scoped draft save and delete actions", () => {
     const el = document.createElement(pbConfiguratorExerciseVariantEditorScreenTag) as HTMLElement & { state: ConfiguratorExerciseVariantEditorScreenState };
     document.body.append(el); el.state = state(); const handler = vi.fn(); el.addEventListener("pb-ui-action", handler);
