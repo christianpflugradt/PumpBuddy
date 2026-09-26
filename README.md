@@ -273,10 +273,6 @@ docker pull ghcr.io/<owner>/pumpbuddy-renderer:<version>
 Use [`runtime/compose/compose.prod.yaml`](runtime/compose/compose.prod.yaml) for image-based deployment.
 Boundary guidance: keep the backend private on the internal container network and expose only the renderer publicly.
 
-## Project Status
-
-PumpBuddy is in early iterative development with small, task-driven plan cycles.
-
 ## License
 
 PumpBuddy is released under the **PolyForm Noncommercial License 1.0.0**.
