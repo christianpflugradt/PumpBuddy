@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-03
+  title: Guard Variant, Station, and Load Profile editor drafts
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Variant, Station, and Load Profile editors preserve meaningful unsaved
+    drafts on in-app exit.
+  rationale: The nested editors and multi-field Load Profile currently discard local
+    edits on Back; staged compatibility choices are also meaningful work.
+scope:
+  in:
+  - Adopt item 01's guard for Exercise Variant, Station, and Load Profile create/edit
+    screens and their ordinary in-app exits.
+  - Compare mutable draft fields and staged compatibility selections with their loaded
+    baselines where applicable; treat unchanged or reverted drafts as clean.
+  - Apply the guard to an exit from a Station opened through Variant compatibility
+    without changing the origin-return destination owned by item 08.
+  out:
+  - No change to compatibility commit semantics, picker selection behavior, structural
+    editability of historical records, or save destination.
+  - No domain, persistence, API, or browser-history changes.
+constraints:
+- Preserve Draft-only Delete, historical rename/read-only behavior, Load Profile definition
+  validation, and staged Station compatibility commit behavior.
+- Keep Continue Editing on the same component draft, including any unsaved compatibility
+  selections.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-load-profile-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Meaningfully changed Variant, Station, and Load Profile drafts trigger
+    the two-action guard; Continue Editing retains fields and staged selections, and
+    confirmed discard exits.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior tests exercise dirty exits and both decisions for
+      the three editor families.
+- id: ac-02
+  statement: Clean or reverted drafts leave immediately and existing save, compatibility,
+    validation, and lifecycle behavior remains intact.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Relevant renderer tests and the full renderer gate pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The three related nested editor adoptions are directly specified.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Variant editor
+  - Station editor
+  - Load Profile editor
+handoff:
+  review_focus:
+  - Check meaningful comparisons for Load Profile fixed-list/formula drafts and historical
+    rename-only state.
+  - Check staged compatibility and save confirmations remain distinct from exit discard.
+review_feedback: []
+review_result: null

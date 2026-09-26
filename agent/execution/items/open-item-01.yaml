@@ -1,0 +1,81 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-01
+  title: Add a reusable meaningful-draft exit guard
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Provide a small reusable in-app exit guard that asks before discarding
+    a meaningfully changed Configurator draft.
+  rationale: Current editor Back actions replace local component state immediately;
+    re-entry rebuilds drafts from persisted data. A shared guard avoids divergent
+    confirmation and continuation behavior.
+scope:
+  in:
+  - Define a narrow renderer contract through which the active Configurator editor
+    reports meaningful draft changes against its original or persisted baseline before
+    an in-app navigation transition.
+  - Intercept ordinary in-app exits from a covered editor before its component is
+    replaced, retaining the attempted destination until the user decides.
+  - For dirty drafts show exactly Continue Editing and Discard Changes; Continue Editing
+    closes the guard with the draft intact, and Discard Changes performs the pending
+    exit only after explicit confirmation. Clean drafts exit immediately.
+  - Give the guard an accessible visible title and keep its interaction compatible
+    with the shared modal contract added in item 05.
+  out:
+  - Editor-specific dirty comparisons and adoption are delivered by items 02-04.
+  - No Save action, automatic save, generic form framework, API change, or broad browser-history
+    architecture.
+constraints:
+- Preserve validation, existing save confirmations, delete confirmations, and unrelated
+  navigation behavior.
+- Treat an input restored to its baseline as clean; do not mark a draft dirty merely
+  because an input event occurred.
+- Keep the pending exit bounded to the existing in-app navigation model; document
+  any browser-history exit that would require materially broader architecture.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-confirm-dialog.ts
+  - renderer/src/workout-controller.test.ts
+  optional:
+  - renderer/src/workout-types.ts
+acceptance_criteria:
+- id: ac-01
+  statement: A representative dirty Configurator draft blocks an ordinary in-app exit;
+    Continue Editing retains the same draft and Discard Changes follows the attempted
+    destination after confirmation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer behavior tests exercise both guard choices and the gate passes.
+- id: ac-02
+  statement: A semantically unchanged draft exits immediately, including after edits
+    are reverted to their baseline.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests cover clean and reverted drafts without a discard guard.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The plan and bounded item provide sufficient implementation
+    direction.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer Configurator navigation
+  - renderer confirmation presentation
+handoff:
+  review_focus:
+  - Confirm the pending destination is not taken before a dirty decision and cannot
+    be replayed after it becomes stale.
+  - Check that the guard does not collide with an editor's existing save or destructive
+    confirmation.
+review_feedback: []
+review_result: null

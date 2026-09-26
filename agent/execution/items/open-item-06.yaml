@@ -1,0 +1,83 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-06
+  title: Apply modal interaction behavior to current pickers and guidance dialogs
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Current Configurator picker and guidance dialog families are operable by
+    keyboard with predictable focus.
+  rationale: Current pickers often handle Escape but rerender without focus entry,
+    Tab containment, or focus return; the Variant compatibility dialog also lacks
+    a visible-title reference.
+scope:
+  in:
+  - Adopt item 05's small modal contract in the Station Load Profile picker, Variant/Station
+    compatibility dialogs, Training Plan create Exercise and Variant pickers, and
+    Training Plan editor Exercise/Variant and guidance dialogs.
+  - Give each dialog a useful initial focus, contain Tab and Shift+Tab, safely dismiss
+    with Escape, and restore focus to a still-existing invoker after cancel, selection,
+    or commit.
+  - Connect each dialog's accessible name to its visible heading, including the Variant
+    compatibility dialog.
+  - Cover any additional current Configurator modal picker in these editor families
+    found during implementation without creating a universal picker component.
+  out:
+  - No change to single-select, additive, staged multi-select, compatibility, or guidance-editing
+    commit semantics.
+  - No wider Configurator redesign or unrelated modal families.
+constraints:
+- Preserve existing search, cancel/backdrop, selection, staged commit, validation,
+  and save outcomes.
+- When an invoker disappears after a successful selection, return focus to a sensible
+  surviving control rather than a detached node.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional:
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: Covered picker and guidance dialogs focus appropriately on open, contain
+    both Tab directions, dismiss safely on Escape, restore focus after close, and
+    have accessible names from visible titles.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer interaction tests cover representative dialogs from each picker
+      family and the gate passes.
+- id: ac-02
+  statement: Existing single-select, additive, staged compatibility, and guidance
+    commit/Cancel outcomes remain unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing picker and guidance behavior tests pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The modal contract and named picker families bound implementation.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Configurator picker dialogs
+  - Training Plan guidance dialog
+handoff:
+  review_focus:
+  - Verify focus handling survives owner rerenders without changing selection or commit
+    semantics.
+  - Check visible-heading label references and safe Escape behavior for each dialog
+    family.
+review_feedback: []
+review_result: null

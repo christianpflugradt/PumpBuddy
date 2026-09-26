@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-02
+  title: Guard Exercise and Gym editor drafts
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Exercise and Gym create and edit screens report meaningful unsaved changes
+    to the shared exit guard.
+  rationale: Their Back actions currently leave local editor drafts without checking
+    whether entered parent data will be lost.
+scope:
+  in:
+  - Adopt item 01's exit contract in the Exercise and Gym editor components and their
+    actual Back and other ordinary in-app exit paths.
+  - Compare editable draft values with their relevant initial or persisted values,
+    including create forms; an untouched or reverted form is clean.
+  - Keep the draft mounted when Continue Editing is chosen; discard and navigate only
+    after Discard Changes.
+  out:
+  - No change to create or edit save destinations; item 07 owns create destinations.
+  - No new validation, CRUD, lifecycle, API, or browser-history behavior.
+constraints:
+- Preserve existing Exercise and Gym validation, request payloads, save and delete
+  behavior, nested actions, and read-only presentation.
+- Do not guard a successful save as an unsaved exit.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  - renderer/src/pb-configurator-gym-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Exercise and Gym create/edit drafts with meaningful changes show the
+    two-action exit guard on ordinary in-app exit; Continue Editing retains every
+    entered value and confirmed discard exits.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests cover dirty parent drafts and both decisions; the gate
+      passes.
+- id: ac-02
+  statement: Untouched and reverted Exercise and Gym drafts exit without a guard,
+    while successful saves retain their existing behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests cover clean exits and existing save outcomes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The parent editors are a bounded adoption step.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Exercise editor
+  - Gym editor
+  - Configurator in-app navigation
+handoff:
+  review_focus:
+  - Inspect baseline comparisons for create and edit, especially normalization and
+    reverted inputs.
+  - Verify save and delete confirmations still use their existing outcomes.
+review_feedback: []
+review_result: null

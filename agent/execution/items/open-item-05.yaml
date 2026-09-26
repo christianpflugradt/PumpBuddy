@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-05
+  title: Establish focus and keyboard behavior for confirmations
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Current Configurator confirmation dialogs follow a small accessible focus
+    and keyboard contract.
+  rationale: The shared confirmation component currently renders dialog semantics
+    but does not move focus inside, contain Tab, support safe Escape dismissal, or
+    return focus to its invoker.
+scope:
+  in:
+  - 'Implement reusable modal interaction behavior suitable for current confirmations
+    and item 06''s picker/dialog families: useful initial focus, Tab and Shift+Tab
+    containment, safe Escape dismissal, and focus return when the invoking element
+    still exists.'
+  - Apply it to pb-confirm-dialog and current Configurator discard, delete, historical
+    rename, and Training Plan save confirmations without changing their decisions.
+  - Name each confirmation from its visible title when one is present; provide a visible
+    title where needed for the accessible name.
+  - Document any confirmation whose active save or destructive safety rule prevents
+    Escape dismissal; ensure disabled controls cannot be bypassed through Escape.
+  out:
+  - No redesign of confirmation content or action outcomes, and no universal picker
+    abstraction.
+  - Picker and guidance overlay adoption belongs to item 06.
+constraints:
+- Preserve existing confirmation, validation, and save behavior; Escape must map only
+  to a safe dismissal action.
+- Return focus only to a still-connected, usable invoker and avoid focusing removed
+  or hidden controls.
+inputs:
+  required:
+  - renderer/src/pb-confirm-dialog.ts
+  - renderer/src/pb-confirm-dialog.test.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - agent/execution/plan.yaml
+  optional:
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: Current Configurator confirmations focus a useful control on open, contain
+    forward and reverse Tab, safely dismiss on Escape, and return focus to a surviving
+    invoker on close.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer focus and keyboard tests for confirmations pass with the gate.
+- id: ac-02
+  statement: Each covered confirmation has an accessible name derived from its visible
+    title; existing dismiss/confirm actions and disabled safety states behave as before.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Dialog semantics and existing confirmation behavior tests pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The shared confirmation component is a clear implementation
+    seam.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - shared modal interaction behavior
+  - Configurator confirmations
+handoff:
+  review_focus:
+  - Verify Escape cannot confirm or interrupt a disabled/in-flight destructive action.
+  - Check invoker focus return after component rerenders and when the invoker no longer
+    exists.
+review_feedback: []
+review_result: null

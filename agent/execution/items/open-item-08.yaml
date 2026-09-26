@@ -1,0 +1,70 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-08
+  title: Return from a Variant-opened Station to its Variant
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Back from a Station opened in a Variant's Compatible Stations section returns
+    to that originating Variant.
+  rationale: The current Station Back route always follows Gym ancestry, so inspecting
+    compatibility loses the Variant context.
+scope:
+  in:
+  - Carry an explicit bounded Variant return destination when the Variant compatibility
+    row opens a Station.
+  - Use that destination for Station Back after item 01's unsaved-draft decision,
+    restoring the originating Variant detail and required data.
+  - Keep the ordinary Gym-to-Station-to-Gym Back route unchanged.
+  out:
+  - No generic navigation history, route restructuring, or change to Station create/save
+    destination.
+  - No changes to compatibility data or domain semantics.
+constraints:
+- Clear or replace stale return context when leaving the Station flow so later Gym-origin
+  visits never inherit a Variant destination.
+- Preserve any draft guard decision before taking either Back route.
+inputs:
+  required:
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-controller-screen-data.test.ts
+  optional:
+  - renderer/src/workout-types.ts
+  - agent/execution/plan.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Variant to Compatible Stations to Station to Back restores the same Variant
+    detail, including after a confirmed discard when the Station draft is dirty.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer navigation tests cover the Variant-origin return and the gate
+      passes.
+- id: ac-02
+  statement: Gym to Station to Back still returns to that Gym, without stale Variant
+    return context.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests cover the ordinary Gym-origin path and a later visit
+      after Variant origin.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The origin link and Back branch provide a bounded change.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - Configurator Station navigation context
+handoff:
+  review_focus:
+  - Verify return context is origin-specific, expires, and never becomes application-wide
+    history.
+  - Check both Back paths and interaction with the unsaved exit guard.
+review_feedback: []
+review_result: null

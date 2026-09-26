@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-04
+  title: Guard Training Plan creation and editing drafts
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Training Plan creation and editing retain meaningful local work until the
+    user confirms discard.
+  rationale: Creation holds a local name, Exercise, and Variant choices on the list
+    component; editing holds ordering and guidance drafts that Back currently abandons.
+scope:
+  in:
+  - Review the list-owned Training Plan create mode for meaningful local state; guard
+    Back and other actual in-app exits when name, Exercise, or Variant selections
+    differ from the empty create baseline.
+  - Guard Training Plan editor exits when name, Exercise order, allowed Variants,
+    or committed local guidance changes differ from the loaded definition.
+  - Use item 01's two-action guard while preserving creation and editing component
+    state on Continue Editing.
+  out:
+  - No new Training Plan reorder control, prerequisite guidance, new save/version
+    rule, or browser-history architecture.
+  - No change to picker selection or guidance overlay commit semantics.
+constraints:
+- Preserve server save assessment and rename, structural version, and guidance replacement
+  confirmations.
+- Exclude transient picker search text and an uncommitted guidance overlay from the
+  persisted draft comparison unless an actual exit would otherwise destroy meaningful
+  user input; document that decision in code/tests.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Meaningful Training Plan create and edit drafts are retained on Continue
+    Editing and discarded only after confirmation on in-app exit.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests cover create name/selection and edit structure/guidance
+      dirty exits with both guard choices.
+- id: ac-02
+  statement: Empty, unchanged, and reverted Training Plan drafts exit immediately;
+    successful save and existing version/confirmation outcomes remain intact.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Clean-exit and save behavior tests pass with the renderer gate.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: The existing creation and editor components define the implementation
+    boundary.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Training Plan create mode
+  - Training Plan editor
+  - Configurator in-app navigation
+handoff:
+  review_focus:
+  - Ensure the list-owned create draft is inspected before the controller rerenders
+    its mode.
+  - Verify guidance and reorder comparisons are semantic, and save/version confirmation
+    remains separate from discard.
+review_feedback: []
+review_result: null

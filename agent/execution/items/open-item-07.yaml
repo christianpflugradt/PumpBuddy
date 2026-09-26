@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-073-item-07
+  title: Open newly created Exercise and Gym details
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Successful Exercise and Gym creation opens the newly created parent's detail
+    for the next nested setup action.
+  rationale: Both create saves currently return to a list, requiring the user to find
+    and reopen the parent before New Variant or New Station is available.
+scope:
+  in:
+  - After a successful Exercise create, use the returned parent ID to open its detail
+    and load the data needed to show New Variant.
+  - After a successful Gym create, use the returned parent ID to open its detail and
+    load the data needed to show New Station.
+  - Leave existing Exercise and Gym edit-save destinations at their current lists.
+  out:
+  - No wizard, automatic nested creation, new CRUD action, or change to Station/Variant
+    save destinations.
+  - No changes to validation, API shape, or persistence.
+constraints:
+- Navigate only after successful creation; keep failed saves on their editable form
+  with the existing error feedback.
+- Use existing detail screen loading paths so nested actions are available when data
+  arrives.
+inputs:
+  required:
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-gym-editor-screen.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-controller-screen-data.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Creating an Exercise lands on its own detail with New Variant available;
+    creating a Gym lands on its own detail with New Station available.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer navigation tests cover both successful create destinations
+      and the gate passes.
+- id: ac-02
+  statement: Existing Exercise and Gym edits still return to their lists after save,
+    and failed creates stay on the form.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Edit and failed-save destination tests pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Both parent creation branches are narrow controller changes.
+  independent_review_required: false
+  independent_review_reason: null
+  risk_level: low
+  boundary_impact:
+  - Exercise and Gym save navigation
+handoff:
+  review_focus:
+  - Check create versus edit branching and detail loading after the returned ID is
+    known.
+  - Ensure item 01's exit guard does not interpret successful creation as discarded
+    work.
+review_feedback: []
+review_result: null
