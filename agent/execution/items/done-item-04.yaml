@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-072-item-04
   title: Restore nested Exercise Variant row presentation
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
