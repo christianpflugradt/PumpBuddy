@@ -9,11 +9,7 @@ export class ModalFocus {
   }
 
   open(invoker: HTMLElement | null, initialFocusSelector: string): void {
-    this.#returnFocusSelector = invoker?.id
-      ? `#${CSS.escape(invoker.id)}`
-      : invoker?.dataset.uiAction
-        ? `[data-ui-action="${CSS.escape(invoker.dataset.uiAction)}"]`
-        : null;
+    this.#returnFocusSelector = this.#selectorFor(invoker);
     this.focusInitial(initialFocusSelector);
   }
 
@@ -52,6 +48,19 @@ export class ModalFocus {
   #focusableControls(dialog: HTMLElement): HTMLElement[] {
     return [...dialog.querySelectorAll<HTMLElement>(focusableSelector)]
       .filter((element) => !element.closest('[hidden], [aria-hidden="true"], [inert]'));
+  }
+
+  #selectorFor(invoker: HTMLElement | null): string | null {
+    if (!invoker) return null;
+    if (invoker.id) return `#${CSS.escape(invoker.id)}`;
+
+    const dataAttributes = Object.entries(invoker.dataset)
+      .flatMap(([name, value]) => {
+        if (!value) return [];
+        const attribute = `data-${name.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`;
+        return `[${attribute}="${CSS.escape(value)}"]`;
+      });
+    return dataAttributes.length > 0 ? dataAttributes.join("") : null;
   }
 
   #focus(selector: string | null | undefined): boolean {

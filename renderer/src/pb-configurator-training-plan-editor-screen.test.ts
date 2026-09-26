@@ -10,6 +10,13 @@ const state = (): ConfiguratorTrainingPlanEditorScreenState => ({
   detail: { id: "plan-1", name: "Upper", selected_version_number: 1, versions: [{ version_number: 1, is_current: true }], selected_gym_id: null, is_executable: null, execution_status: null, execution_summary: null, exercises: [{ training_plan_exercise_id: "plan-exercise-1", exercise_name: "Squat", exercise_position: 1, configured_variant_count: 1, executable_variant_count: null, execution_status: null, default_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 }, variants: [{ id: "configured-1", training_plan_exercise_id: "plan-exercise-1", variant_id: "variant-1", variant_name: "Back squat", requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", availability: null, compatible_stations: [], guidance_override: null, effective_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 } }] }] },
 });
 
+const stateWithTwoExercises = (): ConfiguratorTrainingPlanEditorScreenState => {
+  const next = structuredClone(state());
+  next.exercises[1]!.variants.push({ id: "variant-4", exercise_id: "exercise-2", name: "Close-grip bench", status: "active", requires_station: false, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" });
+  next.detail!.exercises.push({ training_plan_exercise_id: "plan-exercise-2", exercise_name: "Bench", exercise_position: 2, configured_variant_count: 1, executable_variant_count: null, execution_status: null, default_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 }, variants: [{ id: "configured-2", training_plan_exercise_id: "plan-exercise-2", variant_id: "variant-3", variant_name: "Barbell bench", requires_station: false, target_sets: 3, rep_min: 8, rep_max: 10, repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", availability: null, compatible_stations: [], guidance_override: null, effective_guidance: { target_sets: 3, rep_min: 8, rep_max: 10 } }] });
+  return next;
+};
+
 const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void => {
   el.addEventListener("pb-ui-action", (event) => {
     const detail = (event as CustomEvent).detail;
@@ -21,6 +28,21 @@ const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void 
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
+  it("returns focus to the exact row that opened a repeated dialog action", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = stateWithTwoExercises();
+
+    const guidanceInvoker = el.querySelectorAll<HTMLButtonElement>('[data-ui-action="open-exercise-guidance"]')[1]!;
+    guidanceInvoker.click();
+    (el.querySelector('[data-ui-action="dismiss-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(document.activeElement).toMatchObject({ dataset: expect.objectContaining({ uiAction: "open-exercise-guidance", exerciseId: "exercise-2" }) });
+
+    const variantInvoker = el.querySelectorAll<HTMLButtonElement>('[data-ui-action="open-plan-variant-picker"]')[1]!;
+    variantInvoker.click();
+    (el.querySelector('[data-ui-action="dismiss-plan-variant-picker"]') as HTMLButtonElement).click();
+    expect(document.activeElement).toMatchObject({ dataset: expect.objectContaining({ uiAction: "open-plan-variant-picker", exerciseId: "exercise-2" }) });
+    el.remove();
+  });
   it("reports semantic structure and committed guidance drafts, but not picker or open-overlay input", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();
