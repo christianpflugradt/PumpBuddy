@@ -849,7 +849,7 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
   });
 
-  it("guards Exercise and Gym parent drafts until each is continued or discarded", async () => {
+  it("guards Exercise, Gym, and Training Plan creation drafts until each is continued or discarded", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     document.body.append(app);
     createApp(app);
@@ -871,6 +871,14 @@ describe("workout-controller (createApp)", () => {
         back: "navigate-back-from-configurator-gym-detail",
         editor: { screen: "configurator-gym-detail", gymId: null },
         destination: { screen: "configurator-gyms" },
+      },
+      {
+        navigate: "navigate-configurator-training-plans",
+        start: "start-configurator-training-plan-create",
+        source: "configurator-training-plan-create",
+        back: "navigate-back-from-configurator-training-plan-create",
+        editor: { screen: "configurator-training-plans" },
+        destination: { screen: "configurator-training-plans" },
       },
     ] as const) {
       dispatchSideMenuAction(app, flow.navigate);

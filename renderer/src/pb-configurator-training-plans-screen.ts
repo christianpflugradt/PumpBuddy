@@ -28,7 +28,7 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
   #submitError: string | null = null;
   #isSaving = false;
 
-  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.addEventListener("input", this.#onInput); this.addEventListener("keydown", this.#onKeyDown); }
+  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.addEventListener("input", this.#onInput); this.addEventListener("keydown", this.#onKeyDown); this.#emitDraftState(); }
   disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.removeEventListener("input", this.#onInput); this.removeEventListener("keydown", this.#onKeyDown); }
   set state(value: ConfiguratorTrainingPlansScreenState) { this.#state = value; this.#render(); }
   get state(): ConfiguratorTrainingPlansScreenState { return this.#state; }
@@ -36,10 +36,14 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
   #emit(action: string, payload?: Record<string, unknown>, respond?: (result: SaveResult) => void): void {
     this.dispatchEvent(new CustomEvent("pb-ui-action", { bubbles: true, composed: true, detail: { action, ...(payload ? { payload } : {}), ...(respond ? { respond } : {}) } }));
   }
+  #emitDraftState(): void {
+    // Picker search is transient UI state; only the create definition can make this draft dirty.
+    this.#emit("configurator-draft-state-changed", { source: "configurator-training-plan-create", isDirty: this.#name !== "" || this.#exerciseId !== "" || this.#variantIds.size > 0 });
+  }
   #selectedExercise() { return this.#state.exercises.find((exercise) => exercise.id === this.#exerciseId) ?? null; }
   #onInput = (event: Event): void => {
     const target = event.target; if (!(target instanceof HTMLInputElement)) return;
-    if (target.dataset.role === "plan-name") this.#name = target.value;
+    if (target.dataset.role === "plan-name") { this.#name = target.value; this.#emitDraftState(); }
     else if (target.dataset.role === "exercise-search") this.#exerciseQuery = target.value;
     else if (target.dataset.role === "variant-search") this.#variantQuery = target.value;
     else return;
@@ -50,16 +54,16 @@ class PbConfiguratorTrainingPlansScreenElement extends HTMLElement {
     const target = event.target; if (!(target instanceof Element)) return;
     const button = target.closest<HTMLElement>("[data-ui-action]"); if (!button || !this.contains(button)) return;
     const action = button.dataset.uiAction;
-    if (action === "start-configurator-training-plan-create") { this.#state = { ...this.#state, mode: "create" }; this.#name = ""; this.#exerciseId = ""; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#render(); return; }
+    if (action === "start-configurator-training-plan-create") { this.#state = { ...this.#state, mode: "create" }; this.#name = ""; this.#exerciseId = ""; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); return; }
     if (action === "navigate-back-from-configurator-training-plan-create") { this.#emit(action); return; }
     if (action === "open-configurator-training-plan-detail") { const trainingPlanId = button.dataset.trainingPlanId?.trim(); if (trainingPlanId) this.#emit(action, { trainingPlanId }); return; }
     if (action === "open-create-plan-exercise-picker") { this.#exercisePickerOpen = true; this.#exerciseQuery = ""; this.#render(); return; }
     if (action === "dismiss-create-plan-exercise-picker") { this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#render(); return; }
-    if (action === "select-create-plan-exercise") { const exerciseId = button.dataset.exerciseId ?? ""; if (this.#state.exercises.some((exercise) => exercise.id === exerciseId)) { this.#exerciseId = exerciseId; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#submitError = null; this.#render(); } return; }
+    if (action === "select-create-plan-exercise") { const exerciseId = button.dataset.exerciseId ?? ""; if (this.#state.exercises.some((exercise) => exercise.id === exerciseId)) { this.#exerciseId = exerciseId; this.#variantIds.clear(); this.#exercisePickerOpen = false; this.#exerciseQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
     if (action === "open-create-plan-variant-picker") { if (this.#selectedExercise()) { this.#variantPickerOpen = true; this.#variantQuery = ""; this.#render(); } return; }
     if (action === "dismiss-create-plan-variant-picker") { this.#variantPickerOpen = false; this.#variantQuery = ""; this.#render(); return; }
-    if (action === "select-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; const exercise = this.#selectedExercise(); if (exercise?.variants.some((variant) => variant.id === variantId) && !this.#variantIds.has(variantId)) { this.#variantIds.add(variantId); this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#render(); } return; }
-    if (action === "remove-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; if (this.#variantIds.delete(variantId)) { this.#submitError = null; this.#render(); } return; }
+    if (action === "select-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; const exercise = this.#selectedExercise(); if (exercise?.variants.some((variant) => variant.id === variantId) && !this.#variantIds.has(variantId)) { this.#variantIds.add(variantId); this.#variantPickerOpen = false; this.#variantQuery = ""; this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
+    if (action === "remove-create-plan-variant") { const variantId = button.dataset.variantId ?? ""; if (this.#variantIds.delete(variantId)) { this.#submitError = null; this.#emitDraftState(); this.#render(); } return; }
     if (action !== "save-configurator-training-plan" || this.#isSaving) return;
     const name = this.#name.trim();
     if (!name || !this.#exerciseId || this.#variantIds.size === 0) { this.#submitError = !name ? "Plan name is required." : !this.#exerciseId ? "Choose an initial exercise." : "Choose at least one allowed variant."; this.#render(); return; }

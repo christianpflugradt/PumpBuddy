@@ -18,6 +18,33 @@ const createState = (): ConfiguratorTrainingPlansScreenState => ({
 
 describe("pb-configurator-training-plans-screen", () => {
   registerPbConfiguratorTrainingPlansScreen();
+  it("reports only meaningful creation fields as a discardable draft", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
+    el.state = createState(); document.body.append(el);
+    const drafts: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "configurator-draft-state-changed") drafts.push(detail.payload); });
+    (el.querySelector('[data-ui-action="start-configurator-training-plan-create"]') as HTMLButtonElement).click();
+    const name = el.querySelector<HTMLInputElement>('[data-role="plan-name"]')!;
+    name.value = "Upper"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    const revertedName = el.querySelector<HTMLInputElement>('[data-role="plan-name"]')!;
+    revertedName.value = ""; revertedName.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="open-create-plan-exercise-picker"]') as HTMLButtonElement).click();
+    const search = el.querySelector<HTMLInputElement>('[data-role="exercise-search"]')!;
+    search.value = "bench"; search.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="select-create-plan-exercise"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-create-plan-variant-picker"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="select-create-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="remove-create-plan-variant"]') as HTMLButtonElement).click();
+    expect(drafts).toEqual([
+      { source: "configurator-training-plan-create", isDirty: false },
+      { source: "configurator-training-plan-create", isDirty: true },
+      { source: "configurator-training-plan-create", isDirty: false },
+      { source: "configurator-training-plan-create", isDirty: true },
+      { source: "configurator-training-plan-create", isDirty: true },
+      { source: "configurator-training-plan-create", isDirty: true },
+    ]);
+    el.remove();
+  });
   it("marks required creation fields invalid only when their matching error is shown", () => {
     const el = document.createElement(pbConfiguratorTrainingPlansScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlansScreenState };
     el.state = createState(); document.body.append(el);

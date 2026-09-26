@@ -21,6 +21,43 @@ const respondToSaveImpact = (el: HTMLElement, createsNewVersion: boolean): void 
 
 describe("pb-configurator-training-plan-editor-screen", () => {
   beforeEach(() => registerPbConfiguratorTrainingPlanEditorScreen());
+  it("reports semantic structure and committed guidance drafts, but not picker or open-overlay input", () => {
+    const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
+    document.body.append(el); el.state = state();
+    const drafts: unknown[] = [];
+    el.addEventListener("pb-ui-action", (event) => { const detail = (event as CustomEvent).detail; if (detail.action === "configurator-draft-state-changed") drafts.push(detail.payload); });
+    const name = el.querySelector<HTMLInputElement>('[data-field="plan-name"]')!;
+    name.value = "Renamed"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    const revertedName = el.querySelector<HTMLInputElement>('[data-field="plan-name"]')!;
+    revertedName.value = "Upper"; revertedName.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="open-plan-variant-picker"]') as HTMLButtonElement).click();
+    const pickerSearch = el.querySelector<HTMLInputElement>('[data-field="variant-picker-search"]')!;
+    pickerSearch.value = "front"; pickerSearch.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(drafts).toEqual([
+      { source: "configurator-training-plan-detail", isDirty: true },
+      { source: "configurator-training-plan-detail", isDirty: false },
+    ]);
+    (el.querySelector('[data-ui-action="add-plan-variant"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="remove-plan-variant"][data-variant-id="variant-2"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    const min = el.querySelector<HTMLInputElement>('[data-field="guidance-repMin"]')!;
+    min.value = "6"; min.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(drafts).toHaveLength(4);
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-ui-action="open-exercise-guidance"]') as HTMLButtonElement).click();
+    const revertedMin = el.querySelector<HTMLInputElement>('[data-field="guidance-repMin"]')!;
+    revertedMin.value = "8"; revertedMin.dispatchEvent(new Event("input", { bubbles: true }));
+    (el.querySelector('[data-ui-action="save-guidance-overlay"]') as HTMLButtonElement).click();
+    expect(drafts).toEqual([
+      { source: "configurator-training-plan-detail", isDirty: true },
+      { source: "configurator-training-plan-detail", isDirty: false },
+      { source: "configurator-training-plan-detail", isDirty: true },
+      { source: "configurator-training-plan-detail", isDirty: false },
+      { source: "configurator-training-plan-detail", isDirty: true },
+      { source: "configurator-training-plan-detail", isDirty: false },
+    ]);
+    el.remove();
+  });
   it("uses stable optional guidance fields and connects validation errors", () => {
     const el = document.createElement(pbConfiguratorTrainingPlanEditorScreenTag) as HTMLElement & { state: ConfiguratorTrainingPlanEditorScreenState };
     document.body.append(el); el.state = state();

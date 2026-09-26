@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-073-item-04
   title: Guard Training Plan creation and editing drafts
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
