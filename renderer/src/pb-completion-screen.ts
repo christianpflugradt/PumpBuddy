@@ -113,7 +113,7 @@ const renderProgressVisual = (category: CompletionProgressCategory): string => {
     `;
   }
 
-  const arrowPath = category === "lower" ? "M11 2.5 L4 7 L11 11.5" : "M3 2.5 L10 7 L3 11.5";
+  const arrowPath = "M3 2.5 L10 7 L3 11.5";
 
   return `
     <div class="completion-progress-flow" aria-hidden="true">
