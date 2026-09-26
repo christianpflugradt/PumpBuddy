@@ -87,8 +87,8 @@ describe("pb-configurator-training-plan-editor-screen", () => {
     expect(el.querySelector('[role="dialog"]')?.textContent).toContain("Inherited: 3 sets · 8–10 reps");
     expect(el.querySelector('[role="dialog"]')?.textContent).not.toContain("exception");
     expect(el.querySelector('[role="dialog"] [data-ui-action="clear-variant-guidance"]')?.classList.contains("configurator-guidance-inherit")).toBe(true);
-    expect(el.querySelector('[role="dialog"] [data-ui-action="dismiss-guidance-overlay"]')?.classList.contains("configurator-guidance-cancel")).toBe(true);
-    expect(el.querySelector('[role="dialog"] [data-ui-action="save-guidance-overlay"]')?.classList.contains("nav-button-primary")).toBe(true);
+    expect(el.querySelector('[role="dialog"] [data-ui-action="dismiss-guidance-overlay"]')?.classList.contains("configurator-action-dismiss")).toBe(true);
+    expect(el.querySelector('[role="dialog"] [data-ui-action="save-guidance-overlay"]')?.classList.contains("configurator-action-primary")).toBe(true);
     (el.querySelector('[data-ui-action="clear-variant-guidance"]') as HTMLButtonElement).click();
     expect(el.textContent).not.toContain("Inherits exercise guidance");
     (el.querySelector('[data-ui-action="save-configurator-training-plan"]') as HTMLButtonElement).click();

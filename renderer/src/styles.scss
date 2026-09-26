@@ -45,6 +45,9 @@
   --button-secondary-text: #fdba74;
   --button-secondary-border: rgba(249, 115, 22, 0.72);
   --button-secondary-bg-hover: rgba(249, 115, 22, 0.12);
+  --button-danger-bg: rgba(127, 29, 29, 0.22);
+  --button-danger-text: #ffe4e6;
+  --button-danger-border: rgba(251, 113, 133, 0.45);
   --button-disabled-bg: rgba(100, 116, 139, 0.72);
   --status-danger-bg: rgba(239, 68, 68, 0.2);
   --status-danger-text: #fecaca;
@@ -783,12 +786,23 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
 .configurator-exercise-variants > .configurator-editor-actions,
 .configurator-exercise-variants > .configurator-editor-actions .nav-button { width: 100%; }
 .configurator-exercise-variants > .configurator-editor-actions .nav-button { border: 0; background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start)); color: var(--button-primary-text); font-weight: 700; box-shadow: 0 8px 16px var(--button-primary-shadow); }
-.configurator-gym-save-button,
-.configurator-gym-delete-button { min-height: var(--action-target-min-height); border-radius: var(--radius-md); cursor: pointer; font-weight: 700; }
-.configurator-gym-save-button { border: 0; background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end)); color: var(--button-primary-text); }
-.configurator-gym-delete-button { border: 1px solid var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--button-secondary-text); }
-.configurator-gym-save-button:disabled,
-.configurator-gym-delete-button:disabled { cursor: not-allowed; opacity: 0.55; }
+.configurator-action-primary,
+.configurator-action-secondary,
+.configurator-action-dismiss,
+.configurator-action-nested-add,
+.configurator-action-danger { min-height: var(--action-target-min-height); border-radius: var(--radius-md); cursor: pointer; font: inherit; font-weight: 700; }
+.configurator-action-primary { border: 0; background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end)); color: var(--button-primary-text); }
+.configurator-action-secondary,
+.configurator-action-nested-add { border: 1px solid var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--button-secondary-text); }
+.configurator-action-secondary:hover,
+.configurator-action-nested-add:hover { background: var(--button-secondary-bg-hover); }
+.configurator-action-dismiss { border: 1px solid var(--border-input); background: transparent; color: var(--text-strong); }
+.configurator-action-danger { border: 1px solid var(--button-danger-border); background: var(--button-danger-bg); color: var(--button-danger-text); }
+.configurator-action-primary:disabled,
+.configurator-action-secondary:disabled,
+.configurator-action-dismiss:disabled,
+.configurator-action-nested-add:disabled,
+.configurator-action-danger:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; }
 .configurator-gym-stations { display: grid; gap: var(--space-md); margin-top: var(--space-xl); }
 .configurator-gym-stations-header { display: grid; align-items: center; justify-content: stretch; gap: var(--space-md); }
 .configurator-gym-stations-header .action-button { width: 100%; }
@@ -986,33 +1000,14 @@ pb-configurator-exercise-variant-editor-screen .exercise-variant-detail-header >
   gap: var(--space-md);
 }
 
-.configurator-load-profile-save-button,
-.configurator-load-profile-delete-button {
-  min-height: var(--action-target-min-height);
-  border-radius: var(--radius-md);
+.configurator-load-profile-editor-screen .configurator-action-primary,
+.configurator-load-profile-editor-screen .configurator-action-danger {
   padding: 0.6rem 0.9rem;
   font-size: 0.96rem;
-  font-weight: 700;
 }
 
-.configurator-load-profile-save-button {
-  border: 1px solid var(--button-primary-end);
-  background: linear-gradient(135deg, var(--button-primary-start), var(--button-primary-end));
-  color: var(--button-primary-text);
+.configurator-load-profile-editor-screen .configurator-action-primary {
   box-shadow: 0 0.45rem 0.9rem var(--button-primary-shadow);
-}
-
-.configurator-load-profile-delete-button {
-  border: 1px solid color-mix(in srgb, #fb7185 45%, var(--border-panel) 55%);
-  background: rgba(127, 29, 29, 0.22);
-  color: #ffe4e6;
-}
-
-.configurator-load-profile-save-button:disabled,
-.configurator-load-profile-delete-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-  box-shadow: none;
 }
 
 @media (min-width: 42rem) {

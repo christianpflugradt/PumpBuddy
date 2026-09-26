@@ -126,4 +126,16 @@ describe("pb-configurator-gym-editor-screen", () => {
       { action: "open-configurator-station-detail", payload: { gymId: "gym-1", stationId: "station-1" } },
     ]);
   });
+
+  it("uses semantic Configurator roles for footer, nested-add, and destructive confirmation actions", () => {
+    const el = document.createElement(pbConfiguratorGymEditorScreenTag) as HTMLElement & { state: ConfiguratorGymEditorScreenState };
+    document.body.append(el); el.state = createState();
+    expect(el.querySelector('[data-ui-action="save-gym"]')?.classList.contains("configurator-action-primary")).toBe(true);
+    expect(el.querySelector('[data-ui-action="delete-gym"]')?.classList.contains("configurator-action-danger")).toBe(true);
+    expect(el.querySelector('[data-ui-action="start-configurator-station-create"]')?.classList.contains("configurator-action-nested-add")).toBe(true);
+    (el.querySelector('[data-ui-action="delete-gym"]') as HTMLButtonElement).click();
+    expect(el.querySelector('[data-ui-action="dismiss-delete-gym-warning"]')?.classList.contains("configurator-action-dismiss")).toBe(true);
+    expect(el.querySelector('.confirm-dialog [data-ui-action="delete-gym"]')?.classList.contains("configurator-action-danger")).toBe(true);
+    el.remove();
+  });
 });

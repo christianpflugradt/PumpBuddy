@@ -629,7 +629,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
         <div class="configurator-editor-actions">
           <button
             type="button"
-            class="configurator-load-profile-save-button"
+            class="configurator-action-primary"
             data-ui-action="save-load-profile"
             ${saveDisabled ? "disabled" : ""}
           >
@@ -648,7 +648,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
               ? `
                 <button
                   type="button"
-                  class="configurator-load-profile-delete-button"
+                  class="configurator-action-danger"
                   data-ui-action="delete-load-profile"
                   ${this.#isDeleting ? "disabled" : ""}
                 >
@@ -682,14 +682,14 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
           <div class="confirm-dialog-actions">
             <button
               type="button"
-              class="nav-button"
+              class="configurator-action-dismiss"
               data-ui-action="dismiss-historical-rename-warning"
             >
               Keep Editing
             </button>
             <button
               type="button"
-              class="nav-button"
+              class="configurator-action-primary"
               data-ui-action="save-load-profile"
             >
               Save Name
