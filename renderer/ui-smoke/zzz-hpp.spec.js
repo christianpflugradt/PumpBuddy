@@ -1143,7 +1143,7 @@ test('UI smoke configurator exercises > navigation, search, lifecycle, loading, 
   await expect(screen).toBeVisible();
   await expect(screen).toContainText('Barbell Squat');
   await expect(screen).toContainText('Active');
-  await expect(screen.locator('.configurator-exercise-card--inactive')).toContainText('Retired Curl');
+  await expect(screen.locator('.configurator-entity-row--inactive')).toContainText('Retired Curl');
   await expect(page.getByRole('button', { name: 'Variants' })).toHaveCount(0);
   await screen.getByRole('searchbox', { name: 'Search exercises' }).fill('retired');
   await expect(screen).toContainText('Retired Curl');
