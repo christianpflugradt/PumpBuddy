@@ -7,13 +7,14 @@ const launchOptions =
     : undefined;
 const playwrightPort = process.env.PLAYWRIGHT_PORT ?? '41733';
 const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
+const isCI = Boolean(process.env.CI);
 
 module.exports = defineConfig({
   testDir: './ui-smoke',
   timeout: 45 * 1000,
-  retries: process.env.CI ? 1 : 0,
+  retries: isCI ? 1 : 0,
   fullyParallel: false,
-  workers: process.env.CI ? 1 : undefined,
+  workers: isCI ? 1 : undefined,
   reporter: 'list',
   expect: {
     timeout: 10 * 1000,
@@ -41,22 +42,27 @@ module.exports = defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        launchOptions: {
-          ...launchOptions,
-          firefoxUserPrefs: {
-            'ui.prefersReducedMotion': 1,
+    // Keep local quality feedback deterministic; CI remains the cross-browser gate.
+    ...(isCI
+      ? [
+          {
+            name: 'firefox',
+            use: {
+              ...devices['Desktop Firefox'],
+              launchOptions: {
+                ...launchOptions,
+                firefoxUserPrefs: {
+                  'ui.prefersReducedMotion': 1,
+                },
+              },
+            },
+            retries: 2,
           },
-        },
-      },
-      retries: process.env.CI ? 2 : 0,
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+          {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'] },
+          },
+        ]
+      : []),
   ],
 });
