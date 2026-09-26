@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-073-item-13
   title: Synchronize editor draft state after picker dismissal and editor mount
-  status_hint: open
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

@@ -43,7 +43,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
   #modalFocus = new ModalFocus(this);
   #textInput = new TextInputBinding(this, ({ field, value }) => this.#onTextInput(field, value));
 
-  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); this.addEventListener("keydown", this.#onKeyDown); }
+  connectedCallback(): void { this.#render(); this.addEventListener("click", this.#onClick); this.#textInput.connect(); this.addEventListener("keydown", this.#onKeyDown); this.#emitDraftState(); }
   disconnectedCallback(): void { this.removeEventListener("click", this.#onClick); this.#textInput.disconnect(); this.removeEventListener("keydown", this.#onKeyDown); }
   set state(value: ConfiguratorStationEditorScreenState) {
     this.#state = value;
@@ -96,6 +96,7 @@ class PbConfiguratorStationEditorScreenElement extends HTMLElement {
     this.#compatibilitySearch = "";
     this.#compatibilitySubmitError = null;
     this.#isCompatibilitySaving = false;
+    this.#emitDraftState();
     this.#render();
     this.#modalFocus.close();
   }

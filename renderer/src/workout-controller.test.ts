@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
+import { registerPbAppRoot } from "./pb-app-root";
 import {
   createTrainingPlan,
   createExercise,
@@ -8,6 +9,8 @@ import {
   deleteGym,
   deleteLoadProfile,
   loadConfiguratorExerciseVariantCompatibilities,
+  reconcileConfiguratorExerciseVariantCompatibilities,
+  reconcileConfiguratorStationCompatibilities,
   loadConfiguratorStations,
   loadConfiguratorStationCompatibilities,
   loadConfiguratorExerciseVariants,
@@ -26,6 +29,8 @@ import {
   loadWorkoutHistory,
   loadWorkoutProgress,
   updateLoadProfile,
+  updateConfiguratorExerciseVariant,
+  updateConfiguratorStation,
   updateExercise,
   updateGym,
 } from "./workout-api";
@@ -86,6 +91,8 @@ vi.mock("./workout-api", async () => {
     deleteLoadProfile: vi.fn(),
     deleteGym: vi.fn(),
     loadConfiguratorExerciseVariantCompatibilities: vi.fn(),
+    reconcileConfiguratorExerciseVariantCompatibilities: vi.fn(),
+    reconcileConfiguratorStationCompatibilities: vi.fn(),
     loadGymDetail: vi.fn(),
     loadConfiguratorStations: vi.fn(),
     loadConfiguratorStationCompatibilities: vi.fn(),
@@ -103,6 +110,8 @@ vi.mock("./workout-api", async () => {
     loadWorkoutHistory: vi.fn(),
     loadWorkoutProgress: vi.fn(),
     updateLoadProfile: vi.fn(),
+    updateConfiguratorExerciseVariant: vi.fn(),
+    updateConfiguratorStation: vi.fn(),
     updateExercise: vi.fn(),
     updateGym: vi.fn(),
   };
@@ -115,6 +124,8 @@ const createGymMock = vi.mocked(createGym);
 const deleteLoadProfileMock = vi.mocked(deleteLoadProfile);
 const deleteGymMock = vi.mocked(deleteGym);
 const loadConfiguratorExerciseVariantCompatibilitiesMock = vi.mocked(loadConfiguratorExerciseVariantCompatibilities);
+const reconcileConfiguratorExerciseVariantCompatibilitiesMock = vi.mocked(reconcileConfiguratorExerciseVariantCompatibilities);
+const reconcileConfiguratorStationCompatibilitiesMock = vi.mocked(reconcileConfiguratorStationCompatibilities);
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadConfiguratorStationsMock = vi.mocked(loadConfiguratorStations);
@@ -135,6 +146,8 @@ const loadWorkoutExercisesPerformanceMock = vi.mocked(
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 const updateLoadProfileMock = vi.mocked(updateLoadProfile);
+const updateConfiguratorExerciseVariantMock = vi.mocked(updateConfiguratorExerciseVariant);
+const updateConfiguratorStationMock = vi.mocked(updateConfiguratorStation);
 const updateExerciseMock = vi.mocked(updateExercise);
 const updateGymMock = vi.mocked(updateGym);
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -4174,4 +4187,170 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-set");
     expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
   });
+  it.each(["Cancel", "Escape"] as const)("exits a Variant after %s discards staged compatibility unless a field remains dirty", async (dismiss) => {
+    registerPbAppRoot();
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    loadExerciseSummariesMock.mockResolvedValue([{ id: "exercise-1", name: "Cable Row", status: "active", variant_count: 1 }]);
+    loadConfiguratorExerciseVariantsMock.mockResolvedValue([{ id: "variant-1", exercise_id: "exercise-1", name: "Pronated", status: "new", requires_station: true, load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL", repetition_kind: "REPS" }]);
+    loadConfiguratorExerciseVariantCompatibilitiesMock.mockResolvedValue({ exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [], eligible_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }] });
+    reconcileConfiguratorExerciseVariantCompatibilitiesMock.mockResolvedValue({ exercise_id: "exercise-1", variant_id: "variant-1", enabled_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }], eligible_stations: [{ gym_id: "gym-1", gym_name: "North Gym", station_id: "station-1", station_name: "Cable Tower" }] });
+    createApp(app); await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-exercises"); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-detail", payload: { exerciseId: "exercise-1" } }); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-variant-detail", payload: { exerciseId: "exercise-1", variantId: "variant-1" } }); await flush();
+
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-variant-detail", exerciseId: "exercise-1", variantId: "variant-1" });
+
+    const editor = () => app.querySelector("pb-configurator-exercise-variant-editor-screen")!;
+    const stageAndDismiss = () => {
+      (editor().querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+      (editor().querySelector('[data-station-id="station-1"]') as HTMLButtonElement).click();
+      if (dismiss === "Cancel") (editor().querySelector('[data-ui-action="dismiss-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+      else editor().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    };
+    stageAndDismiss();
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: "exercise-1" });
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-variant-detail", payload: { exerciseId: "exercise-1", variantId: "variant-1" } }); await flush();
+    const name = editor().querySelector<HTMLInputElement>('[data-field="name"]')!;
+    name.value = "Neutral"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    stageAndDismiss();
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toEqual({ source: "configurator-exercise-variant-detail" });
+    dispatchAction(app, "continue-configurator-draft-editing");
+    const reverted = editor().querySelector<HTMLInputElement>('[data-field="name"]')!;
+    reverted.value = "Pronated"; reverted.dispatchEvent(new Event("input", { bubbles: true }));
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: "exercise-1" });
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-variant-detail", payload: { exerciseId: "exercise-1", variantId: "variant-1" } }); await flush();
+    (editor().querySelector('[data-ui-action="open-configurator-exercise-variant-compatibility-picker"]') as HTMLButtonElement).click();
+    (editor().querySelector('[data-station-id="station-1"]') as HTMLButtonElement).click();
+    (editor().querySelector('[data-ui-action="save-configurator-exercise-variant-compatibilities"]') as HTMLButtonElement).click();
+    await flush();
+    expect(reconcileConfiguratorExerciseVariantCompatibilitiesMock).toHaveBeenCalled();
+    dispatchAction(app, "navigate-back-from-configurator-exercise-variant-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: "exercise-1" });
+  });
+
+  it.each(["Cancel", "Escape"] as const)("exits a Station after %s discards staged compatibility unless a field remains dirty", async (dismiss) => {
+    registerPbAppRoot();
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    loadGymSummariesMock.mockResolvedValue([{ id: "gym-1", name: "Downtown", status: "active" }]);
+    loadConfiguratorStationsMock.mockResolvedValue([{ id: "station-1", gym_id: "gym-1", name: "Rack", status: "new", load_profile: { id: "profile-1", name: "Barbell", status: "active" } }]);
+    loadLoadProfileSummariesMock.mockResolvedValue([{ id: "profile-1", name: "Barbell", status: "active", definition_kind: "fixed_list", weight_unit: "KG", station_count: 1 }]);
+    loadConfiguratorStationCompatibilitiesMock.mockResolvedValue({ gym_id: "gym-1", station_id: "station-1", enabled_variants: [], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Squat", variant_id: "variant-1", variant_name: "Back Squat", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] });
+    reconcileConfiguratorStationCompatibilitiesMock.mockResolvedValue({ gym_id: "gym-1", station_id: "station-1", enabled_variants: [{ exercise_id: "exercise-1", exercise_name: "Squat", variant_id: "variant-1", variant_name: "Back Squat", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }], eligible_variants: [{ exercise_id: "exercise-1", exercise_name: "Squat", variant_id: "variant-1", variant_name: "Back Squat", repetition_kind: "REPS", load_input_mode: "TOTAL", set_tracking_mode: "BILATERAL" }] });
+    createApp(app); await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-gyms"); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-gym-detail", payload: { gymId: "gym-1" } }); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-station-detail", payload: { stationId: "station-1" } }); await flush();
+
+    expect(app.state?.viewState).toEqual({ screen: "configurator-station-detail", gymId: "gym-1", stationId: "station-1" });
+
+    const editor = () => app.querySelector("pb-configurator-station-editor-screen")!;
+    const stageAndDismiss = () => {
+      (editor().querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+      (editor().querySelector('[data-variant-id="variant-1"]') as HTMLButtonElement).click();
+      if (dismiss === "Cancel") (editor().querySelector('[data-ui-action="dismiss-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+      else editor().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    };
+    stageAndDismiss();
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+    dispatchActionWithDetail(app, { action: "open-configurator-station-detail", payload: { stationId: "station-1" } }); await flush();
+    const name = editor().querySelector<HTMLInputElement>('[data-field="name"]')!;
+    name.value = "New Rack"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    stageAndDismiss();
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toEqual({ source: "configurator-station-detail" });
+    dispatchAction(app, "continue-configurator-draft-editing");
+    const reverted = editor().querySelector<HTMLInputElement>('[data-field="name"]')!;
+    reverted.value = "Rack"; reverted.dispatchEvent(new Event("input", { bubbles: true }));
+    (editor().querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+    dispatchActionWithDetail(app, { action: "open-configurator-station-detail", payload: { stationId: "station-1" } }); await flush();
+    (editor().querySelector('[data-ui-action="open-configurator-station-compatibility-picker"]') as HTMLButtonElement).click();
+    (editor().querySelector('[data-variant-id="variant-1"]') as HTMLButtonElement).click();
+    (editor().querySelector('[data-ui-action="save-configurator-station-compatibilities"]') as HTMLButtonElement).click();
+    await flush();
+    expect(reconcileConfiguratorStationCompatibilitiesMock).toHaveBeenCalled();
+    dispatchAction(app, "navigate-back-from-configurator-station-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+  });
+
+  it("clears a saved Variant draft when another Variant editor mounts", async () => {
+    registerPbAppRoot();
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    const variant = { id: "variant-1", exercise_id: "exercise-1", name: "Pronated", status: "new" as const, requires_station: true, load_input_mode: "TOTAL" as const, set_tracking_mode: "BILATERAL" as const, repetition_kind: "REPS" as const };
+    loadExerciseSummariesMock.mockResolvedValue([{ id: "exercise-1", name: "Cable Row", status: "active", variant_count: 1 }]);
+    loadConfiguratorExerciseVariantsMock.mockResolvedValue([variant]);
+    updateConfiguratorExerciseVariantMock.mockResolvedValue({ ...variant, name: "Neutral" });
+    createApp(app); await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-exercises"); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-detail", payload: { exerciseId: "exercise-1" } }); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-exercise-variant-detail", payload: { exerciseId: "exercise-1", variantId: "variant-1" } }); await flush();
+    const name = app.querySelector<HTMLInputElement>('pb-configurator-exercise-variant-editor-screen [data-field="name"]')!;
+    name.value = "Neutral"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (app.querySelector('pb-configurator-exercise-variant-editor-screen [data-ui-action="save-configurator-exercise-variant"]') as HTMLButtonElement).click();
+    await flush();
+    expect(updateConfiguratorExerciseVariantMock).toHaveBeenCalled();
+    dispatchActionWithDetail(app, { action: "start-configurator-exercise-variant-create", payload: { exerciseId: "exercise-1" } });
+    dispatchAction(app, "navigate-back-from-configurator-exercise-variant-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-exercise-detail", exerciseId: "exercise-1" });
+  });
+
+  it("clears a saved Station draft when another Station editor mounts", async () => {
+    registerPbAppRoot();
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    const station = { id: "station-1", gym_id: "gym-1", name: "Rack", status: "new" as const, load_profile: { id: "profile-1", name: "Barbell", status: "active" as const } };
+    loadGymSummariesMock.mockResolvedValue([{ id: "gym-1", name: "Downtown", status: "active" }]);
+    loadConfiguratorStationsMock.mockResolvedValue([station]);
+    loadLoadProfileSummariesMock.mockResolvedValue([{ id: "profile-1", name: "Barbell", status: "active", definition_kind: "fixed_list", weight_unit: "KG", station_count: 1 }]);
+    updateConfiguratorStationMock.mockResolvedValue({ ...station, name: "New Rack" });
+    createApp(app); await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-gyms"); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-gym-detail", payload: { gymId: "gym-1" } }); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-station-detail", payload: { stationId: "station-1" } }); await flush();
+    const name = app.querySelector<HTMLInputElement>('pb-configurator-station-editor-screen [data-field="name"]')!;
+    name.value = "New Rack"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (app.querySelector('pb-configurator-station-editor-screen [data-ui-action="save-configurator-station"]') as HTMLButtonElement).click();
+    await flush();
+    expect(updateConfiguratorStationMock).toHaveBeenCalled();
+    dispatchAction(app, "start-configurator-station-create");
+    dispatchAction(app, "navigate-back-from-configurator-station-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-gym-detail", gymId: "gym-1" });
+  });
+
+  it("clears a saved Load Profile draft when another Load Profile editor mounts", async () => {
+    registerPbAppRoot();
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    document.body.append(app);
+    loadLoadProfileSummariesMock.mockResolvedValue([{ id: "profile-1", name: "Alpha Draft", status: "new", definition_kind: "fixed_list", weight_unit: "KG", station_count: 0 }]);
+    createApp(app); await flush();
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles"); await flush();
+    dispatchActionWithDetail(app, { action: "open-configurator-load-profile-detail", payload: { loadProfileId: "profile-1" } }); await flush();
+    const name = app.querySelector<HTMLInputElement>('pb-configurator-load-profile-editor-screen [data-field="name"]')!;
+    name.value = "Alpha Updated"; name.dispatchEvent(new Event("input", { bubbles: true }));
+    (app.querySelector('pb-configurator-load-profile-editor-screen [data-ui-action="save-load-profile"]') as HTMLButtonElement).click();
+    await flush();
+    expect(updateLoadProfileMock).toHaveBeenCalled();
+    dispatchAction(app, "start-configurator-load-profile-create");
+    dispatchAction(app, "navigate-back-from-configurator-load-profile-detail");
+    expect(app.state?.configuratorExitGuard).toBeNull();
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+  });
+
+
 });

@@ -151,6 +151,7 @@ class PbConfiguratorLoadProfileEditorScreenElement extends HTMLElement {
     this.addEventListener("click", this.#onClick);
     this.#textInput.connect();
     this.addEventListener("change", this.#onChange);
+    this.#emitDraftState();
   }
 
   disconnectedCallback(): void {
