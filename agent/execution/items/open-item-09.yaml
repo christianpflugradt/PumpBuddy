@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-09
+  title: Remove remaining ad hoc Configurator lifecycle mappings
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: All scoped Configurator lifecycle labels and presentation resolve through
+    the one shared lifecycle abstraction.
+  rationale: Station and Exercise Variant editor metadata still use local status ternaries
+    instead of the shared Configurator lifecycle formatter or status element, leaving
+    more than one authoritative Draft, Active, and Inactive mapping.
+scope:
+  in:
+  - Replace the Station and Exercise Variant local lifecycle label mappings with the
+    existing Configurator lifecycle abstraction.
+  - Add focused assertions for Draft, Active, and Inactive metadata rendering in the
+    affected editors.
+  out:
+  - Changing lifecycle values, labels, transitions, availability, row actions, or
+    non-Configurator status presentation.
+constraints:
+- Preserve the existing new, active, and inactive values and exact Draft, Active,
+  and Inactive labels.
+- Reuse the Configurator-specific light-DOM lifecycle abstraction; do not introduce
+  another mapping helper.
+inputs:
+  required:
+  - renderer/src/pb-configurator-status.ts
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  optional:
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: No Station or Exercise Variant editor source retains a local Draft, Active,
+    or Inactive lifecycle mapping.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused metadata tests for all lifecycle values and renderer checks
+      pass using the shared mapping.
+- id: ac-02
+  statement: Lifecycle label presentation remains behaviorally unchanged.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing editor tests and new mapping assertions pass with the exact
+      current values and labels.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - renderer/configurator-status
+  - renderer/configurator-editor-presentation
+handoff:
+  review_focus:
+  - Check that each lifecycle display in the affected editors uses the one authoritative
+    Configurator abstraction.
+  - Confirm no lifecycle behavior or non-Configurator presentation changes.

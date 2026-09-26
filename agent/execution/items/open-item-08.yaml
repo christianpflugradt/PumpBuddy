@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-071-item-08
+  title: Complete Configurator editor accessible field adoption
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: All active Configurator editor fields consistently expose the established
+    accessible field contract without changing validation or workflows.
+  rationale: Station, Exercise, Exercise Variant, and Training Plan editor fields
+    still omit required or optional semantics, invalid state, and helper or error
+    associations that the plan requires; several fields have no stable control identifiers
+    for an explicit contract.
+scope:
+  in:
+  - Migrate the remaining active Station, Exercise, Exercise Variant, Training Plan
+    editor, and Training Plan creation fields to the Configurator field contract.
+  - Preserve current implicit labels where valid, while adding stable identifiers
+    and programmatic helper or error relationships wherever the shared contract requires
+    them.
+  - Add focused DOM coverage for required or optional, invalid, helper or error, disabled,
+    and historical read-only states represented by these editors.
+  out:
+  - Changing validation rules, requiredness, payloads, save eligibility, lifecycle
+    behavior, picker architecture, or TextInputBinding behavior.
+  - Introducing a generic field Web Component.
+constraints:
+- Preserve existing data-field values, data-ui-action values, emitted events, validation
+  messages, and current focus or selection behavior.
+- Use the Configurator-scoped shared classes and light-DOM markup contract already
+  established by this plan.
+inputs:
+  required:
+  - renderer/src/pb-configurator-station-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.ts
+  - renderer/src/pb-configurator-training-plans-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-configurator-station-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-editor-screen.test.ts
+  - renderer/src/pb-configurator-exercise-variant-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plan-editor-screen.test.ts
+  - renderer/src/pb-configurator-training-plans-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Every active Configurator editor field in scope has a programmatic label,
+    explicit required or optional meaning, correct invalid state, and helper or error
+    linkage when applicable.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Focused DOM tests cover valid, invalid, helper or error, disabled, and
+      historical read-only cases and the renderer check passes.
+- id: ac-02
+  statement: Field-contract adoption preserves all current validation, payload, action,
+    lifecycle, picker, and input-binding behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Existing editor interaction coverage and renderer checks pass without
+      behavioral regressions.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator-forms
+  - renderer/accessibility-semantics
+handoff:
+  review_focus:
+  - Verify all remaining editor families, including Training Plan creation, adopt
+    the same semantic contract.
+  - Verify conditional errors do not leave stale aria-describedby references after
+    rerendering.
