@@ -4,7 +4,7 @@
   "private": true,
   "type": "commonjs",
   "engines": {
-    "node": ">=24.10.0 <25"
+    "node": ">=24.10.0 <27"
   },
   "scripts": {
     "test:ui-smoke": "node ./scripts/run-ui-smoke.mjs",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.6.5",
     "@vitest/coverage-v8": "^5.0.3",
     "jsdom": "^30.1.1",
     "sass": "^1.105.1",
