@@ -275,6 +275,10 @@ jobs:
   publish-coverage-badges:
     name: Publish coverage badges to Pages
     runs-on: ubuntu-latest
+    concurrency:
+      group: coverage-pages
+      cancel-in-progress: false
+      queue: max
     needs:
       - detect-changes
       - backend-quality

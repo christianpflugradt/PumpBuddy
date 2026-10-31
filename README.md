@@ -143,6 +143,7 @@ There are two intentionally separate CI signals:
 Coverage percentage governance is intentionally manual in this repository.
 
 - CI publishes backend and renderer coverage badges for visibility.
+- Coverage publication jobs run one at a time, with up to 100 waiting jobs queued instead of replacing each other. Quality checks and coverage calculation remain parallel. Publication order follows queue arrival, not commit order.
 - Numeric pass/fail coverage thresholds are non-mandatory by default (`BACKEND_BRANCH_COVERAGE_MIN=0`).
 - The backend coverage script may emit `n/a` when coverage tooling is unavailable; this fallback is informational and non-blocking by design.
 - Human supervision owns threshold decisions and changes.
