@@ -47,6 +47,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'Makefile'
+      - 'renovate.json'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/check/check-bootstrap-secret-handoff.sh'

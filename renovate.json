@@ -3,11 +3,22 @@
   "internalChecksFilter": "strict",
   "minimumReleaseAgeBehaviour": "timestamp-required",
   "rebaseWhen": "behind-base-branch",
+  "automerge": false,
+  "platformAutomerge": false,
   "extends": [
     "config:best-practices",
     ":maintainLockFilesMonthly"
   ],
   "packageRules": [
+    {
+      "description": "Auto-merge patch, minor, and digest dependency updates after green CI.",
+      "matchUpdateTypes": [
+        "patch",
+        "minor",
+        "digest"
+      ],
+      "automerge": true
+    },
     {
       "description": "Update the semantic-release changelog stack together so its preset and writer remain compatible.",
       "groupName": "semantic-release toolchain",
@@ -33,6 +44,16 @@
         "major"
       ],
       "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Group GitHub Actions updates and auto-merge all update types after green CI and a fourteen-day cooldown.",
+      "matchFileNames": [
+        ".github/**"
+      ],
+      "groupName": "github-actions",
+      "separateMajorMinor": false,
+      "minimumReleaseAge": "14 days",
+      "automerge": true
     }
   ],
   "customManagers": [

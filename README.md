@@ -123,6 +123,16 @@ reviews.
 
 ## Validation and CI
 
+Renovate merges its patch, minor, and digest dependency updates after CI checks
+pass. GitHub Actions updates are grouped and also allow major updates to merge
+automatically after a 14-day release cooldown. Other major updates and monthly
+lockfile maintenance stay manual. Routine minor and patch updates keep their
+7-day cooldown, and other majors keep their 14-day cooldown.
+
+Renovate performs these merges itself (`platformAutomerge: false`) and rebases
+branches that fall behind `main` before merging. GitHub-native auto-merge does
+not need to be enabled. This policy applies to Renovate PRs only.
+
 There are two intentionally separate CI signals:
 
 - **CI Quality**: backend/renderer software quality
