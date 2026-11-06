@@ -26,7 +26,7 @@ services:
       - pumpbuddy-internal
 
   postgres:
-    image: postgres:18-alpine@sha256:80df0884d0d3b7f0f7b2c37f273b1c12d5fd66e25aaef2e19ebf95908d620f11
+    image: postgres:18-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
     environment:
       POSTGRES_DB: pumpbuddy
       POSTGRES_USER: pumpbuddy
@@ -44,7 +44,7 @@ services:
       - pumpbuddy-internal
 
   init-access-key:
-    image: postgres:18-alpine@sha256:80df0884d0d3b7f0f7b2c37f273b1c12d5fd66e25aaef2e19ebf95908d620f11
+    image: postgres:18-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
     depends_on:
       postgres:
         condition: service_healthy
