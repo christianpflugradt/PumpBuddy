@@ -15,7 +15,7 @@
 	refresh-frontend-api-client
 
 OPENAPI_CONTRACT := agent/design/api-contract.yaml
-OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.26.0@sha256:a304ddf1e2e5f24f68fa3153568d6174cea4959d09aa8e3db6d526fd0782326d
+OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.27.0@sha256:949efd0d5cf3c093ef169887b2ebe0879ee2e8074b6476264232ce4fd8ef46d0
 OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
 OPENAPI_RENDERER_OUTPUT := renderer/generated/openapi/typescript
 OPENAPI_RENDERER_LEGACY_OUTPUT := renderer/dist/generated/openapi/typescript
