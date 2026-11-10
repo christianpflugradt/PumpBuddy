@@ -10,7 +10,7 @@ CLI and Action. Local Rules contain PumpBuddy requirements only.
 
 Prepare Node from `.node-version`, Python from `mise.toml`, Rust and components
 from `backend/rust-toolchain.toml`, Docker with an accessible daemon, make,
-ShellCheck, actionlint 1.7.12, Gitleaks 8.30.1 and cargo-audit 0.22.2.
+ShellCheck, actionlint 1.7.12 and Gitleaks 8.30.1.
 Rustup is optional when the installed compiler matches the pin. Mise does not
 provide a second Rust pin. Checks never install tools.
 
@@ -49,7 +49,7 @@ and retry Git. Never bypass hooks.
 | bootstrap-secret-handoff | pre-push, check, release-candidate |
 | release-artifacts | pre-push, check, release-candidate |
 | release-rules, workflows | pre-push, check |
-| npm-audit, rust-audit | check, release-readiness |
+| npm-audit | check, release-readiness |
 | release-package, release-package-verify | release-candidate |
 
 Backend runs Clippy for all targets/features and the complete native suite,
@@ -72,7 +72,9 @@ checks expect dependencies and generated models prepared beforehand.
 Cargo tests and Clippy select locked offline mode. npm fallback execution is
 offline. PostgreSQL runs locally with synthetic credentials; browser APIs are
 mocked. Preparation caches test dependencies. Docker release builds may download
-build dependencies; audits intentionally access current advisories.
+build dependencies; npm audits intentionally access current advisories.
+Rust dependency auditing is manual: `make check-rust-audit` requires cargo-audit
+0.22.2 and accesses current advisories. It does not block CI or releases.
 Release helper tests also build a tiny scratch image without network access and
 verify its Docker save/load identity. Tests never call a real model or paid service.
 
