@@ -106,6 +106,10 @@ visible without blocking commits. No adapter or credentials are copied here.
 CI has `check` / `Check`, runs on main pushes and pull requests including
 Renovate, and executes deterministic Please Behave checks. Framework checks
 are part of that job. Renovate merge policy remains unchanged.
+CI, Release Readiness and Release Candidate execute through SHA-pinned Please
+Behave Action v1.2.0 with `checks-only: 'true'` and `summary: 'true'`. The CLI
+version remains pinned in `.please-version`. Install-only mode precedes explicit
+synchronization; the execution invocation produces the Job Summary.
 
 Coverage Badges is independent. It calculates backend coverage and complete
 renderer coverage again, then publishes the same two GitHub Pages endpoints.
