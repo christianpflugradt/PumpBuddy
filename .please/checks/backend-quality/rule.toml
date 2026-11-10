@@ -1,0 +1,9 @@
+id = "backend-quality"
+description = "Run Clippy and all backend tests offline"
+run_at = ["pre-push", "check", "release-candidate"]
+depends_on = ["api-models"]
+
+[check]
+command = "make check-backend"
+timeout_seconds = 1800
+resource = "build"

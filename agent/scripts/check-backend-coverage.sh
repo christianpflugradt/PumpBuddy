@@ -32,7 +32,7 @@ fi
 export RUSTUP_TOOLCHAIN="$rust_toolchain"
 
 write_na_badge() {
-  TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$manifest_path"
+  TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"
   python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
     "$badge_json_path" \
     "backend branch coverage" \
@@ -60,18 +60,18 @@ run_cargo_llvm_cov_once() {
     llvm_profdata_path="$3"
     if [ -n "$selected_flag" ]; then
       TESTCONTAINERS_COMMAND=remove LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
-        cargo llvm-cov --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
+        cargo llvm-cov --offline --locked --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
     else
       TESTCONTAINERS_COMMAND=remove LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
-        cargo llvm-cov --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
+        cargo llvm-cov --offline --locked --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
     fi
     return "$?"
   fi
 
   if [ -n "$selected_flag" ]; then
-    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
+    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --offline --locked --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
   else
-    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
+    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --offline --locked --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
   fi
 }
 
@@ -159,24 +159,6 @@ detect_llvm_tools_from_path() {
   return 1
 }
 
-try_install_llvm_tools_with_rustup() {
-  if ! command -v rustup >/dev/null 2>&1; then
-    return 1
-  fi
-
-  # Prefer active/default toolchain when available.
-  if rustup component add llvm-tools-preview >/dev/null 2>&1; then
-    return 0
-  fi
-
-  # Recover hosts where rustup is present but no default toolchain is configured.
-  if rustup component add llvm-tools-preview --toolchain "$rust_toolchain" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  return 1
-}
-
 try_recover_with_discovered_llvm_tools() {
   if discovered_paths="$(detect_llvm_tools_from_rustup)"; then
     llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
@@ -207,24 +189,6 @@ try_recover_with_discovered_llvm_tools() {
     llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
     if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
       return 0
-    fi
-  fi
-
-  if try_install_llvm_tools_with_rustup; then
-    if discovered_paths="$(detect_llvm_tools_from_rustup)"; then
-      llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
-      llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
-      if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
-        return 0
-      fi
-    fi
-
-    if discovered_paths="$(detect_llvm_tools_from_rustup "$rust_toolchain")"; then
-      llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
-      llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
-      if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
-        return 0
-      fi
     fi
   fi
 

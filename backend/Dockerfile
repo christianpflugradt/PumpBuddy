@@ -1,6 +1,6 @@
 # Keep this version in lockstep with backend rust-toolchain.toml.
-ARG RUST_TOOLCHAIN=1.94
-FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:6ae102bdbf528294bc79ad6e1fae682f6f7c2a6e6621506ba959f9685b308a55 AS base
+ARG RUST_TOOLCHAIN=1.97.1
+FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:0e2bcaef56d041a486784e54104a81aebe0da44bd03019bd70bc0401e42e4a97 AS base
 
 WORKDIR /app
 
@@ -25,6 +25,12 @@ FROM base AS test
 CMD ["cargo", "test"]
 
 FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS runtime
+
+ARG APP_VERSION
+ARG BUILD_COMMIT
+LABEL org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${BUILD_COMMIT}" \
+      org.opencontainers.image.source="https://github.com/christianpflugradt/PumpBuddy"
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates \

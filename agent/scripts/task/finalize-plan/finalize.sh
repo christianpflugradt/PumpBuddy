@@ -295,9 +295,8 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
 fi
 
 if [ "${OUTCOME}" = "accept" ] && [ "${RESUME_MODE}" != "true" ]; then
-  echo "PLAN_QUALITY_GATE_RUN=make check"
-  make check
-  echo "PLAN_QUALITY_GATE_RESULT=passed"
+  echo "PLAN_QUALITY_GATE=commit_and_push_hooks"
+  echo "PLAN_QUALITY_GATE_RESULT=deferred_to_git_hooks"
 fi
 
 if [ "${RESUME_MODE}" != "true" ]; then

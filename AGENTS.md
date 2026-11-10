@@ -49,3 +49,21 @@ Path reference policy:
 - Any path written into tracked repo artifacts or instructions must be repo-relative, never absolute.
 - Referenced paths must stay within this repository; do not write paths that escape the repo root.
 - Prefer forms like `agent/...`, `backend/...`, or `renderer/...`, including for currently open items, plans, design references, and archived task notes.
+
+## Repository Governance
+
+- Use the published Please Behave version pinned in `.please-version`.
+- Keep shared rules and provider adapters in external packages; local rules
+  contain PumpBuddy-specific requirements only.
+- Git hooks are the final local gates. Pre-commit checks formatting and framework
+  contracts; pre-push runs the complete local suite and Docker builds.
+- Do not manually repeat the complete gate before Git operations. Targeted Makefile
+  diagnosis and source formatting are permitted. Fix failures and retry Git;
+  inspect saved reports with `please status --details`. Never bypass hooks.
+- Prepare dependencies explicitly with `make prepare`; checks never install tools.
+  Tests remain offline with local fixtures and mocked APIs. Only the normal
+  advisory commit hook may call its provider.
+- Work on main, preserve unrelated edits, and commit/push coherent completed changes.
+  Stop after successful push; remote workflow monitoring belongs to the user.
+- Do not publish releases/images or trigger Release without explicit authorization.
+- See `.please/README.md` for setup, execution points and release contracts.

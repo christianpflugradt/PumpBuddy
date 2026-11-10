@@ -176,6 +176,8 @@ await fs.writeFile(
   'utf8',
 );
 
-writeBadge(summary.total.lines.pct);
+if (process.env.WRITE_COVERAGE_BADGES === '1') {
+  writeBadge(summary.total.lines.pct);
+}
 
 console.log(`Merged UI smoke coverage from ${coverageFiles.length} file(s).`);

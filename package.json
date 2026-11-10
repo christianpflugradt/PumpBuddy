@@ -6,7 +6,8 @@
     "node": ">=24.10.0 <27"
   },
   "scripts": {
-    "release": "semantic-release"
+    "release": "node agent/scripts/release/publish-release.mjs",
+    "release:plan": "node agent/scripts/release/release-plan.mjs"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "13.0.1",

@@ -1,0 +1,9 @@
+id = "release-artifacts"
+description = "Build both shipped Docker images without publishing"
+run_at = ["pre-push", "check", "release-candidate"]
+depends_on = ["api-models"]
+
+[check]
+command = "make check-release-artifacts"
+timeout_seconds = 2400
+resource = "build"

@@ -1,61 +1,8 @@
 version: 1
 source_of_truth: quality_gates
-
 rules:
-  - id: api_contract_alignment
+  - id: please_behave
     path_any:
-      - agent/design/api-contract.yaml
-      - backend/src/api/**
-      - renderer/src/openapi-contract.ts
-      - renderer/src/workout-contract-state.ts
-      - renderer/src/workout-contract.ts
-      - renderer/src/workout-api.ts
-      - agent/scripts/check/verify-api-contract-alignment.sh
-      - .github/workflows/ci-quality.yaml
-    commands:
-      - agent/scripts/check/verify-api-contract-alignment.sh
-
-  - id: release_artifacts
-    path_any:
-      - .github/workflows/release.yaml
-      - backend/Dockerfile
-      - backend/rust-toolchain.toml
-      - renderer/Dockerfile
-      - Makefile
-      - agent/scripts/run-quality.sh
-    commands:
-      - make check-release-artifacts
-
-  - id: bootstrap_secret_handoff
-    path_any:
-      - runtime/compose/compose.dev.yaml
-      - runtime/compose/compose.prod.yaml
-      - runtime/README.md
-      - README.md
-      - agent/scripts/check/check-bootstrap-secret-handoff.sh
-      - Makefile
-    commands:
-      - make check-bootstrap-secret-handoff
-
-  - id: renderer_code
-    path_any:
-      - agent/design/api-contract.yaml
-      - renderer/**
-    commands:
-      - make check-renderer
-
-  - id: backend_code
-    path_any:
-      - agent/design/api-contract.yaml
-      - backend/**
-      - runtime/database/**
-    commands:
-      - make check-backend
-
-  - id: shared_quality_tooling
-    path_any:
-      - Makefile
-      - agent/scripts/run-quality.sh
-      - agent/scripts/check-backend-coverage.sh
+      - "**"
     commands:
       - make check

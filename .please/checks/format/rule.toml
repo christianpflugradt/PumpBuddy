@@ -1,0 +1,7 @@
+id = "format"
+description = "Verify Rust formatting"
+run_at = ["pre-commit", "pre-push", "check", "release-candidate"]
+
+[check]
+command = "make check-format"
+timeout_seconds = 120

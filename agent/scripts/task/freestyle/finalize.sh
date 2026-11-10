@@ -14,7 +14,6 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
-COMMIT_MSG_CHECK_SCRIPT="agent/scripts/check/check-commit-message.sh"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -32,10 +31,6 @@ if [ ! -f "${EXECUTION_CONFIG}" ]; then
   exit 23
 fi
 
-if [ ! -x "${COMMIT_MSG_CHECK_SCRIPT}" ]; then
-  echo "Missing commit message check script: ${COMMIT_MSG_CHECK_SCRIPT}" >&2
-  exit 26
-fi
 
 if [ ! -f "${MSG_FILE}" ]; then
   echo "Commit message file not found: ${MSG_FILE}" >&2
@@ -47,14 +42,7 @@ if [ ! -s "${MSG_FILE}" ]; then
   exit 6
 fi
 
-FIRST_LINE="$(sed -n '1p' "${MSG_FILE}" || true)"
-if printf '%s' "${FIRST_LINE}" | grep -qE '^Status:[[:space:]]+'; then
-  echo "Refusing to commit: ${MSG_FILE} appears to contain task output (starts with 'Status:')." >&2
-  echo "Please write a Conventional Commit-style message to ${MSG_FILE} before running this script." >&2
-  exit 8
-fi
 
-"${COMMIT_MSG_CHECK_SCRIPT}" "${MSG_FILE}"
 
 load_execution_git_settings "${EXECUTION_CONFIG}"
 validate_execution_git_settings

@@ -1,21 +1,12 @@
 # Validation
 
-Structured contract validation for the agent framework.
+The `framework` Please Behave Rule runs at pre-commit, pre-push, check and
+release-candidate. For targeted diagnosis use `make check-framework`.
 
-## Run
+It retains Pydantic project/example contracts, cross-file design consistency,
+execution item invariants, Makefile command policy, ShellCheck,
+workspace-cleanliness self-tests and all 13 task script/context contracts.
+ShellCheck is required.
 
-```bash
-agent/scripts/check/validate-docs.sh
-```
-
-This command runs:
-
-- Pydantic validation for registered project contracts
-- Pydantic validation for registered example contracts
-- cross-file design consistency checks
-- execution item invariant checks
-- shell script lint (shellcheck; local run skips if shellcheck is unavailable)
-
-For the full, completeness-oriented verification inventory, see:
-
-- `agent/meta/framework-verification.md`
+See `agent/meta/framework-verification.md` for the inventory and `.please/README.md`
+for preparation, Git hooks and execution points.

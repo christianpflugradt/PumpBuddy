@@ -9,12 +9,12 @@ Use it to check whether the framework still enforces all intended guards.
 
 Primary local entrypoint:
 
-- `agent/scripts/check/validate-docs.sh`
+- `make check-framework`
 
 Additional targeted checks:
 
 - `agent/scripts/check/check-task-contract.sh <task-name>`
-- `agent/scripts/check/check-commit-message.sh <message-file>`
+- External commit-msg rules in `.please/config.toml`
 - `agent/scripts/check/shellcheck.sh`
 - `agent/scripts/check/check-execution-items.sh`
 
@@ -76,13 +76,12 @@ Entrypoint:
 
 Scope:
 
-- `.githooks/*.sh`
 - `agent/scripts/**/*.sh`
 
 Behavior:
 
-- local: warns and skips when `shellcheck` is not installed
-- CI (`Agent Framework Quality`): installs shellcheck and fails on lint findings
+- local: fails when `shellcheck` is not installed
+- CI (`Check`): installs shellcheck and fails on lint findings
 
 ### 5) Task Contract Integrity
 
@@ -111,39 +110,20 @@ Implementation judgment and stakeholder consultation are instruction contracts r
 
 ### 7) Commit Message Policy
 
-Entrypoint:
-
-- `agent/scripts/check/check-commit-message.sh <message-file>`
-
-Policy source:
-
-- `agent/strategy/commit-policy.yaml`
-
-Checks:
-
-- conventional-commit first-line format
-- allowed commit types
-- allowed scopes
-- scope must not equal type
-- minimal subject length
+External Conventional Commits and advisory header review run at commit-msg.
+`.please/config.toml` pins the shared package; `.please/commit-scopes.txt` supplies
+project scopes. No local header constraints, range or PR-title checks remain.
 
 ## CI Coverage
 
-Workflow:
-
-- `.github/workflows/agent-framework-quality.yml`
-
-Separate CI jobs:
-
-- `Pydantic Contracts`
-- `Execution Item Invariants`
-- `Shellcheck`
-- `Task Contracts`
+`.github/workflows/ci.yml` runs `framework` inside `check` / `Check`, including
+all task contracts. `.github/workflows/coverage-badges.yml` independently calculates
+and publishes badges.
 
 ## Not Covered by This Inventory
 
 This inventory is framework-focused only.
-Software runtime quality (backend/renderer tests, lint, coverage, performance smoke) belongs to `CI Quality`.
+Software runtime quality belongs to backend/renderer Rules in `Check`.
 
 ## Maintenance Rule
 

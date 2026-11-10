@@ -2,8 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?display_name=tag&sort=semver)](https://github.com/christianpflugradt/PumpBuddy/releases/latest)
-[![CI Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yaml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yaml)
-[![Agent Framework Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yaml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yaml)
+[![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml)
 [![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
 [![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
 
@@ -39,45 +38,30 @@ Only the renderer is publicly exposed; backend and database stay internal to the
 
 ## Development Quick Start
 
-Run software quality checks:
+Use the published governor in [`.please-version`](.please-version).
+Prepare tools/dependencies, then install managed hooks:
 
-```bash
-make check
-```
-
-Run targeted quality checks:
-
-```bash
-make check-renderer
-make check-backend
-```
-
-Quality/test command interface for contributor and agent workflows is Makefile-only.
-
-Backend Rust toolchain single source of truth is [`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
-When bumping Rust, update that file first, then keep lockstep references aligned in:
-
-- [`.github/workflows/ci-quality.yaml`](.github/workflows/ci-quality.yaml) (backend quality setup reads the pinned channel)
-- [`agent/scripts/run-quality.sh`](agent/scripts/run-quality.sh) and [`agent/scripts/check-backend-coverage.sh`](agent/scripts/check-backend-coverage.sh) (backend quality commands)
-- [`backend/Dockerfile`](backend/Dockerfile) (`ARG RUST_TOOLCHAIN`)
-
-Node toolchain single source of truth is [`.node-version`](.node-version).
-Package metadata constrains Node to the supported 24.x range, with a minimum
-patch level compatible with the release tooling. When bumping Node, update
-`.node-version` first, then keep lockstep references aligned in:
-
-- [`package.json`](package.json) and [`renderer/package.json`](renderer/package.json) (`engines.node`)
-- [`package-lock.json`](package-lock.json) and [`renderer/package-lock.json`](renderer/package-lock.json) (lockfile metadata and renderer Node typings)
-- [`.github/workflows/ci-quality.yaml`](.github/workflows/ci-quality.yaml) and [`.github/workflows/release.yaml`](.github/workflows/release.yaml) (Node setup reads `.node-version`)
-- [`renderer/Dockerfile`](renderer/Dockerfile) (`node:24-bookworm-slim` builder image tag and digest)
-
-Install managed pre-push hook:
-
-```bash
+```sh
+make prepare
 make install-git-hooks
 ```
 
-The hook runs quality checks before every `git push`.
+Git hooks are the final local gates: pre-commit checks Rust formatting and framework
+contracts; pre-push runs the complete local suite and Docker artifact builds.
+Inspect captured failures with `please status --details`, fix them and retry Git.
+Targeted checks remain available through `make check-backend`,
+`make check-renderer`, `make check-framework` and `make check-release-artifacts`.
+`make check` explicitly runs the complete local gate.
+
+The Makefile is the contributor/agent quality command interface. Preparation is
+separate from checks. Node is pinned in [`.node-version`](.node-version),
+Python in [`mise.toml`](mise.toml), and Rust in
+[`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
+Keep the Rust Dockerfile version/digest aligned with that Rust pin and the renderer
+builder aligned with Node. Checks do not install or silently replace tools.
+
+See [repository governance](.please/README.md) for all rules, execution points,
+prerequisites, offline test behavior and release guarantees.
 
 ## AI-Assisted Workflow (Short)
 
@@ -133,36 +117,18 @@ Renovate performs these merges itself (`platformAutomerge: false`) and rebases
 branches that fall behind `main` before merging. GitHub-native auto-merge does
 not need to be enabled. This policy applies to Renovate PRs only.
 
-There are two intentionally separate CI signals:
-
-- **CI Quality**: backend/renderer software quality
-- **Agent Framework Quality**: agent framework contracts and script hygiene
-
-### Coverage Governance
-
-Coverage percentage governance is intentionally manual in this repository.
-
-- CI publishes backend and renderer coverage badges for visibility.
-- Coverage publication jobs run one at a time, with up to 100 waiting jobs queued instead of replacing each other. Quality checks and coverage calculation remain parallel. Publication order follows queue arrival, not commit order.
-- Numeric pass/fail coverage thresholds are non-mandatory by default (`BACKEND_BRANCH_COVERAGE_MIN=0`).
-- The backend coverage script may emit `n/a` when coverage tooling is unavailable; this fallback is informational and non-blocking by design.
-- Human supervision owns threshold decisions and changes.
-- Recommended supervision cadence: review coverage badge trends during each PR review and after merges to `main`.
-- Intervention trigger: when a trend indicates meaningful sustained coverage regression, a maintainer explicitly tightens thresholds or creates remediation items.
-
-Run framework validation locally:
-
-```bash
-agent/scripts/check/validate-docs.sh
-```
-
-Validation details are documented in [`validation/README.md`](validation/README.md).
+CI has a single `Check` job containing software and framework validation.
+The independent `Coverage Badges` workflow calculates and publishes existing
+GitHub Pages badges. Its publication queue is retained; quality CI does not write
+badge files. Backend thresholds default to zero with an informational n/a fallback;
+renderer coverage retains its configured thresholds.
 
 ## Commit Policy
 
-Conventional commit policy is defined in:
-
-- [`agent/strategy/commit-policy.yaml`](agent/strategy/commit-policy.yaml)
+Only the external Conventional Commits Check and advisory Gemini Flash-Lite
+header Review run at commit-msg. Scopes are listed in
+[.please/commit-scopes.txt](.please/commit-scopes.txt).
+See [repository governance](.please/README.md) for provider setup and release semantics.
 
 ## OpenAPI Model Generation
 
@@ -209,7 +175,7 @@ make run-app
 Production run:
 
 ```bash
-cp runtime/compose/.env.prod.example runtime/compose/.env.prod
+cp runtime/compose/.env.example runtime/compose/.env.prod
 $EDITOR runtime/compose/.env.prod
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
@@ -219,7 +185,7 @@ TLS before traffic reaches PumpBuddy. The bundled stack binds the renderer upstr
 to `127.0.0.1:8080` for that proxy hop and is not meant to be exposed directly on
 the public internet.
 
-You can also copy and adjust [`runtime/compose/.env.prod.example`](runtime/compose/.env.prod.example)
+You can also copy and adjust [`runtime/compose/.env.example`](runtime/compose/.env.example)
 to `runtime/compose/.env.prod` and run `docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d`.
 
 Point the reverse proxy at `http://127.0.0.1:8080` on the Docker host.
@@ -257,32 +223,21 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 ## Release
 
-Releases are triggered via GitHub Actions `Release` workflow (`workflow_dispatch`) and semantic-release.
-In the agent workflow, `finalize-plan` with `accept` triggers this workflow via `gh workflow run release.yaml --ref main` when `agent/execution/execution-config.yaml` has `release.trigger_on_finalize_accept: true`.
+The manual GitHub Actions `Release` workflow keeps its `release.yaml` filename;
+accepted `finalize-plan` automation can still trigger it. Plan determines the
+next version/source SHA. Release Readiness and Release Candidate run in parallel.
+Publish requires both and publishes the exact exported candidate images without
+rebuilding. Changes to main or the planned version refuse publication.
 
-Release tooling is repository-managed and pinned via `package-lock.json`:
+Both published images remain **linux/amd64**:
 
-- install exact release dependencies: `npm ci`
-- verify release resolution locally (dry-run): `npx semantic-release --dry-run`
-- CI workflow uses `npm ci` and then `npm run release`
+- `ghcr.io/christianpflugradt/pumpbuddy-backend:v<version>`
+- `ghcr.io/christianpflugradt/pumpbuddy-renderer:v<version>`
 
-Published release images are pushed to GitHub Container Registry (GHCR):
-
-- Backend image: `ghcr.io/<owner>/pumpbuddy-backend:<version>`
-- Renderer image: `ghcr.io/<owner>/pumpbuddy-renderer:<version>`
-
-`<version>` is the exact git tag produced by semantic-release (for example, `v1.2.3`).
-The release workflow publishes the same tag string via `release_tag`, and both images are pushed with that value unchanged.
-
-Pull examples:
-
-```bash
-docker pull ghcr.io/<owner>/pumpbuddy-backend:<version>
-docker pull ghcr.io/<owner>/pumpbuddy-renderer:<version>
-```
-
-Use [`runtime/compose/compose.prod.yaml`](runtime/compose/compose.prod.yaml) for image-based deployment.
-Boundary guidance: keep the backend private on the internal container network and expose only the renderer publicly.
+The version is the exact Semantic Release tag, such as `v4.3.4`.
+The stable series, GitHub release notes and production Compose consumers remain.
+See [repository governance](.please/README.md) for release policy, CI evidence,
+artifact provenance, permissions and partial-publication limitations.
 
 ## License
 

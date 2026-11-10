@@ -46,7 +46,7 @@ Archive output:
 
 Primary entrypoint:
 
-- `agent/scripts/check/validate-docs.sh`
+- `make check-framework`
 
 Validation stack includes:
 
@@ -59,17 +59,14 @@ Validation stack includes:
 Additional checks:
 
 - task contracts: `agent/scripts/check/check-task-contract.sh <task-name>`
-- commit messages: `agent/scripts/check/check-commit-message.sh <message-file>`
+- commit messages: the external commit-msg Rule Set in `.please/config.toml`
 - commit policy source: `agent/strategy/commit-policy.yaml`
 
-## CI Separation
+## CI Wiring
 
-The repository keeps software quality and framework quality separate:
-
-- `CI Quality` for backend/renderer runtime quality
-- `Agent Framework Quality` for agent framework contracts and script hygiene
-
-This separation keeps deployability status independent from framework drift status.
+The main CI workflow has a single `Check` job for software and framework quality.
+Coverage calculation and GitHub Pages badge publication live in the independent
+`Coverage Badges` workflow.
 
 ## Maintenance Rules
 

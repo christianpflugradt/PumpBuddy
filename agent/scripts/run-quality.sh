@@ -1,269 +1,76 @@
 #!/usr/bin/env sh
 set -eu
-
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$repo_root"
 
-contract_path="agent/design/api-contract.yaml"
-backend_toolchain_file="$repo_root/backend/rust-toolchain.toml"
-backend_dockerfile="$repo_root/backend/Dockerfile"
-backend_openapi_models_dir="$repo_root/backend/target/generated/openapi/rust/src/models"
-backend_models_mod_file="$repo_root/backend/src/models/mod.rs"
-
-resolve_backend_rust_toolchain() {
-  if [ ! -f "$backend_toolchain_file" ]; then
-    echo "ERROR backend toolchain file not found: $backend_toolchain_file" >&2
+verify_toolchain() {
+  expected="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
+  export RUSTUP_TOOLCHAIN="$expected"
+  actual="$(rustc --version | awk '{print $2}')"
+  docker_toolchain="$(sed -n 's/^ARG RUST_TOOLCHAIN=//p' backend/Dockerfile)"
+  if [ "$actual" != "$expected" ] || [ "$docker_toolchain" != "$expected" ]; then
+    echo "Rust compiler ($actual) and Docker ($docker_toolchain) must match rust-toolchain.toml ($expected)." >&2
     exit 1
   fi
-
-  channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' "$backend_toolchain_file" | head -n 1)"
-  if [ -z "$channel" ]; then
-    echo "ERROR could not resolve Rust toolchain channel from $backend_toolchain_file" >&2
-    exit 1
-  fi
-
-  printf '%s\n' "$channel"
 }
 
-resolve_backend_docker_rust_toolchain() {
-  if [ ! -f "$backend_dockerfile" ]; then
-    echo "ERROR backend Dockerfile not found: $backend_dockerfile" >&2
+require_models() {
+  if [ ! -d backend/target/generated/openapi/rust/src/models ] ||
+     [ ! -f renderer/generated/openapi/typescript/runtime.ts ]; then
+    echo "Generated API models missing; run make prepare before targeted checks." >&2
     exit 1
   fi
-
-  docker_toolchain="$(sed -n 's/^ARG RUST_TOOLCHAIN=\([^[:space:]]*\)$/\1/p' "$backend_dockerfile" | head -n 1)"
-  if [ -z "$docker_toolchain" ]; then
-    echo "ERROR could not resolve RUST_TOOLCHAIN ARG from $backend_dockerfile" >&2
-    exit 1
-  fi
-
-  printf '%s\n' "$docker_toolchain"
-}
-
-verify_backend_docker_toolchain_lockstep() {
-  backend_toolchain="${1:-}"
-  if [ -z "$backend_toolchain" ]; then
-    backend_toolchain="$(resolve_backend_rust_toolchain)"
-  fi
-
-  docker_toolchain="$(resolve_backend_docker_rust_toolchain)"
-  if [ "$docker_toolchain" != "$backend_toolchain" ]; then
-    echo "ERROR backend Dockerfile RUST_TOOLCHAIN ($docker_toolchain) must match backend/rust-toolchain.toml channel ($backend_toolchain)." >&2
-    exit 1
-  fi
-
-  echo "INFO backend Dockerfile RUST_TOOLCHAIN matches backend/rust-toolchain.toml ($backend_toolchain)"
 }
 
 cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
   if [ -n "$container_ids" ]; then
-    # Remove Testcontainers-owned leftovers and their anonymous database volumes
-    # without touching compose-managed app containers.
     printf '%s\n' "$container_ids" | xargs docker rm --force --volumes >/dev/null 2>&1 || true
   fi
 }
 
-current_git_commit() {
-  (
-    cd "$repo_root"
-    git rev-parse HEAD
-  )
-}
-
-current_git_timestamp() {
-  (
-    cd "$repo_root"
-    git show --no-patch --date=iso-strict --format=%cd HEAD
-  )
-}
-
-api_contract_changed_locally() {
-  (
-    cd "$repo_root"
-    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      return 0
-    fi
-
-    if ! git diff --quiet -- "$contract_path"; then
-      return 0
-    fi
-    if ! git diff --cached --quiet -- "$contract_path"; then
-      return 0
-    fi
-    if git ls-files --others --exclude-standard -- "$contract_path" | grep -q .; then
-      return 0
-    fi
-
-    return 1
-  )
-}
-
-should_refresh_api_clients() {
-  if [ "${CI:-}" = "true" ] || [ "${FORCE_REFRESH_API_CLIENTS:-0}" = "1" ]; then
-    return 0
-  fi
-
-  api_contract_changed_locally
-}
-
-backend_generated_api_client_missing() {
-  if [ ! -d "$backend_openapi_models_dir" ]; then
-    return 0
-  fi
-
-  required_model_files="$(sed -n 's|.*"/target/generated/openapi/rust/src/models/\([^"]*\.rs\)".*|\1|p' "$backend_models_mod_file")"
-  if [ -z "$required_model_files" ]; then
-    return 0
-  fi
-
-  for required_model_file in $required_model_files; do
-    if [ ! -f "$backend_openapi_models_dir/$required_model_file" ]; then
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-renderer_generated_api_client_missing() {
-  [ ! -f "$repo_root/renderer/generated/openapi/typescript/runtime.ts" ]
-}
-
-renderer_install_deps_if_needed() {
-  lockfile="package-lock.json"
-  marker_file="node_modules/.pumpbuddy-lockfile.cksum"
-
-  if [ "${CI:-}" = "true" ]; then
-    npm ci
-    return 0
-  fi
-
-  if [ ! -d "node_modules" ]; then
-    npm ci
-  else
-    current_cksum="$(cksum "$lockfile" | awk '{print $1 ":" $2}')"
-    saved_cksum=""
-    if [ -f "$marker_file" ]; then
-      saved_cksum="$(cat "$marker_file")"
-    fi
-
-    if [ "$current_cksum" != "$saved_cksum" ]; then
-      npm ci
-    else
-      echo "INFO renderer deps unchanged; skipping npm ci"
-      return 0
-    fi
-  fi
-
-  cksum "$lockfile" | awk '{print $1 ":" $2}' >"$marker_file"
-}
-
-run_backend_quality() {
-  # Testcontainers normally removes itself, but retain a scoped fallback for
-  # process failures and async teardown races. Docker only deletes the
-  # PostgreSQL image's anonymous data volume when removal includes --volumes.
-  trap cleanup_testcontainers 0
-
-  backend_toolchain="$(resolve_backend_rust_toolchain)"
-  verify_backend_docker_toolchain_lockstep "$backend_toolchain"
-  export RUSTUP_TOOLCHAIN="$backend_toolchain"
-  echo "INFO backend quality uses Rust toolchain $backend_toolchain (source: backend/rust-toolchain.toml)"
-
-  if should_refresh_api_clients; then
-    make -C "$repo_root" refresh-backend-api-client
-  elif backend_generated_api_client_missing; then
-    echo "INFO backend generated API client missing; refreshing backend API client"
-    make -C "$repo_root" refresh-backend-api-client
-  else
-    echo "INFO API contract unchanged; skipping backend API client refresh"
-  fi
-  TESTCONTAINERS_COMMAND=remove cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
-  TESTCONTAINERS_COMMAND=remove cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
-  if [ "${CI:-}" = "true" ] || [ "${BACKEND_CHECK_WITH_COVERAGE:-0}" = "1" ]; then
-    "$repo_root/agent/scripts/check-backend-coverage.sh"
-  else
-    TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$repo_root/backend/Cargo.toml"
-  fi
-}
-
-run_renderer_quality() {
-  if should_refresh_api_clients || renderer_generated_api_client_missing; then
-    make -C "$repo_root" refresh-frontend-api-client
-  else
-    echo "INFO API contract unchanged; skipping renderer API client refresh"
-  fi
-  (
-    cd "$repo_root/renderer"
-    # Ensure optional native deps (for example Rollup platform packages) are consistent.
-    renderer_install_deps_if_needed
-    if [ "${CI:-}" = "true" ]; then
-      npx playwright install --with-deps chromium firefox webkit
-    fi
-    npm run check
-  )
-}
-
-run_release_artifact_quality() {
-  backend_toolchain="$(resolve_backend_rust_toolchain)"
-  verify_backend_docker_toolchain_lockstep "$backend_toolchain"
-
-  release_commit="$(current_git_commit)"
-  release_timestamp="$(current_git_timestamp)"
-  release_tag="${RELEASE_ARTIFACT_APP_VERSION:-quality-check}"
-  backend_tag="${RELEASE_ARTIFACT_BACKEND_TAG:-pumpbuddy-backend:quality-check}"
-  renderer_tag="${RELEASE_ARTIFACT_RENDERER_TAG:-pumpbuddy-renderer:quality-check}"
-
-  make -C "$repo_root" refresh-backend-api-client
-  make -C "$repo_root" refresh-frontend-api-client
-
-  docker build \
-    --file "$repo_root/backend/Dockerfile" \
-    --tag "$backend_tag" \
-    --build-arg "APP_VERSION=$release_tag" \
-    --build-arg "BUILD_COMMIT=$release_commit" \
-    --build-arg "BUILD_TIMESTAMP=$release_timestamp" \
-    "$repo_root/backend"
-
-  docker build \
-    --file "$repo_root/renderer/Dockerfile" \
-    --tag "$renderer_tag" \
-    --build-arg "APP_VERSION=$release_tag" \
-    "$repo_root/renderer"
-}
-
-usage() {
-  cat <<'EOF'
-Usage: agent/scripts/run-quality.sh [backend|renderer|release-artifacts|check]
-
-Commands:
-  backend   Run backend quality checks.
-  renderer  Run renderer quality checks.
-  release-artifacts  Build shipped backend and renderer artifacts without publishing them.
-  check     Run backend and renderer quality checks in order.
-EOF
-}
-
-command_name="${1:-check}"
-
-case "$command_name" in
+case "${1:-check}" in
+  format)
+    verify_toolchain
+    cargo fmt --manifest-path backend/Cargo.toml --check
+    ;;
   backend)
-    run_backend_quality
+    trap cleanup_testcontainers 0
+    verify_toolchain
+    require_models
+    docker image inspect postgres:18-alpine >/dev/null
+    TESTCONTAINERS_COMMAND=remove cargo clippy --offline --locked --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
+    if [ "${BACKEND_CHECK_WITH_COVERAGE:-0}" = "1" ]; then
+      agent/scripts/check-backend-coverage.sh
+    else
+      TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path backend/Cargo.toml
+    fi
     ;;
   renderer)
-    run_renderer_quality
+    export PLAYWRIGHT_BROWSERS_PATH="$repo_root/.cache/playwright"
+    require_models
+    # Installed local tools only; npm/npx fallback paths cannot download packages.
+    (cd renderer && npm_config_offline=true npm run check)
     ;;
   release-artifacts)
-    run_release_artifact_quality
+    require_models
+    if [ "${PLEASE_EXECUTION_POINT:-}" = "release-candidate" ]; then
+      export DOCKER_DEFAULT_PLATFORM=linux/amd64
+    fi
+    expected="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
+    [ "$(sed -n 's/^ARG RUST_TOOLCHAIN=//p' backend/Dockerfile)" = "$expected" ]
+    source_commit="$(git rev-parse HEAD)"
+    source_timestamp="$(git show --no-patch --date=iso-strict --format=%cd HEAD)"
+    version="${RELEASE_TAG:-quality-check}"
+    docker build --provenance=false --sbom=false --file backend/Dockerfile \
+      --tag pumpbuddy-backend:candidate \
+      --build-arg "APP_VERSION=$version" \
+      --build-arg "BUILD_COMMIT=$source_commit" \
+      --build-arg "BUILD_TIMESTAMP=$source_timestamp" backend
+    docker build --provenance=false --sbom=false --file renderer/Dockerfile \
+      --tag pumpbuddy-renderer:candidate \
+      --build-arg "APP_VERSION=$version" --build-arg "BUILD_COMMIT=$source_commit" renderer
     ;;
-  check)
-    run_backend_quality
-    run_renderer_quality
-    ;;
-  -h|--help|help)
-    usage
-    ;;
-  *)
-    usage >&2
-    exit 1
-    ;;
+  check) exec make check ;;
+  *) echo "Usage: agent/scripts/run-quality.sh [format|backend|renderer|release-artifacts|check]" >&2; exit 2 ;;
 esac

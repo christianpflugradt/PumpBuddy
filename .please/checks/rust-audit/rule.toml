@@ -1,0 +1,7 @@
+id = "rust-audit"
+description = "Audit backend dependencies"
+run_at = ["check", "release-readiness"]
+
+[check]
+command = "make check-rust-audit"
+timeout_seconds = 300

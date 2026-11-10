@@ -11,7 +11,6 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.*.example
-!renderer/.env.production
 .venv/
 
 # --- Logs ---
@@ -65,3 +64,6 @@ docker-compose.override.yml
 *.seed
 agent/tmp/*
 !agent/tmp/.gitkeep
+
+# Repository-local governance tools and release candidates
+.tools/

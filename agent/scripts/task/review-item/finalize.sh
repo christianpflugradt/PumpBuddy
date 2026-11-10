@@ -312,11 +312,8 @@ if [ "${OUTCOME}" = "return" ] && [ "${RETURN_BLOCKED_DUE_INFRA}" = "true" ]; th
 fi
 
 if [ "${OUTCOME}" = "accept" ]; then
-  # Full quality runs once when the plan is accepted. Re-running a complete
-  # component suite after every small item gives identical final coverage but
-  # makes multi-item features needlessly slow. Item review still requires
-  # criterion-specific evidence; plan acceptance remains blocked on make check.
-  echo "QUALITY_GATE_RESULT=deferred_to_plan_accept"
+  # Commit and push hooks run the final gates for every coherent change.
+  echo "QUALITY_GATE_RESULT=commit_and_push_hooks"
 fi
 
 if [ -f "${REVIEW_ITEM}" ]; then

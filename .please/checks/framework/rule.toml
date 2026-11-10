@@ -1,0 +1,7 @@
+id = "framework"
+description = "Validate all framework contracts and shell scripts"
+run_at = ["pre-commit", "pre-push", "check", "release-candidate"]
+
+[check]
+command = "make check-framework"
+timeout_seconds = 180

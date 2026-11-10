@@ -16,7 +16,6 @@ TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 MSG_FILE="agent/tmp/implement-item-commit-message.txt"
 ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
-COMMIT_MSG_CHECK_SCRIPT="agent/scripts/check/check-commit-message.sh"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 
 # shellcheck source=/dev/null
@@ -61,10 +60,6 @@ if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   exit 25
 fi
 
-if [ ! -x "${COMMIT_MSG_CHECK_SCRIPT}" ]; then
-  echo "Missing commit message check script: ${COMMIT_MSG_CHECK_SCRIPT}" >&2
-  exit 26
-fi
 
 if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
   echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
@@ -130,14 +125,7 @@ if [ ! -s "${MSG_FILE}" ]; then
   exit 6
 fi
 
-FIRST_LINE="$(sed -n '1p' "${MSG_FILE}" || true)"
-if printf '%s' "${FIRST_LINE}" | grep -qE '^Status:[[:space:]]+'; then
-  echo "Refusing to commit: ${MSG_FILE} appears to contain task output (starts with 'Status:')." >&2
-  echo "Please write a Conventional Commit-style message to ${MSG_FILE} before running this script." >&2
-  exit 8
-fi
 
-"${COMMIT_MSG_CHECK_SCRIPT}" "${MSG_FILE}"
 
 INDEPENDENT_REVIEW_REQUIRED="$(python3 - "${OPEN_ITEM}" <<'PY'
 import sys

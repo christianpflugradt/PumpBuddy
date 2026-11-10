@@ -1,37 +1,31 @@
 #!/usr/bin/env sh
 set -eu
-
-usage() {
-  cat <<'EOF'
-Usage: agent/scripts/install-git-hooks.sh [install|status]
-
-Commands:
-  install  Configure this repository to use the tracked .githooks directory.
-  status   Print the currently configured hooks path for this repository.
-EOF
-}
-
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
-command_name="${1:-install}"
-
-case "$command_name" in
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+case "${1:-install}" in
   install)
-    git -C "$repo_root" config --local core.hooksPath .githooks
-    echo "Configured core.hooksPath=.githooks for $repo_root"
+    expected="$(cat .please-version)"
+    actual="v$(please --version | awk '{print $2}')"
+    if [ "$actual" != "$expected" ]; then
+      echo "Expected published Please Behave $expected; found $actual" >&2
+      exit 1
+    fi
+    current="$(git config --local --get core.hooksPath || true)"
+    case "$current" in
+      .githooks|"$root/.githooks")
+        for event in pre-commit commit-msg pre-push; do
+          if [ -e ".githooks/$event" ] || [ -L ".githooks/$event" ]; then
+            echo "Custom hook preserved: .githooks/$event; integrate it before setup." >&2
+            exit 1
+          fi
+        done
+        git config --local --unset core.hooksPath
+        ;;
+    esac
+    exec please sync --yes
     ;;
   status)
-    current_hooks_path="$(git -C "$repo_root" config --local --get core.hooksPath || true)"
-    if [ -n "$current_hooks_path" ]; then
-      echo "$current_hooks_path"
-    else
-      echo ".git/hooks"
-    fi
+    git config --local --get core.hooksPath || echo ".git/hooks"
     ;;
-  -h|--help|help)
-    usage
-    ;;
-  *)
-    usage >&2
-    exit 1
-    ;;
+  *) echo "Usage: agent/scripts/install-git-hooks.sh [install|status]" >&2; exit 2 ;;
 esac

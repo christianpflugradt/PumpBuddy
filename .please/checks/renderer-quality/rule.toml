@@ -1,0 +1,9 @@
+id = "renderer-quality"
+description = "Run the complete renderer quality suite offline"
+run_at = ["pre-push", "check", "release-candidate"]
+depends_on = ["api-models"]
+
+[check]
+command = "make check-renderer"
+timeout_seconds = 1200
+resource = "build"

@@ -101,22 +101,23 @@ if (Number.isNaN(percent)) {
   process.stderr.write("could not parse line coverage from vitest output\n");
 }
 
-const badgeResult = spawnSync(
-  "python3",
-  [
-    badgeScriptPath,
-    badgeJsonPath,
-    "renderer line coverage",
-    (Number.isNaN(percent) ? "0" : percent.toFixed(2)),
-    "line",
-    "all files",
-  ],
-  { cwd: repoRoot, encoding: "utf8" },
-);
+if (process.env.WRITE_COVERAGE_BADGES === "1") {
+  const badgeResult = spawnSync(
+    "python3",
+    [
+      badgeScriptPath,
+      badgeJsonPath,
+      "renderer line coverage",
+      (Number.isNaN(percent) ? "0" : percent.toFixed(2)),
+      "line",
+      "all files",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
 
-if (badgeResult.stdout) process.stdout.write(badgeResult.stdout);
-if (badgeResult.stderr) process.stderr.write(badgeResult.stderr);
+  if (badgeResult.stdout) process.stdout.write(badgeResult.stdout);
+  if (badgeResult.stderr) process.stderr.write(badgeResult.stderr);
 
-if (badgeResult.status !== 0) process.exit(badgeResult.status ?? 1);
-
+  if (badgeResult.status !== 0) process.exit(badgeResult.status ?? 1);
+}
 process.exit(result.status ?? 1);

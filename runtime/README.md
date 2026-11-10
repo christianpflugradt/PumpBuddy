@@ -11,7 +11,7 @@ to the internet.
 
 - `compose/compose.dev.yaml`: builds images from local source (development)
 - `compose/compose.prod.yaml`: runs published GHCR images (production)
-- `compose/.env.prod.example`: environment variable template for production
+- `compose/.env.example`: environment variable template for production
 - `database/00-schema.sql`: schema only
 - `database/10-seed-dev.sql`: development seed data
 
@@ -20,7 +20,7 @@ to the internet.
 1. Prepare an environment file:
 
 ```bash
-cp runtime/compose/.env.prod.example runtime/compose/.env.prod
+cp runtime/compose/.env.example runtime/compose/.env.prod
 ```
 
 2. Set required values in `runtime/compose/.env.prod`:

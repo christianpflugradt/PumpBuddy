@@ -1,0 +1,7 @@
+id = "api-contract-alignment"
+description = "Verify API changes against the canonical contract"
+run_at = ["pre-push", "check", "release-candidate"]
+
+[check]
+command = "make check-api-contract"
+timeout_seconds = 120

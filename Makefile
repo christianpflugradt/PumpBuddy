@@ -1,9 +1,22 @@
 .PHONY: \
 	check \
+	check-format \
+	check-framework \
+	check-api-contract \
 	check-bootstrap-secret-handoff \
 	check-backend \
-	check-release-artifacts \
 	check-renderer \
+	check-release-artifacts \
+	check-release-toolchain \
+	check-release-rules \
+	check-workflows \
+	check-npm-audit \
+	check-rust-audit \
+	prepare \
+	coverage-backend \
+	coverage-renderer \
+	release-package \
+	release-package-verify \
 	install-git-hooks \
 	git-hooks-status \
 	run-app \
@@ -21,15 +34,25 @@ OPENAPI_RENDERER_OUTPUT := renderer/generated/openapi/typescript
 OPENAPI_RENDERER_LEGACY_OUTPUT := renderer/dist/generated/openapi/typescript
 COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
 
-OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
+OPENAPI_DOCKER_RUN = docker run --pull never --network none --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
 
 check:
-	$(MAKE) check-bootstrap-secret-handoff
-	$(MAKE) check-release-toolchain
-	$(MAKE) -j 2 check-backend check-renderer
+	please run --at pre-push --checks-only
+
+check-format:
+	agent/scripts/run-quality.sh format
+
+check-framework:
+	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/validate-docs.sh
+	@for task in discuss-plan refine-plan plan-item implement-item review-item finalize-plan review-architecture review-consistency review-quality review-security review-technology freestyle next-item; do \
+		PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/check-task-contract.sh "$$task" || exit; \
+	done
 
 check-bootstrap-secret-handoff:
 	agent/scripts/check/check-bootstrap-secret-handoff.sh
+
+check-api-contract:
+	agent/scripts/check/verify-api-contract-alignment.sh
 
 check-backend:
 	agent/scripts/run-quality.sh backend
@@ -42,6 +65,35 @@ check-release-artifacts:
 
 check-release-toolchain:
 	node agent/scripts/check/check-release-notes-toolchain.mjs
+
+check-release-rules: check-release-toolchain
+	node --test agent/scripts/release/test-release.mjs
+	python3 -m unittest discover -s agent/scripts/release -p 'test_*.py'
+
+check-workflows:
+	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" python3 agent/scripts/check/check-workflows.py
+
+check-npm-audit:
+	npm audit --audit-level=high
+	cd renderer && npm audit --audit-level=high
+
+check-rust-audit:
+	cargo audit --file backend/Cargo.lock
+
+prepare:
+	agent/scripts/governance/prepare.sh check
+
+coverage-backend:
+	BACKEND_CHECK_WITH_COVERAGE=1 WRITE_COVERAGE_BADGES=1 $(MAKE) check-backend
+
+coverage-renderer:
+	WRITE_COVERAGE_BADGES=1 $(MAKE) check-renderer
+
+release-package:
+	python3 agent/scripts/release/artifacts.py package
+
+release-package-verify:
+	python3 agent/scripts/release/artifacts.py verify
 
 run-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d
