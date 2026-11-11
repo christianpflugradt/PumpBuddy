@@ -1,8 +1,8 @@
 # Repository governance
 
 The independently installed published CLI in `.please-version` governs this
-repository. Candidate binaries never govern their own validation. Four external
-Rule Sets and the independent Gemini Flash-Lite provider use revision
+repository. Candidate binaries never govern their own validation. The three baseline Rule Sets
+and the independent Gemini Flash-Lite provider use revision
 `0432837bb42e230f53cd52b64b2292948382e5b2`, shared with Passing By, Please Behave
 CLI and Action. Local Rules contain PumpBuddy requirements only.
 
@@ -40,16 +40,16 @@ and retry Git. Never bypass hooks.
 
 | Rule | Execution points |
 | --- | --- |
-| format | pre-commit, pre-push, check, release-candidate |
-| framework | pre-commit, pre-push, check, release-candidate |
+| format | pre-commit, pre-push, check |
+| framework | pre-commit, pre-push, check |
 | api-models | pre-push, check, release-candidate |
-| backend-quality | pre-push, check, release-candidate |
-| renderer-quality | pre-push, check, release-candidate |
-| api-contract-alignment | pre-push, check, release-candidate |
-| bootstrap-secret-handoff | pre-push, check, release-candidate |
+| backend-quality | pre-push, check |
+| renderer-quality | pre-push, check |
+| api-contract-alignment | pre-push, check |
+| bootstrap-secret-handoff | pre-push, check |
 | release-artifacts | pre-push, check, release-candidate |
 | release-rules, workflows | pre-push, check |
-| npm-audit | check, release-readiness |
+| npm-audit | check |
 | release-package, release-package-verify | release-candidate |
 
 Backend runs Clippy for all targets/features and the complete native suite,
@@ -126,7 +126,7 @@ expression and shell diagnostics remain blocking.
 
 ## Release
 
-Manual `release.yaml` remains the target of accepted finalize-plan automation.
+Manual `release.yml` remains the target of accepted finalize-plan automation.
 Jobs are Plan, Release Readiness, Release Candidate and Publish. Readiness and
 Candidate depend only on Plan and run in parallel. Publish requires both
 successfully. Nothing publishes when Plan finds no releasable changes.
@@ -138,8 +138,7 @@ release unless breaking. Breaking changes are major. Historical build(release)
 version commits are ignored. Scoped reverts cancel unreleased originals in
 version calculation and notes. No generated version commit is created.
 
-Candidate reruns formatting, framework checks, all backend/renderer tests and
-shipped Docker builds. Candidate images explicitly remain linux/amd64.
+Candidate builds the versioned Docker images. Source checks, framework checks and backend/renderer tests are reused from CI. Candidate images explicitly remain linux/amd64.
 Local Docker checks retain the native host platform used before this migration;
 Linux CI and Release Candidate build AMD64 natively. Local ARM checks do not
 introduce an ARM release image or require AMD64 compiler emulation.
@@ -154,7 +153,7 @@ paths, configuration digests, platform and source/version labels. Publish loads
 archives and binds Docker's loaded identity to the archived configuration. This
 supports both classic config IDs and containerd OCI manifest IDs. Publish tags
 and pushes those verified loaded IDs; registry manifests must reference the same
-configuration digests. Publish never builds or runs the governor.
+configuration digests. Publish never builds; the published governor verifies common release evidence.
 
 Archives remain internal workflow artifacts retained for seven days. Existing
 GitHub release notes, version tag and GitHub plugin comments/labels are preserved.
@@ -175,3 +174,22 @@ package, issue and pull-request writes for existing GHCR/GitHub plugin behavior.
 Readiness has actions:read for CI evidence. GITHUB_TOKEN supplies permissions;
 no new repository secret is required. GEMINI_API_KEY is used only by the normal
 local advisory commit hook, not offline tests or Release.
+
+## Shared release evidence
+
+The separate external `release/releasable-project` Rule Set is pinned independently
+from the repository baseline. Its `release-contract` Check uses
+`release-ci.json` and `release-artifacts.json`. Readiness trusts exact-source CI
+without an age limit or repeated source/security checks. Candidate builds and
+artifact-specific tests remain local. After they pass, `release-record` writes
+internal `release-evidence/TARGET.json` manifests. Publish collects every expected
+target and invokes `release-verify` before publication. The shared Check verifies
+repository, workflow, source, version, current run/attempt and artifact hashes.
+Missing or altered evidence blocks publication; partial release reruns require
+rerunning all jobs. Evidence is transferred separately and is not a public asset.
+
+Before tagging, thin local Semantic Release adapters load the cached external
+publication guard exported by `release-verify`. The shared implementation checks
+the recalculated version, checkout, dispatched SHA, repository, main branch and
+current remote main. Custom prerelease/image publication reuses that source guard.
+Offline lifecycle fixtures exercise the actual pinned external module from cache.

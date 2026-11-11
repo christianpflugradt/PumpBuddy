@@ -145,8 +145,7 @@ def loaded_image_id(directory, name, metadata):
 
 def publish(directory=Path("dist")):
     metadata = verify(directory)
-    if run("git", "ls-remote", "origin", "refs/heads/main").split()[0] != metadata["binding"]["source_sha"]:
-        raise ValueError("main changed before image publication")
+    subprocess.run(["node", os.environ["PLEASE_RELEASE_GUARD"], "--source"], check=True)
     for name in COMPONENTS:
         image_id = loaded_image_id(directory, name, metadata)
         target = f"ghcr.io/christianpflugradt/pumpbuddy-{name}:v{metadata['binding']['version']}"

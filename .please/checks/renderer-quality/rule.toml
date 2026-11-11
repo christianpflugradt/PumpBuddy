@@ -1,6 +1,6 @@
 id = "renderer-quality"
 description = "Run the complete renderer quality suite offline"
-run_at = ["pre-push", "check", "release-candidate"]
+run_at = ["pre-push", "check"]
 depends_on = ["api-models"]
 
 [check]

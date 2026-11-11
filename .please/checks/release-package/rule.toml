@@ -1,7 +1,7 @@
 id = "release-package"
 description = "Export verified Docker candidates with provenance"
 run_at = ["release-candidate"]
-depends_on = ["format", "framework", "backend-quality", "renderer-quality", "api-contract-alignment", "bootstrap-secret-handoff", "release-artifacts"]
+depends_on = ["release-artifacts"]
 
 [check]
 command = "make release-package"

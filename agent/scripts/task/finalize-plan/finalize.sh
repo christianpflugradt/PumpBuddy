@@ -280,7 +280,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
     echo "DRY_RUN=would_git_push"
   fi
   if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; then
-    echo "DRY_RUN=would_trigger_release_workflow release.yaml"
+    echo "DRY_RUN=would_trigger_release_workflow release.yml"
   fi
   emit_task_output_markers "SUCCESS" "finalize-plan"
   echo "PLAN_FINALIZED=DRY_RUN"
@@ -503,8 +503,8 @@ if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; the
     echo "Release trigger failed: gh CLI is not installed." >&2
     exit 37
   fi
-  run_write_command "${EXECUTION_CONFIG}" "would_trigger_release_workflow release.yaml" \
-    gh workflow run release.yaml --ref main
+  run_write_command "${EXECUTION_CONFIG}" "would_trigger_release_workflow release.yml" \
+    gh workflow run release.yml --ref main
 fi
 
 clear_resume_state

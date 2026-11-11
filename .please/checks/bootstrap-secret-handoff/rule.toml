@@ -1,6 +1,6 @@
 id = "bootstrap-secret-handoff"
 description = "Verify bootstrap credential handling"
-run_at = ["pre-push", "check", "release-candidate"]
+run_at = ["pre-push", "check"]
 
 [check]
 command = "make check-bootstrap-secret-handoff"

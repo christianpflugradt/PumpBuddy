@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "repository": "christianpflugradt/PumpBuddy",
+  "workflow": ".github/workflows/release.yml",
+  "root": "dist",
+  "targets": {
+    "linux-amd64": [
+      "backend.tar",
+      "renderer.tar",
+      "metadata.json"
+    ]
+  }
+}

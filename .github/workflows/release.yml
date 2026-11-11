@@ -53,29 +53,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.15'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-      - name: Prepare pinned Rust compiler
-        run: |
-          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-          rustup toolchain install "$channel" --profile minimal --component rustfmt --component clippy
-          echo "RUSTUP_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-        with:
-          go-version: stable
-          cache: false
-      - name: Prepare validation tools
-        run: |
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          go install github.com/zricethezav/gitleaks/v8@v8.30.1
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-          sudo apt-get update
-          sudo apt-get install --yes shellcheck
-      - name: Prepare audit dependencies
-        run: agent/scripts/governance/prepare.sh readiness
-      - name: Read published governor pin
+      - name: Read pinned governor version
         id: governor
         run: echo "version=$(cat .please-version)" >> "$GITHUB_OUTPUT"
       - name: Install published governor
@@ -83,9 +61,9 @@ jobs:
         with:
           version: ${{ steps.governor.outputs.version }}
           run: 'false'
-      - name: Resolve external rules and independent provider
+      - name: Synchronize governance
         run: please sync --yes
-      - name: Verify readiness against exact source CI
+      - name: Verify release readiness
         env:
           GITHUB_TOKEN: ${{ github.token }}
         uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0
@@ -131,13 +109,9 @@ jobs:
           channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
           rustup toolchain install "$channel" --profile minimal --component rustfmt --component clippy
           echo "RUSTUP_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
-      - name: Prepare framework linter
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes shellcheck
       - name: Prepare candidate dependencies
         run: agent/scripts/governance/prepare.sh candidate
-      - name: Read published governor pin
+      - name: Read pinned governor version
         id: governor
         run: echo "version=$(cat .please-version)" >> "$GITHUB_OUTPUT"
       - name: Install published governor
@@ -145,7 +119,7 @@ jobs:
         with:
           version: ${{ steps.governor.outputs.version }}
           run: 'false'
-      - name: Resolve external rules and independent provider
+      - name: Synchronize governance
         run: please sync --yes
       - name: Validate and export exact Docker candidates
         uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0
@@ -168,6 +142,23 @@ jobs:
           path: .please/reports/last.json
           include-hidden-files: true
           if-no-files-found: warn
+          retention-days: 7
+      - name: Record release candidate evidence
+        uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0
+        with:
+          version: ${{ steps.governor.outputs.version }}
+          execution-point: release-record
+          checks-only: 'true'
+          summary: 'true'
+        env:
+          EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+          RELEASE_TARGET: linux-amd64
+      - name: Upload release candidate evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-linux-amd64
+          path: release-evidence/
+          if-no-files-found: error
           retention-days: 7
 
   publish:
@@ -212,6 +203,31 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: Read pinned governor version
+        id: governor
+        run: echo "version=$(cat .please-version)" >> "$GITHUB_OUTPUT"
+      - name: Install published governor
+        uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0
+        with:
+          version: ${{ steps.governor.outputs.version }}
+          run: 'false'
+      - name: Synchronize governance
+        run: please sync --yes
+      - name: Download release candidate evidence
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: release-evidence
+          merge-multiple: true
+      - name: Verify complete release candidate evidence
+        uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0
+        with:
+          version: ${{ steps.governor.outputs.version }}
+          execution-point: release-verify
+          checks-only: 'true'
+          summary: 'true'
+        env:
+          EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
       - name: Publish verified images, version tag and release notes
         env:
           GITHUB_TOKEN: ${{ github.token }}

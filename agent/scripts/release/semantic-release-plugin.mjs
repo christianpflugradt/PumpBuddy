@@ -1,17 +1,13 @@
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 export function verifyRelease(_config, context) {
   const env = context.env ?? process.env;
+  if (!env.PLEASE_RELEASE_GUARD) throw new Error("Run release-verify before publication");
+  require(env.PLEASE_RELEASE_GUARD).verifyRelease(_config, context);
   const execution = { cwd: context.cwd, env, encoding: "utf8" };
-  if (context.nextRelease.version !== env.EXPECTED_RELEASE_VERSION) {
-    throw new Error("Release version changed after planning.");
-  }
-  const head = execFileSync("git", ["rev-parse", "HEAD"], execution).trim();
-  const remote = execFileSync("git", ["ls-remote", "origin", "refs/heads/main"], execution)
-    .trim().split(/\s+/)[0];
-  if (head !== env.GITHUB_SHA || remote !== head) {
-    throw new Error("main changed during the release; rerun from its latest commit.");
-  }
   execFileSync("python3", ["agent/scripts/release/artifacts.py", "verify"], execution);
 }
 

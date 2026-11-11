@@ -43,7 +43,7 @@ jobs:
           sudo apt-get install --yes shellcheck
       - name: Prepare project dependencies
         run: agent/scripts/governance/prepare.sh check
-      - name: Read published governor pin
+      - name: Read pinned governor version
         id: governor
         run: echo "version=$(cat .please-version)" >> "$GITHUB_OUTPUT"
       - name: Install published governor
@@ -51,7 +51,7 @@ jobs:
         with:
           version: ${{ steps.governor.outputs.version }}
           run: 'false'
-      - name: Resolve external rules and independent provider
+      - name: Synchronize governance
         run: please sync --yes
       - name: Run Please Behave checks
         uses: please-behave/action@722d5967c094e5ac4bfe25e9f82b020ff34e9487 # v1.2.0

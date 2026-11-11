@@ -223,7 +223,7 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 ## Release
 
-The manual GitHub Actions `Release` workflow keeps its `release.yaml` filename;
+The manual GitHub Actions `Release` workflow uses `release.yml`;
 accepted `finalize-plan` automation can still trigger it. Plan determines the
 next version/source SHA. Release Readiness and Release Candidate run in parallel.
 Publish requires both and publishes the exact exported candidate images without

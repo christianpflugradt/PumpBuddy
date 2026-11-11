@@ -67,3 +67,4 @@ agent/tmp/*
 
 # Repository-local governance tools and release candidates
 .tools/
+/release-evidence/
