@@ -105,7 +105,7 @@ visible without blocking commits. No adapter or credentials are copied here.
 
 CI has `check` / `Check`, runs on main pushes and pull requests including
 Renovate, and executes deterministic Please Behave checks. Framework checks
-are part of that job. Renovate merge policy remains unchanged.
+are part of that job. Ordinary dependency merge policy remains unchanged; the governor follows the shared update policy below.
 CI, Release Readiness and Release Candidate execute through SHA-pinned Please
 Behave Action v1.2.0 with `checks-only: 'true'` and `summary: 'true'`. The CLI
 version remains pinned in `.please-version`. Install-only mode precedes explicit
@@ -193,3 +193,13 @@ publication guard exported by `release-verify`. The shared implementation checks
 the recalculated version, checkout, dispatched SHA, repository, main branch and
 current remote main. Custom prerelease/image publication reuses that source guard.
 Offline lifecycle fixtures exercise the actual pinned external module from cache.
+
+## Published governor updates
+
+`.please-version` records the exact latest stable published governor. The shared
+`renovate-governor` preset in the external ruleset repository tracks GitHub
+Releases and auto-merges newer stable versions, including major updates, after
+checks pass. Governor updates have no dependency cooldown; ordinary dependency
+policies remain unchanged. CI installs the proposed pin before running checks.
+Renovate runs determine update timing. Local governor preparation uses the same
+pin; candidate binaries never become the governor.

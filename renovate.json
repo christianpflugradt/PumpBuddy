@@ -7,7 +7,8 @@
   "platformAutomerge": false,
   "extends": [
     "config:best-practices",
-    ":maintainLockFilesMonthly"
+    ":maintainLockFilesMonthly",
+    "github>christianpflugradt/please-behave-rulesets:renovate-governor"
   ],
   "packageRules": [
     {
@@ -36,14 +37,20 @@
         "minor",
         "patch"
       ],
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "7 days",
+      "matchPackageNames": [
+        "!please-behave/cli"
+      ]
     },
     {
       "description": "Wait fourteen days before major dependency update PRs because they carry higher change and review risk.",
       "matchUpdateTypes": [
         "major"
       ],
-      "minimumReleaseAge": "14 days"
+      "minimumReleaseAge": "14 days",
+      "matchPackageNames": [
+        "!please-behave/cli"
+      ]
     },
     {
       "description": "Group GitHub Actions updates and auto-merge all update types after green CI and a fourteen-day cooldown.",
@@ -53,7 +60,10 @@
       "groupName": "github-actions",
       "separateMajorMinor": false,
       "minimumReleaseAge": "14 days",
-      "automerge": true
+      "automerge": true,
+      "matchPackageNames": [
+        "!please-behave/cli"
+      ]
     }
   ],
   "customManagers": [
