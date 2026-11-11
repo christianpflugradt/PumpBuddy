@@ -3,7 +3,7 @@
 The independently installed published CLI in `.please-version` governs this
 repository. Candidate binaries never govern their own validation. The three baseline Rule Sets
 and the independent Gemini Flash-Lite provider use revision
-`0432837bb42e230f53cd52b64b2292948382e5b2`, shared with Passing By, Please Behave
+`c4d4c60eff8fc5d32641f5fe33b5cfa9e337e1f3`, shared with Passing By, Please Behave
 CLI and Action. Local Rules contain PumpBuddy requirements only.
 
 ## Preparation and hooks
@@ -186,8 +186,8 @@ local advisory commit hook, not offline tests or Release.
 
 ## Shared release evidence
 
-The separate external `release/releasable-project` Rule Set is pinned independently
-from the repository baseline. Its `release-contract` Check uses
+The separate external `rulesets/multi-point/releasable-open-source-software` Rule Set shares the reviewed
+immutable revision with the other imports. Its `release-contract` Check uses
 `release-ci.json` and `release-artifacts.json`. Readiness trusts exact-source CI
 without an age limit or repeated source/security checks. Candidate builds and
 artifact-specific tests remain local. After they pass, `release-record` writes
