@@ -43,6 +43,7 @@ check-format:
 	agent/scripts/run-quality.sh format
 
 check-framework:
+	python3 -B -m unittest discover -s agent/scripts/governance -p 'test_*.py'
 	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/validate-docs.sh
 	@for task in discuss-plan refine-plan plan-item implement-item review-item finalize-plan review-architecture review-consistency review-quality review-security review-technology freestyle next-item; do \
 		PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/check-task-contract.sh "$$task" || exit; \

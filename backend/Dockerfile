@@ -1,4 +1,4 @@
-# Keep this version in lockstep with backend rust-toolchain.toml.
+# Pin a stable compiler image for reproducible builds, independently of host Rust.
 ARG RUST_TOOLCHAIN=1.97.1
 FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:0e2bcaef56d041a486784e54104a81aebe0da44bd03019bd70bc0401e42e4a97 AS base
 

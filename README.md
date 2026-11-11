@@ -52,8 +52,9 @@ Use `mise exec -- make check` for manual validation and `mise exec -- git commit
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH
 setup; installing tools alone does not activate them. Git, Bash, make, a native
-compiler/linker, Docker with an accessible daemon and the published governor remain
-host prerequisites; credentials remain external.
+compiler/linker, stable Rust with rustfmt and Clippy, Docker with an accessible
+daemon and the published governor remain host prerequisites; credentials remain
+external. The Argon2 CLI is needed for explicit development access-key seeding.
 
 Git hooks are the final local gates: pre-commit checks Rust formatting and framework
 contracts; pre-push runs the complete local suite and Docker artifact builds.
@@ -64,11 +65,19 @@ Targeted checks remain available through `make check-backend`,
 
 The Makefile is the contributor/agent quality command interface. Preparation is
 separate from checks. Node is pinned in [`.node-version`](.node-version),
-Python and standalone validation tools in [`mise.toml`](mise.toml), and Rust in
-[`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
-Mise reads the existing Node and Rust version files for installation.
-Keep the Rust Dockerfile version/digest aligned with that Rust pin and the renderer
-builder aligned with Node. Checks do not install or silently replace tools.
+Python and standalone validation tools in [`mise.toml`](mise.toml). Mise reads
+the existing Node version file. Rust uses the host's stable compiler by default;
+[`backend/rust-toolchain.toml`](backend/rust-toolchain.toml) selects `stable` for
+rustup and CI. No exact local compiler version is required. A project override
+needs a concrete compatibility reason; nightly, beta and development compilers
+are rejected by preparation and backend checks.
+
+The backend Dockerfile retains its stable compiler version and image digest for
+reproducible container builds. That release-build input is independent of the
+host's numeric compiler version. The renderer builder remains aligned with Node.
+On Nix-managed machines, host tools remain under the user's Nix configuration;
+repository setup does not change Nix, invoke Homebrew or install global tools.
+Checks do not install or silently replace tools.
 
 See [repository governance](.please/README.md) for all rules, execution points,
 prerequisites, offline test behavior and release guarantees.

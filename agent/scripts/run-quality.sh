@@ -4,14 +4,7 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$repo_root"
 
 verify_toolchain() {
-  expected="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-  export RUSTUP_TOOLCHAIN="$expected"
-  actual="$(rustc --version | awk '{print $2}')"
-  docker_toolchain="$(sed -n 's/^ARG RUST_TOOLCHAIN=//p' backend/Dockerfile)"
-  if [ "$actual" != "$expected" ] || [ "$docker_toolchain" != "$expected" ]; then
-    echo "Rust compiler ($actual) and Docker ($docker_toolchain) must match rust-toolchain.toml ($expected)." >&2
-    exit 1
-  fi
+  sh agent/scripts/governance/require-stable-rust.sh
 }
 
 require_models() {
@@ -57,8 +50,6 @@ case "${1:-check}" in
     if [ "${PLEASE_EXECUTION_POINT:-}" = "release-candidate" ]; then
       export DOCKER_DEFAULT_PLATFORM=linux/amd64
     fi
-    expected="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-    [ "$(sed -n 's/^ARG RUST_TOOLCHAIN=//p' backend/Dockerfile)" = "$expected" ]
     source_commit="$(git rev-parse HEAD)"
     source_timestamp="$(git show --no-patch --date=iso-strict --format=%cd HEAD)"
     version="${RELEASE_TAG:-quality-check}"

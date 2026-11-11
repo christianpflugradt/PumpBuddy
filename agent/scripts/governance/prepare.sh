@@ -19,12 +19,7 @@ if [ "$mode" = readiness ]; then
 fi
 python3 -m venv .tools/validation-venv
 .tools/validation-venv/bin/python3 -m pip install -r validation/core/requirements.txt
-expected_rust="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-export RUSTUP_TOOLCHAIN="$expected_rust"
-if [ "$(rustc --version | awk '{print $2}')" != "$expected_rust" ]; then
-  echo "Prepare Rust $expected_rust before dependency preparation." >&2
-  exit 1
-fi
+sh agent/scripts/governance/require-stable-rust.sh
 cargo fetch --locked --manifest-path backend/Cargo.toml
 generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
 docker pull "$generator"
