@@ -1,4 +1,3 @@
-import { releaseGuardEnvironment } from "./release-guard-fixture.mjs";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
@@ -77,7 +76,7 @@ test("version, checkout and remote-main guards precede candidate verification", 
     mkdirSync(path.join(directory, "tools"));
     writeFileSync(path.join(directory, "tools", "python3"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
     const env = {
-      ...fixtureEnv, ...releaseGuardEnvironment, PATH: path.join(directory, "tools") + path.delimiter + process.env.PATH,
+      ...fixtureEnv, GITHUB_REPOSITORY: "christianpflugradt/PumpBuddy", GITHUB_REF: "refs/heads/main", PATH: path.join(directory, "tools") + path.delimiter + process.env.PATH,
       EXPECTED_RELEASE_VERSION: "4.4.0", GITHUB_SHA: source,
     };
     const context = { cwd: directory, env, nextRelease: { version: "4.4.0" } };

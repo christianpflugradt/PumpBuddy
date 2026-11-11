@@ -26,7 +26,6 @@ class CandidateTests(unittest.TestCase):
         self.env = {
             "EXPECTED_RELEASE_VERSION": "4.4.0", "GITHUB_SHA": "a" * 40,
             "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "2",
-            "PLEASE_RELEASE_GUARD": "fixture-release-guard.mjs",
             "GITHUB_REPOSITORY": artifacts.REPOSITORY, "GITHUB_REF": "refs/heads/main",
         }
         self.environment = patch.dict(os.environ, self.env)
@@ -164,15 +163,15 @@ class CandidateTests(unittest.TestCase):
         with patch.object(artifacts, "run", side_effect=tool), patch.object(artifacts.subprocess, "run", side_effect=lambda args, **_: calls.append(args)):
             artifacts.publish(self.directory)
         self.assertEqual(len(calls), 5)
-        self.assertEqual(calls.pop(0), ["node", "fixture-release-guard.mjs", "--source"])
+        self.assertEqual(calls.pop(0), ["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"])
         self.assertEqual(calls[0], ["docker", "image", "tag", self.metadata["images"]["backend"]["config_digest"], "ghcr.io/christianpflugradt/pumpbuddy-backend:v4.4.0"])
         self.assertFalse(any("build" in call for call in calls))
 
-    def test_failed_shared_source_guard_prevents_any_push(self):
+    def test_failed_local_source_guard_prevents_any_push(self):
         with patch.object(artifacts.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "node")) as write:
             with self.assertRaises(subprocess.CalledProcessError):
                 artifacts.publish(self.directory)
-            write.assert_called_once_with(["node", "fixture-release-guard.mjs", "--source"], check=True)
+            write.assert_called_once_with(["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"], check=True)
 
 
 if __name__ == "__main__":

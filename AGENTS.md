@@ -60,7 +60,7 @@ Path reference policy:
 - Do not manually repeat the complete gate before Git operations. Targeted Makefile
   diagnosis and source formatting are permitted. Fix failures and retry Git;
   inspect saved reports with `please status --details`. Never bypass hooks.
-- Prepare dependencies explicitly with `make prepare`; checks never install tools.
+- Prepare tools with mise install and dependencies with mise run ci:prepare (alias prepare, delegating to make prepare); checks never install tools.
   Tests remain offline with local fixtures and mocked APIs. Only the normal
   advisory commit hook may call its provider.
 - Work on main, preserve unrelated edits, and commit/push coherent completed changes.

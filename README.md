@@ -44,7 +44,7 @@ Prepare tools/dependencies, then install managed hooks:
 ```sh
 mise trust
 mise install
-mise run prepare
+mise run ci:prepare
 mise exec -- make install-git-hooks
 ```
 
@@ -52,8 +52,8 @@ Use `mise exec -- make check` for manual validation and `mise exec -- git commit
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH
 setup; installing tools alone does not activate them. Git, Bash, make, a native
-compiler/linker, stable Rust with rustfmt and Clippy, Docker with an accessible
-daemon and the published governor remain host prerequisites; credentials remain
+compiler/linker and Docker with an accessible daemon remain host prerequisites.
+Mise installs stable Rust and the published governor; credentials remain
 external. The Argon2 CLI is needed for explicit development access-key seeding.
 
 Git hooks are the final local gates: pre-commit checks Rust formatting and framework
@@ -65,8 +65,8 @@ Targeted checks remain available through `make check-backend`,
 
 The Makefile is the contributor/agent quality command interface. Preparation is
 separate from checks. Node, Python and standalone validation tools are pinned in
-[`mise.toml`](mise.toml). CI reads the Node pin directly from that file.
-Rust uses the host's stable compiler by default; CI explicitly selects `stable`.
+[`mise.toml`](mise.toml). CI installs the configured tools through mise; Python is exactly pinned and Rust tracks stable.
+Mise selects stable Rust locally and in CI; no exact compiler pin is required.
 No exact local compiler version is required. A project override
 needs a concrete compatibility reason; nightly, beta and development compilers
 are rejected by preparation and backend checks.

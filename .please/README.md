@@ -10,8 +10,8 @@ CLI and Action. Local Rules contain PumpBuddy requirements only.
 
 Run `mise trust` and `mise install` to prepare the project versions of Node,
 Python, ShellCheck, actionlint and Gitleaks from `mise.toml`. CI reads the same
-Node pin. Mise does not manage Rust or machine-level packages. Use the host's
-stable Rust compiler with rustfmt and Clippy; CI explicitly selects `stable`.
+Node pin. Mise manages stable Rust with rustfmt and Clippy; machine-level packages remain
+host prerequisites.
 Local checks reject prerelease compilers without
 requiring an exact numeric version. LLVM tools are used by optional coverage.
 Git, Bash, make, a native compiler/linker and Docker with an accessible daemon
@@ -24,7 +24,7 @@ The backend Docker compiler version and digest stay pinned for reproducible
 container builds. They need not equal the host's numeric stable version. A local
 compiler override is reserved for a documented project compatibility requirement.
 
-Run `mise run prepare` (which delegates to `make prepare`) explicitly to install
+Run `mise run ci:prepare` (which delegates to `make prepare`) explicitly to install
 locked npm dependencies, prepare the
 repository-local Python environment, fetch Cargo dependencies, cache the OpenAPI
 generator and PostgreSQL test image, generate models and prepare browsers.
@@ -60,15 +60,13 @@ and retry Git. Never bypass hooks.
 | --- | --- |
 | format | pre-commit, pre-push, check |
 | framework | pre-commit, pre-push, check |
-| api-models | pre-push, check, release-candidate |
 | backend-quality | pre-push, check |
 | renderer-quality | pre-push, check |
 | api-contract-alignment | pre-push, check |
 | bootstrap-secret-handoff | pre-push, check |
-| release-artifacts | pre-push, check, release-candidate |
+| release-artifacts | pre-push, check, release |
 | release-rules, workflows | pre-push, check |
 | npm-audit | check |
-| release-package, release-package-verify | release-candidate |
 
 Backend runs Clippy for all targets/features and the complete native suite,
 including Testcontainers PostgreSQL integration tests. Renderer retains its
@@ -82,9 +80,9 @@ workspace-cleanliness self-test and all 13 task contracts. Missing ShellCheck
 now fails instead of silently skipping lint.
 
 API generation is a prerequisite of backend, renderer and Docker builds.
-Generation and those checks share the `build` resource because they use common
-generated/build outputs. Packaging depends on successful candidate checks;
-archive verification depends on packaging. Targeted backend/renderer Makefile
+Preparation generates the models before quality checks. Backend, renderer and
+Docker build checks share the build resource. Actions packages only after a
+successful candidate build and verifies archives before transfer and publication. Targeted backend/renderer Makefile
 checks expect dependencies and generated models prepared beforehand.
 
 Cargo tests and Clippy select locked offline mode. npm fallback execution is
@@ -124,10 +122,21 @@ visible without blocking commits. No adapter or credentials are copied here.
 CI has `check` / `Check`, runs on main pushes and pull requests including
 Renovate, and executes deterministic Please Behave checks. Framework checks
 are part of that job. Ordinary dependency merge policy remains unchanged; the governor follows the shared update policy below.
-CI, Release Readiness and Release Candidate execute through SHA-pinned Please
-Behave Action v1.2.0 with `checks-only: 'true'` and `summary: 'true'`. The CLI
-version remains pinned in `mise.toml`. Install-only mode precedes explicit
-synchronization; the execution invocation produces the Job Summary.
+CI and Candidate use published Action v1.3.0 with install false, sync true,
+checks-only and summaries. Mise owns the governor and exact Python pin; there is
+no version extraction or duplicate installation. Readiness directly verifies
+exact-source CI with agent/scripts/release/check-release-ci.py. The only project
+custom point is release. Plan and Publish never install or invoke governance or
+Git hooks. Release policies live under .github.
+
+Mise installs stable Rust with rustfmt and Clippy. The moving channel matches
+the existing compiler policy, receiving fixes without pin updates; later builds
+may use a different compiler. Docker base-image versions remain independent.
+ci:prepare (alias prepare) retains dependency and browser preparation. The focused
+release:prepare task only caches the API generator and regenerates model inputs.
+Model generation is explicit preparation, without a setup-only governance Rule.
+Refresh preparation after API contract or dependency changes. Docker image build
+validation remains a meaningful Check; packaging and integrity run directly in Actions.
 
 Coverage Badges is independent. It calculates backend coverage and complete
 renderer coverage again, then publishes the same two GitHub Pages endpoints.
@@ -195,22 +204,12 @@ local advisory commit hook, not offline tests or Release.
 
 ## Shared release evidence
 
-The separate external `rulesets/multi-point/releasable-open-source-software` Rule Set shares the reviewed
-immutable revision with the other imports. Its `release-contract` Check uses
-`release-ci.json` and `release-artifacts.json`. Readiness trusts exact-source CI
-without an age limit or repeated source/security checks. Candidate builds and
-artifact-specific tests remain local. After they pass, `release-record` writes
-internal `release-evidence/TARGET.json` manifests. Publish collects every expected
-target and invokes `release-verify` before publication. The shared Check verifies
-repository, workflow, source, version, current run/attempt and artifact hashes.
-Missing or altered evidence blocks publication; partial release reruns require
-rerunning all jobs. Evidence is transferred separately and is not a public asset.
-
-Before tagging, thin local Semantic Release adapters load the cached external
-publication guard exported by `release-verify`. The shared implementation checks
-the recalculated version, checkout, dispatched SHA, repository, main branch and
-current remote main. Custom prerelease/image publication reuses that source guard.
-Offline lifecycle fixtures exercise the actual pinned external module from cache.
+Workflow-owned CI and artifact policies live in .github/release-ci.json and
+.github/release-artifacts.json. Direct scripts record and verify manifests bound
+to repository, workflow, source, version, current run/attempt and artifact hashes.
+Missing or modified evidence prevents publication. Local source guards verify the
+planned version, checked-out source and current remote main before tagging and
+before image pushes, without requiring cached imported modules or hook setup.
 
 ## Published governor updates
 
@@ -227,5 +226,5 @@ pin; candidate binaries never become the governor.
 The exact published governor version is the `github:please-behave/cli` tool entry
 in `mise.toml`. `mise install` installs the released executable through the GitHub
 backend with checksum and available artifact-attestation verification. Run
-`mise exec -- please --version` to inspect it. CI reads this same entry for the
-published Action. Candidate binaries never become the governor.
+`mise exec -- please --version` to inspect it. CI installs it through mise; the published Action reuses the
+installed executable with install false and sync true. Candidate binaries never become the governor.

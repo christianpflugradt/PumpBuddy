@@ -7,6 +7,12 @@ export PIP_CACHE_DIR="$PWD/.cache/pip"
 export npm_config_cache="$PWD/.cache/npm"
 mode="${1:-check}"
 case "$mode" in check|candidate|readiness|badges) ;; *) exit 2 ;; esac
+if [ "$mode" = candidate ]; then
+  generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
+  docker pull "$generator"
+  make refresh-api-clients
+  exit 0
+fi
 expected_node="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("mise.toml").read_text())["tools"]["node"])')"
 if [ "$(node --version)" != "v$expected_node" ]; then
   echo "Prepare Node $expected_node before installing dependencies." >&2

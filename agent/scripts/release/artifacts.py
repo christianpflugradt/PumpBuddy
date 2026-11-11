@@ -145,7 +145,7 @@ def loaded_image_id(directory, name, metadata):
 
 def publish(directory=Path("dist")):
     metadata = verify(directory)
-    subprocess.run(["node", os.environ["PLEASE_RELEASE_GUARD"], "--source"], check=True)
+    subprocess.run(["node", str(Path(__file__).with_name("source-guard.mjs")), "--source"], check=True)
     for name in COMPONENTS:
         image_id = loaded_image_id(directory, name, metadata)
         target = f"ghcr.io/christianpflugradt/pumpbuddy-{name}:v{metadata['binding']['version']}"

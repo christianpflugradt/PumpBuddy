@@ -1,5 +1,6 @@
 [tools]
 "github:please-behave/cli" = "0.5.1"
+rust = { version = "stable", profile = "minimal", components = "rustfmt,clippy" }
 python = "3.15.2"
 node = "26.13.0"
 actionlint = "1.7.12"
@@ -10,7 +11,8 @@ shellcheck = "0.11.0"
 description = "Run all repository quality checks"
 run = "make check"
 
-[tasks.prepare]
+[tasks."ci:prepare"]
+alias = "prepare"
 description = "Prepare locked dependencies, cached images and local browser inputs"
 run = "make prepare"
 
@@ -25,3 +27,23 @@ run = "make stop-app"
 [tasks.rebuild-app]
 description = "Rebuild and start the development application"
 run = "make rebuild-app"
+
+[tasks."release:prepare"]
+description = "Prepare cached API generation inputs for candidate images"
+run = "agent/scripts/governance/prepare.sh candidate"
+
+[tasks.build]
+description = "Build and verify both Docker images"
+run = "make check-release-artifacts"
+
+[tasks.package]
+description = "Export the verified Docker images without rebuilding"
+run = "make release-package"
+
+[tasks."hooks:install"]
+description = "Synchronize managed Git hooks and imports"
+run = "make install-git-hooks"
+
+[tasks.release]
+description = "Start the Release workflow for remote main"
+run = "gh workflow run release.yml --ref main"

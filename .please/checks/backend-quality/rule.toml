@@ -1,7 +1,6 @@
 id = "backend-quality"
 description = "Run Clippy and all backend tests offline"
 run_at = ["pre-push", "check"]
-depends_on = ["api-models"]
 
 [check]
 command = "make check-backend"

@@ -47,7 +47,7 @@ case "${1:-check}" in
     ;;
   release-artifacts)
     require_models
-    if [ "${PLEASE_EXECUTION_POINT:-}" = "release-candidate" ]; then
+    if [ "${PLEASE_EXECUTION_POINT:-}" = "release" ]; then
       export DOCKER_DEFAULT_PLATFORM=linux/amd64
     fi
     source_commit="$(git rev-parse HEAD)"
