@@ -64,11 +64,10 @@ Targeted checks remain available through `make check-backend`,
 `make check` explicitly runs the complete local gate.
 
 The Makefile is the contributor/agent quality command interface. Preparation is
-separate from checks. Node is pinned in [`.node-version`](.node-version),
-Python and standalone validation tools in [`mise.toml`](mise.toml). Mise reads
-the existing Node version file. Rust uses the host's stable compiler by default;
-[`backend/rust-toolchain.toml`](backend/rust-toolchain.toml) selects `stable` for
-rustup and CI. No exact local compiler version is required. A project override
+separate from checks. Node, Python and standalone validation tools are pinned in
+[`mise.toml`](mise.toml). CI reads the Node pin directly from that file.
+Rust uses the host's stable compiler by default; CI explicitly selects `stable`.
+No exact local compiler version is required. A project override
 needs a concrete compatibility reason; nightly, beta and development compilers
 are rejected by preparation and backend checks.
 

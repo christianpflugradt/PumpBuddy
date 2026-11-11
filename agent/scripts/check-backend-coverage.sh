@@ -3,7 +3,6 @@ set -eu
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
-toolchain_file="$repo_root/backend/rust-toolchain.toml"
 badge_output_dir="${COVERAGE_BADGE_OUTPUT_DIR:-$repo_root/site/badges}"
 badge_json_path="$badge_output_dir/backend-coverage.json"
 threshold="${BACKEND_BRANCH_COVERAGE_MIN:-0}"
@@ -13,23 +12,8 @@ tmp_json="$(mktemp)"
 tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
-resolve_backend_rust_toolchain() {
-  if [ ! -f "$toolchain_file" ]; then
-    return 1
-  fi
-
-  sed -n 's/^channel = "\(.*\)"/\1/p' "$toolchain_file" | head -n 1
-}
-
-rust_toolchain="${RUSTUP_TOOLCHAIN:-}"
-if [ -z "$rust_toolchain" ]; then
-  rust_toolchain="$(resolve_backend_rust_toolchain || true)"
-fi
-if [ -z "$rust_toolchain" ]; then
-  echo "ERROR could not resolve backend Rust toolchain from RUSTUP_TOOLCHAIN or $toolchain_file" >&2
-  exit 1
-fi
-export RUSTUP_TOOLCHAIN="$rust_toolchain"
+sh "$repo_root/agent/scripts/governance/require-stable-rust.sh"
+rust_toolchain="stable"
 
 write_na_badge() {
   TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"

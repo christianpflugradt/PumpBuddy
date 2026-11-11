@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version-file: .node-version
+          node-version-file: mise.toml
           package-manager-cache: false
       - run: npm ci --ignore-scripts
       - name: Plan semantic release without publication
@@ -102,13 +102,12 @@ jobs:
           python-version: '3.15'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version-file: .node-version
+          node-version-file: mise.toml
           package-manager-cache: false
-      - name: Prepare pinned Rust compiler
+      - name: Prepare stable Rust compiler
         run: |
-          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-          rustup toolchain install "$channel" --profile minimal --component rustfmt --component clippy
-          echo "RUSTUP_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          echo "RUSTUP_TOOLCHAIN=stable" >> "$GITHUB_ENV"
       - name: Prepare candidate dependencies
         run: agent/scripts/governance/prepare.sh candidate
       - name: Read pinned governor version
@@ -188,7 +187,7 @@ jobs:
           python-version: '3.15'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version-file: .node-version
+          node-version-file: mise.toml
           package-manager-cache: false
       - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8

@@ -9,10 +9,10 @@ CLI and Action. Local Rules contain PumpBuddy requirements only.
 ## Preparation and hooks
 
 Run `mise trust` and `mise install` to prepare the project versions of Node,
-Python, ShellCheck, actionlint and Gitleaks. Mise reads `.node-version`; it does
-not manage Rust or machine-level packages. Use the host's stable Rust compiler
-with rustfmt and Clippy. The `stable` channel in `backend/rust-toolchain.toml`
-also selects the CI compiler; local checks reject prerelease compilers without
+Python, ShellCheck, actionlint and Gitleaks from `mise.toml`. CI reads the same
+Node pin. Mise does not manage Rust or machine-level packages. Use the host's
+stable Rust compiler with rustfmt and Clippy; CI explicitly selects `stable`.
+Local checks reject prerelease compilers without
 requiring an exact numeric version. LLVM tools are used by optional coverage.
 Git, Bash, make, a native compiler/linker and Docker with an accessible daemon
 remain host prerequisites. The Argon2 CLI is needed for explicit development

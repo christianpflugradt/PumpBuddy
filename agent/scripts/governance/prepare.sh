@@ -7,7 +7,7 @@ export PIP_CACHE_DIR="$PWD/.cache/pip"
 export npm_config_cache="$PWD/.cache/npm"
 mode="${1:-check}"
 case "$mode" in check|candidate|readiness|badges) ;; *) exit 2 ;; esac
-expected_node="$(cat .node-version)"
+expected_node="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("mise.toml").read_text())["tools"]["node"])')"
 if [ "$(node --version)" != "v$expected_node" ]; then
   echo "Prepare Node $expected_node before installing dependencies." >&2
   exit 1
