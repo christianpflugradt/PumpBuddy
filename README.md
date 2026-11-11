@@ -42,9 +42,18 @@ Use the published governor in [`.please-version`](.please-version).
 Prepare tools/dependencies, then install managed hooks:
 
 ```sh
-make prepare
-make install-git-hooks
+mise trust
+mise install
+mise run prepare
+mise exec -- make install-git-hooks
 ```
+
+Use `mise exec -- make check` for manual validation and `mise exec -- git commit` /
+`mise exec -- git push` so hooks inherit the same configured tools without shell
+activation. Plain commands require mise shell activation or equivalent PATH
+setup; installing tools alone does not activate them. Git, Bash, make, a native
+compiler/linker, Docker with an accessible daemon and the published governor remain
+host prerequisites; credentials remain external.
 
 Git hooks are the final local gates: pre-commit checks Rust formatting and framework
 contracts; pre-push runs the complete local suite and Docker artifact builds.
@@ -55,8 +64,9 @@ Targeted checks remain available through `make check-backend`,
 
 The Makefile is the contributor/agent quality command interface. Preparation is
 separate from checks. Node is pinned in [`.node-version`](.node-version),
-Python in [`mise.toml`](mise.toml), and Rust in
+Python and standalone validation tools in [`mise.toml`](mise.toml), and Rust in
 [`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
+Mise reads the existing Node and Rust version files for installation.
 Keep the Rust Dockerfile version/digest aligned with that Rust pin and the renderer
 builder aligned with Node. Checks do not install or silently replace tools.
 

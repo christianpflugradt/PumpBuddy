@@ -8,18 +8,27 @@ CLI and Action. Local Rules contain PumpBuddy requirements only.
 
 ## Preparation and hooks
 
-Prepare Node from `.node-version`, Python from `mise.toml`, Rust and components
-from `backend/rust-toolchain.toml`, Docker with an accessible daemon, make,
-ShellCheck, actionlint 1.7.12 and Gitleaks 8.30.1.
-Rustup is optional when the installed compiler matches the pin. Mise does not
-provide a second Rust pin. Checks never install tools.
+Run `mise trust` and `mise install` to prepare Node, Python, Rust, ShellCheck,
+actionlint and Gitleaks. Mise reads the existing `.node-version` and numeric Rust
+version in `backend/rust-toolchain.toml`; it does not maintain second version
+pins. Rust includes rustfmt, Clippy and LLVM tools. Git, Bash, make, a native
+compiler/linker and Docker with an accessible daemon remain host prerequisites.
+Checks never install tools.
 
-Run `make prepare` explicitly to install locked npm dependencies, prepare the
+Run `mise run prepare` (which delegates to `make prepare`) explicitly to install
+locked npm dependencies, prepare the
 repository-local Python environment, fetch Cargo dependencies, cache the OpenAPI
 generator and PostgreSQL test image, generate models and prepare browsers.
 This downloads dependencies but does not install machine-wide tools. CI prepares
 Chromium, Firefox and WebKit; local preparation uses Chromium. Repeat preparation
 when dependency locks, toolchain pins or generator pins change.
+
+Use `mise exec -- make install-git-hooks` for hook setup and `mise exec -- make check`
+for manual validation without shell activation. Run Git as
+`mise exec -- git commit` and `mise exec -- git push` so hooks inherit the same
+configured tools. Plain commands require mise shell activation or equivalent
+PATH setup; `mise install` alone does not activate tools. The separately installed
+published governor must remain on PATH, and credentials are supplied externally.
 
 Run `make install-git-hooks` with the published governor on PATH. It verifies the
 version, retires the old `.githooks` configuration only after old hooks are removed,
