@@ -4,7 +4,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 case "${1:-install}" in
   install)
-    expected="$(cat .please-version)"
+    expected="$(python3 -c 'import pathlib, tomllib; print("v" + tomllib.loads(pathlib.Path("mise.toml").read_text())["tools"]["github:please-behave/cli"])')"
     actual="v$(please --version | awk '{print $2}')"
     if [ "$actual" != "$expected" ]; then
       echo "Expected published Please Behave $expected; found $actual" >&2

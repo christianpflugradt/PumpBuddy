@@ -38,7 +38,7 @@ Only the renderer is publicly exposed; backend and database stay internal to the
 
 ## Development Quick Start
 
-Use the published governor in [`.please-version`](.please-version).
+Use the published governor in [`mise.toml`](mise.toml).
 Prepare tools/dependencies, then install managed hooks:
 
 ```sh

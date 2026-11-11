@@ -52,7 +52,7 @@ Path reference policy:
 
 ## Repository Governance
 
-- Use the published Please Behave version pinned in `.please-version`.
+- Use the published Please Behave version pinned in `mise.toml`.
 - Keep shared rules and provider adapters in external packages; local rules
   contain PumpBuddy-specific requirements only.
 - Git hooks are the final local gates. Pre-commit checks formatting and framework
