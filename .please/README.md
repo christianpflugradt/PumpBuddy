@@ -1,10 +1,9 @@
 # Repository governance
 
 The independently installed published CLI in `mise.toml` governs this
-repository. Candidate binaries never govern their own validation. The three baseline Rule Sets
-and the independent Gemini Flash-Lite provider use revision
-`c4d4c60eff8fc5d32641f5fe33b5cfa9e337e1f3`, shared with Passing By, Please Behave
-CLI and Action. Local Rules contain PumpBuddy requirements only.
+repository. Candidate binaries never govern their own validation. The baseline Rule Sets
+and the independent Gemini Flash-Lite provider share one reviewed revision pinned in
+`config.toml`. Local Rules contain PumpBuddy requirements only.
 
 ## Preparation and hooks
 
@@ -110,7 +109,8 @@ No environment filename exceptions are added to shared security rules.
 The license check matches the external PolyForm Noncommercial 1.0.0 reference
 byte-for-byte. Existing copyright attribution is preserved in `NOTICE`.
 
-Commit-msg uses only the external Conventional Commits Check and advisory
+The external repository-conventions set limits AGENTS.md to 1500 approximate tokens at
+pre-commit and check. Commit-msg uses its Conventional Commits Check and advisory
 header-only wording Review. `commit-scopes.txt` supplies project scopes.
 No local header constraints, commit-range or PR-title checks remain.
 The independent provider package supplies the adapter. Export GEMINI_API_KEY
@@ -122,7 +122,7 @@ visible without blocking commits. No adapter or credentials are copied here.
 CI has `check` / `Check`, runs on main pushes and pull requests including
 Renovate, and executes deterministic Please Behave checks. Framework checks
 are part of that job. Ordinary dependency merge policy remains unchanged; the governor follows the shared update policy below.
-CI and Candidate use published Action v1.3.0 with install false, sync true,
+CI and Candidate use the published Action with install false, sync true,
 checks-only and summaries. Mise owns the governor and exact Python pin; there is
 no version extraction or duplicate installation. Readiness directly verifies
 exact-source CI with agent/scripts/release/check-release-ci.py. The only project
