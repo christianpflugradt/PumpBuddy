@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   pbExerciseVariantDetailScreenTag,
   registerPbExerciseVariantDetailScreen,
@@ -7,7 +7,14 @@ import {
 
 describe("pb-exercise-variant-detail-screen", () => {
   beforeEach(() => {
+    // The strength chart keeps a rolling 12-month window, so fixed fixture dates need a fixed clock.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-01T12:00:00.000Z"));
     registerPbExerciseVariantDetailScreen();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   const strengthRow = (): ExerciseVariantDetailScreenState["row"] =>
