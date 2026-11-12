@@ -40,10 +40,6 @@ run = "make check-release-artifacts"
 description = "Export the verified Docker images without rebuilding"
 run = "make release-package"
 
-[tasks."hooks:install"]
-description = "Synchronize managed Git hooks and imports"
-run = "make install-git-hooks"
-
 [tasks.release]
 description = "Start the Release workflow for remote main"
 run = "gh workflow run release.yml --ref main"

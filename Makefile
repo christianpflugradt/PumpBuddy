@@ -10,16 +10,12 @@
 	check-release-candidate \
 	check-release-toolchain \
 	check-release-rules \
-	check-workflows \
-	check-npm-audit \
 	check-rust-audit \
 	prepare \
 	coverage-backend \
 	coverage-renderer \
 	release-package \
 	release-package-verify \
-	install-git-hooks \
-	git-hooks-status \
 	run-app \
 	stop-app \
 	rebuild-app \
@@ -75,13 +71,6 @@ check-release-rules: check-release-toolchain
 	node --test agent/scripts/release/test-release.mjs
 	python3 -m unittest discover -s agent/scripts/release -p 'test_*.py'
 
-check-workflows:
-	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" python3 agent/scripts/check/check-workflows.py
-
-check-npm-audit:
-	npm audit --audit-level=high
-	cd renderer && npm audit --audit-level=high
-
 check-rust-audit:
 	cargo audit --file backend/Cargo.lock
 
@@ -115,12 +104,6 @@ rebuild-app: refresh-api-clients
 rebuild-renderer: refresh-frontend-api-client
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache renderer
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --no-deps --force-recreate renderer
-
-install-git-hooks:
-	agent/scripts/install-git-hooks.sh install
-
-git-hooks-status:
-	agent/scripts/install-git-hooks.sh status
 
 refresh-api-clients: refresh-backend-api-client refresh-frontend-api-client
 

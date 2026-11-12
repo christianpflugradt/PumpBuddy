@@ -1,7 +1,0 @@
-id = "npm-audit"
-description = "Audit both npm dependency graphs"
-run_at = ["check"]
-
-[check]
-command = "make check-npm-audit"
-timeout_seconds = 300

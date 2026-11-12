@@ -45,7 +45,7 @@ Prepare tools/dependencies, then install managed hooks:
 mise trust
 mise install
 mise run ci:prepare
-mise exec -- make install-git-hooks
+mise exec -- please sync --yes
 ```
 
 Use `mise exec -- make check` for manual validation and `mise exec -- git commit` /

@@ -1,7 +1,0 @@
-id = "workflows"
-description = "Verify workflow syntax and expressions"
-run_at = ["pre-push", "check"]
-
-[check]
-command = "make check-workflows"
-timeout_seconds = 120

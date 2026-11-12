@@ -31,17 +31,16 @@ This downloads dependencies but does not install machine-wide tools. CI prepares
 Chromium, Firefox and WebKit; local preparation uses Chromium. Repeat preparation
 when dependency locks, toolchain pins or generator pins change.
 
-Use `mise exec -- make install-git-hooks` for hook setup and `mise exec -- make check`
+Use `mise exec -- please sync --yes` for hook setup and `mise exec -- make check`
 for manual validation without shell activation. Run Git as
 `mise exec -- git commit` and `mise exec -- git push` so hooks inherit the same
 configured tools. Plain commands require mise shell activation or equivalent
 PATH setup; `mise install` alone does not activate tools. The separately installed
 published governor must remain on PATH, and credentials are supplied externally.
 
-Run `make install-git-hooks` with the published governor on PATH. It verifies the
-version, retires the old `.githooks` configuration only after old hooks are removed,
-then synchronizes external sources and managed Git wrappers. Custom hooks are
-preserved and require explicit integration. Normal execution uses immutable
+Run `please sync --yes` with the published governor on PATH. It synchronizes
+external sources and managed Git wrappers. Custom hooks are preserved and require
+explicit integration. Normal execution uses immutable
 cached imports. Reports under `.please/reports/` remain ignored.
 
 When using a repository-local governor, prepend `.tools/please/bin` to PATH in
@@ -65,8 +64,10 @@ and retry Git. Never bypass hooks.
 | bootstrap-secret-handoff | pre-push, check |
 | release-artifacts | pre-push, check |
 | release-candidate | release |
-| release-rules, workflows | pre-push, check |
-| npm-audit | check |
+| release-rules | pre-push, check |
+
+The shared open-source-software rules `workflows`, `shell` and `npm-audit` complement
+these local rules; Local Rules contain only PumpBuddy-specific requirements.
 
 Backend runs Clippy for all targets/features and the complete native suite,
 including Testcontainers PostgreSQL integration tests. Renderer retains its
@@ -147,10 +148,9 @@ Renderer coverage thresholds remain unchanged. The Pages job retains
 `coverage-pages`, `cancel-in-progress: false` and `queue: max`; ordering follows
 queue arrival. Only the Pages job receives Pages/OIDC write permissions.
 
-Actionlint 1.7.12 predates GitHub's supported concurrency.queue property.
-The workflow checker validates queue values and the max/cancellation combination,
-then suppresses only actionlint's unknown-queue diagnostic. All other workflow,
-expression and shell diagnostics remain blocking.
+Actionlint 1.7.12 predates GitHub's supported concurrency.queue property;
+`.github/actionlint.yaml` suppresses only that unknown-key diagnostic for the shared
+`workflows` rule. All other workflow, expression and shell diagnostics remain blocking.
 
 ## Release
 
