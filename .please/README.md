@@ -63,7 +63,8 @@ and retry Git. Never bypass hooks.
 | renderer-quality | pre-push, check |
 | api-contract-alignment | pre-push, check |
 | bootstrap-secret-handoff | pre-push, check |
-| release-artifacts | pre-push, check, release |
+| release-artifacts | pre-push, check |
+| release-candidate | release |
 | release-rules, workflows | pre-push, check |
 | npm-audit | check |
 

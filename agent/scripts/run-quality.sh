@@ -47,9 +47,6 @@ case "${1:-check}" in
     ;;
   release-artifacts)
     require_models
-    if [ "${PLEASE_EXECUTION_POINT:-}" = "release" ]; then
-      export DOCKER_DEFAULT_PLATFORM=linux/amd64
-    fi
     source_commit="$(git rev-parse HEAD)"
     source_timestamp="$(git show --no-patch --date=iso-strict --format=%cd HEAD)"
     version="${RELEASE_TAG:-quality-check}"

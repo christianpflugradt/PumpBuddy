@@ -7,6 +7,7 @@
 	check-backend \
 	check-renderer \
 	check-release-artifacts \
+	check-release-candidate \
 	check-release-toolchain \
 	check-release-rules \
 	check-workflows \
@@ -63,6 +64,9 @@ check-renderer:
 
 check-release-artifacts:
 	agent/scripts/run-quality.sh release-artifacts
+
+check-release-candidate:
+	DOCKER_DEFAULT_PLATFORM=linux/amd64 agent/scripts/run-quality.sh release-artifacts
 
 check-release-toolchain:
 	node agent/scripts/check/check-release-notes-toolchain.mjs
