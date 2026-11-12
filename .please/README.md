@@ -123,8 +123,8 @@ visible without blocking commits. No adapter or credentials are copied here.
 CI has `check` / `Check`, runs on main pushes and pull requests including
 Renovate, and executes deterministic Please Behave checks. Framework checks
 are part of that job. Ordinary dependency merge policy remains unchanged; the governor follows the shared update policy below.
-CI and Candidate use the published Action with install false, sync true,
-checks-only and summaries. Mise owns the governor and exact Python pin; there is
+CI and Candidate use the published Action with install false, sync true
+and summaries. Mise owns the governor and exact Python pin; there is
 no version extraction or duplicate installation. Readiness directly verifies
 exact-source CI with agent/scripts/release/check-release-ci.py. The only project
 custom point is release. Plan and Publish never install or invoke governance or
