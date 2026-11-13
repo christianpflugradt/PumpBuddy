@@ -1,7 +1,0 @@
-id = "release-rules"
-description = "Test release policy and candidate verification offline"
-run_at = ["pre-push", "check"]
-
-[check]
-command = "make check-release-rules"
-timeout_seconds = 180

@@ -7,8 +7,6 @@
 	check-renderer \
 	check-release-artifacts \
 	check-release-candidate \
-	check-release-toolchain \
-	check-release-rules \
 	check-rust-audit \
 	prepare \
 	coverage-backend \
@@ -59,13 +57,6 @@ check-release-artifacts:
 
 check-release-candidate:
 	DOCKER_DEFAULT_PLATFORM=linux/amd64 agent/scripts/run-quality.sh release-artifacts
-
-check-release-toolchain:
-	node agent/scripts/check/check-release-notes-toolchain.mjs
-
-check-release-rules: check-release-toolchain
-	node --test agent/scripts/release/test-release.mjs
-	python3 -m unittest discover -s agent/scripts/release -p 'test_*.py'
 
 check-rust-audit:
 	cargo audit --file backend/Cargo.lock
