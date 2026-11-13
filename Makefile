@@ -1,8 +1,5 @@
 .PHONY: \
 	check \
-	check-format-rust \
-	check-format-python \
-	check-format-shell \
 	check-framework \
 	check-api-contract \
 	check-bootstrap-secret-handoff \
@@ -37,15 +34,6 @@ OPENAPI_DOCKER_RUN = docker run --pull never --network none --rm -u "$$(id -u):$
 
 check:
 	please run --at pre-push --checks-only
-
-check-format-rust:
-	agent/scripts/run-quality.sh format-rust
-
-check-format-python:
-	agent/scripts/run-quality.sh format-python
-
-check-format-shell:
-	agent/scripts/run-quality.sh format-shell
 
 check-framework:
 	python3 -B -m unittest discover -s agent/scripts/governance -p 'test_*.py'

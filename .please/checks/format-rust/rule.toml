@@ -3,5 +3,5 @@ description = "Verify Rust formatting"
 run_at = ["pre-commit", "pre-push", "check"]
 
 [check]
-command = "make check-format-rust"
+command = "agent/scripts/run-quality.sh format-rust"
 timeout_seconds = 120

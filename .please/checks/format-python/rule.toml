@@ -3,5 +3,5 @@ description = "Verify Python formatting with ruff"
 run_at = ["pre-commit", "pre-push", "check"]
 
 [check]
-command = "make check-format-python"
+command = "agent/scripts/run-quality.sh format-python"
 timeout_seconds = 120
