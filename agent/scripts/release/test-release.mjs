@@ -23,7 +23,7 @@ for (const [message, expected] of [
   ["refactor(backend): simplify the handler", "patch"],
   ["ci: align repository governance", null],
   ["docs: explain deployment", null],
-  ["config: adjust local defaults", null],
+  ["config: adjust local defaults", "patch"],
   ["style: format source", null],
   ["test: cover a regression", null],
   ["build(release): stamp version", null],
