@@ -12,7 +12,7 @@ tmp_json="$(mktemp)"
 tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
-sh "$repo_root/agent/scripts/governance/require-stable-rust.sh"
+sh "$repo_root/agent/scripts/governance/require-release-rust.sh"
 # The pinned toolchain is a rustup toolchain named by its version, for example 1.100.0.
 rust_toolchain="$(rustc --version | cut -d " " -f 2)"
 

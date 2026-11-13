@@ -4,7 +4,7 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$repo_root"
 
 verify_toolchain() {
-  sh agent/scripts/governance/require-stable-rust.sh
+  sh agent/scripts/governance/require-release-rust.sh
 }
 
 require_models() {

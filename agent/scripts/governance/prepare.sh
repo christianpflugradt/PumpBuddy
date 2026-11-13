@@ -25,7 +25,7 @@ if [ "$mode" = readiness ]; then
 fi
 python3 -m venv .tools/validation-venv
 .tools/validation-venv/bin/python3 -m pip install -r validation/core/requirements.txt
-sh agent/scripts/governance/require-stable-rust.sh
+sh agent/scripts/governance/require-release-rust.sh
 cargo fetch --locked --manifest-path backend/Cargo.toml
 generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
 docker pull "$generator"
