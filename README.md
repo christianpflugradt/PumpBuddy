@@ -54,7 +54,7 @@ checks and stops at the first blocker. Use `mise exec -- make check` for the ful
 activation. Plain commands require mise shell activation or equivalent PATH
 setup; installing tools alone does not activate them. Git, Bash, make, a native
 compiler/linker and Docker with an accessible daemon remain host prerequisites.
-Mise installs stable Rust and the published governor; credentials remain
+Mise installs the pinned Rust toolchain and the published governor; credentials remain
 external. The Argon2 CLI is needed for explicit development access-key seeding.
 
 Git hooks are the final local gates: pre-commit checks Rust formatting and framework
@@ -66,15 +66,15 @@ Targeted checks remain available through `make check-backend`,
 
 The Makefile is the contributor/agent quality command interface. Preparation is
 separate from checks. Node, Python and standalone validation tools are pinned in
-[`mise.toml`](mise.toml). CI installs the configured tools through mise; Python is exactly pinned and Rust tracks stable.
-Mise selects stable Rust locally and in CI; no exact compiler pin is required.
-No exact local compiler version is required. A project override
-needs a concrete compatibility reason; nightly, beta and development compilers
+[`mise.toml`](mise.toml). CI installs the configured tools through mise.
+
+Toolchain versions, including Rust, are pinned exactly and Renovate updates the pins, so no
+moving channel (`stable`, `latest`, floating tags or refs) is needed. A moving target requires a
+strong, documented reason; do not revert a pin to one. Nightly, beta and development compilers
 are rejected by preparation and backend checks.
 
-The backend Dockerfile retains its stable compiler version and image digest for
-reproducible container builds. That release-build input is independent of the
-host's numeric compiler version. The renderer builder remains aligned with Node.
+The backend Dockerfile pins its compiler version and image digest for
+reproducible container builds, updated by Renovate separately from the mise pin. The renderer builder remains aligned with Node.
 On Nix-managed machines, host tools remain under the user's Nix configuration;
 repository setup does not change Nix, invoke Homebrew or install global tools.
 Checks do not install or silently replace tools.

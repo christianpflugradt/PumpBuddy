@@ -9,10 +9,9 @@ and the independent Gemini Flash-Lite provider share one reviewed revision pinne
 
 Run `mise trust` and `mise install` to prepare the project versions of Node,
 Python, ShellCheck, actionlint and Gitleaks from `mise.toml`. CI reads the same
-Node pin. Mise manages stable Rust with rustfmt and Clippy; machine-level packages remain
+Node pin. Mise manages the pinned Rust toolchain with rustfmt, Clippy and LLVM tools; machine-level packages remain
 host prerequisites.
-Local checks reject prerelease compilers without
-requiring an exact numeric version. LLVM tools are used by optional coverage.
+Local checks reject prerelease compilers. LLVM tools are used by optional coverage.
 Git, Bash, make, a native compiler/linker and Docker with an accessible daemon
 remain host prerequisites. The Argon2 CLI is needed for explicit development
 access-key seeding. Host installations on Nix-managed machines remain under the
@@ -20,8 +19,8 @@ user's control; ask the user for any required Nix adjustment. Repository setup
 does not invoke Homebrew or install global tools. Checks never install tools.
 
 The backend Docker compiler version and digest stay pinned for reproducible
-container builds. They need not equal the host's numeric stable version. A local
-compiler override is reserved for a documented project compatibility requirement.
+container builds and are updated by Renovate separately from the mise pin.
+The toolchain pinning policy is in the README.
 
 Run `mise run prepare` (which delegates to `make prepare`) explicitly to install
 locked npm dependencies, prepare the
@@ -131,9 +130,8 @@ exact-source CI with agent/scripts/release/check-release-ci.py. The only project
 custom point is release. Plan and Publish never install or invoke governance or
 Git hooks. Release policies live under .github.
 
-Mise installs stable Rust with rustfmt and Clippy. The moving channel matches
-the existing compiler policy, receiving fixes without pin updates; later builds
-may use a different compiler. Docker base-image versions remain independent.
+Mise installs the pinned Rust toolchain with rustfmt, Clippy and LLVM tools; CI jobs, including
+Coverage Badges, install it through mise as well. Docker base-image versions remain independent.
 `prepare` retains dependency and browser preparation. The focused
 release:prepare task only caches the API generator and regenerates model inputs.
 Model generation is explicit preparation, without a setup-only governance Rule.
@@ -143,7 +141,7 @@ validation remains a meaningful Check; packaging and integrity run directly in A
 Coverage Badges is independent. It calculates backend coverage and complete
 renderer coverage again, then publishes the same two GitHub Pages endpoints.
 Only this workflow writes badge files. Backend coverage keeps its informational
-n/a fallback, stable-toolchain line-coverage fallback and default zero threshold.
+n/a fallback, line-coverage fallback on the pinned toolchain and default zero threshold.
 Renderer coverage thresholds remain unchanged. The Pages job retains
 `coverage-pages`, `cancel-in-progress: false` and `queue: max`; ordering follows
 queue arrival. Only the Pages job receives Pages/OIDC write permissions.

@@ -23,8 +23,6 @@ jobs:
           persist-credentials: false
       - name: Install project tools
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
-        with:
-          cache: false # Resolve the moving Rust stable channel on each run.
       - name: Fetch project dependencies
         run: mise run prepare
       - name: Run Please Behave checks and applicable reviews
