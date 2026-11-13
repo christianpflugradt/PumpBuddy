@@ -134,8 +134,6 @@ jobs:
     permissions:
       contents: write
       packages: write
-      issues: write
-      pull-requests: write
     env:
       EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
     steps:
