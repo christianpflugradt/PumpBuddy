@@ -48,7 +48,8 @@ mise run prepare
 mise exec -- please sync --yes
 ```
 
-`mise run format` formats Rust, Python and shell sources; `mise run verify` runs the deterministic
+`mise run format` rewrites Rust, Python and shell sources; the hooks enforce them without
+rewriting through the separate rules `format-rust`, `format-python` and `format-shell`; `mise run verify` runs the deterministic
 checks and stops at the first blocker. Use `mise exec -- make check` for the full manual run and `mise exec -- git commit` /
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH
@@ -57,7 +58,7 @@ compiler/linker and Docker with an accessible daemon remain host prerequisites.
 Mise installs the pinned Rust toolchain and the published governor; credentials remain
 external. The Argon2 CLI is needed for explicit development access-key seeding.
 
-Git hooks are the final local gates: pre-commit checks Rust formatting and framework
+Git hooks are the final local gates: pre-commit checks Rust, Python and shell formatting and framework
 contracts; pre-push runs the complete local suite and Docker artifact builds.
 Inspect captured failures with `please status --details`, fix them and retry Git.
 Targeted checks remain available through `make check-backend`,

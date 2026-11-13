@@ -1,0 +1,7 @@
+id = "format-shell"
+description = "Verify shell script formatting with shfmt"
+run_at = ["pre-commit", "pre-push", "check"]
+
+[check]
+command = "make check-format-shell"
+timeout_seconds = 120

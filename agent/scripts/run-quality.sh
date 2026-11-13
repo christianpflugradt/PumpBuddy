@@ -23,9 +23,22 @@ cleanup_testcontainers() {
 }
 
 case "${1:-check}" in
-format)
+format-rust)
   verify_toolchain
   cargo fmt --manifest-path backend/Cargo.toml --check
+  ;;
+format-python)
+  # Pass the files as arguments, not through xargs, so the formatter's exit status stays 1 (FAIL).
+  # shellcheck disable=SC2046
+  set -- $(git ls-files '*.py')
+  [ "$#" -gt 0 ] || exit 0
+  ruff format --check -- "$@"
+  ;;
+format-shell)
+  # shellcheck disable=SC2046
+  set -- $(git ls-files '*.sh')
+  [ "$#" -gt 0 ] || exit 0
+  shfmt -d "$@"
   ;;
 backend)
   trap cleanup_testcontainers 0
@@ -61,7 +74,7 @@ release-artifacts)
   ;;
 check) exec make check ;;
 *)
-  echo "Usage: agent/scripts/run-quality.sh [format|backend|renderer|release-artifacts|check]" >&2
+  echo "Usage: agent/scripts/run-quality.sh [format-rust|format-python|format-shell|backend|renderer|release-artifacts|check]" >&2
   exit 2
   ;;
 esac

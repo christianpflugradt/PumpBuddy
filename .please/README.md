@@ -55,7 +55,9 @@ and retry Git. Never bypass hooks.
 
 | Rule | Execution points |
 | --- | --- |
-| format | pre-commit, pre-push, check |
+| format-rust | pre-commit, pre-push, check |
+| format-python | pre-commit, pre-push, check |
+| format-shell | pre-commit, pre-push, check |
 | framework | pre-commit, pre-push, check |
 | backend-quality | pre-push, check |
 | renderer-quality | pre-push, check |
