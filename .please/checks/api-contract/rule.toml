@@ -1,4 +1,4 @@
-id = "api-contract-alignment"
+id = "api-contract"
 description = "Verify API changes against the canonical contract"
 run_at = ["pre-push", "check"]
 

@@ -63,7 +63,7 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | framework | pre-push, check |
 | backend-quality | pre-push, check |
 | renderer-quality | pre-push, check |
-| api-contract-alignment | pre-push, check |
+| api-contract | pre-push, check |
 | bootstrap-secret-handoff | pre-push, check |
 | release-artifacts | pre-push, check |
 | release-candidate | release |
