@@ -41,7 +41,7 @@ run = "make stop-app"
 description = "Rebuild and start the development application"
 run = "make rebuild-app"
 
-[tasks."release:prepare"]
+[tasks."prepare:candidate"]
 description = "Prepare cached API generation inputs for candidate images"
 run = "agent/scripts/governance/prepare.sh candidate"
 

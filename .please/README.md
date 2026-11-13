@@ -137,7 +137,7 @@ Git hooks. Release policies live under .github.
 Mise installs the pinned Rust toolchain with rustfmt, Clippy and LLVM tools; CI jobs, including
 Coverage Badges, install it through mise as well. Docker base-image versions remain independent.
 `prepare` retains dependency and browser preparation. The focused
-release:prepare task only caches the API generator and regenerates model inputs.
+prepare:candidate task only caches the API generator and regenerates model inputs.
 Model generation is explicit preparation, without a setup-only governance Rule.
 Refresh preparation after API contract or dependency changes. Docker image build
 validation remains a meaningful Check; packaging and integrity run directly in Actions.
