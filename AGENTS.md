@@ -52,7 +52,7 @@ Path reference policy:
 
 ## Repository Governance
 
-- Use the published Please Behave version pinned in `.please-version`.
+- Use the published Please Behave version pinned in `mise.toml`.
 - Keep shared rules and provider adapters in external packages; local rules
   contain PumpBuddy-specific requirements only.
 - Git hooks are the final local gates. Pre-commit checks formatting and framework
@@ -60,7 +60,8 @@ Path reference policy:
 - Do not manually repeat the complete gate before Git operations. Targeted Makefile
   diagnosis and source formatting are permitted. Fix failures and retry Git;
   inspect saved reports with `please status --details`. Never bypass hooks.
-- Prepare dependencies explicitly with `make prepare`; checks never install tools.
+- Pin tool and toolchain versions exactly; Renovate updates them. Do not switch a pin to a moving channel (`stable`, `latest`, floating tags) without a strong documented reason; see README.
+- Prepare tools with mise install and dependencies with mise run prepare (delegating to make prepare); checks never install tools.
   Tests remain offline with local fixtures and mocked APIs. Only the normal
   advisory commit hook may call its provider.
 - Work on main, preserve unrelated edits, and commit/push coherent completed changes.

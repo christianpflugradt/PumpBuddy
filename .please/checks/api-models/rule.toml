@@ -1,8 +1,0 @@
-id = "api-models"
-description = "Generate both API model sets from the cached generator"
-run_at = ["pre-push", "check", "release-candidate"]
-
-[check]
-command = "make refresh-api-clients"
-timeout_seconds = 300
-resource = "build"

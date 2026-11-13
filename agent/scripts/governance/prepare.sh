@@ -6,8 +6,14 @@ export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
 export PIP_CACHE_DIR="$PWD/.cache/pip"
 export npm_config_cache="$PWD/.cache/npm"
 mode="${1:-check}"
-case "$mode" in check|candidate|readiness|badges) ;; *) exit 2 ;; esac
-expected_node="$(cat .node-version)"
+case "$mode" in check | candidate | readiness | badges) ;; *) exit 2 ;; esac
+if [ "$mode" = candidate ]; then
+  generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
+  docker pull "$generator"
+  make refresh-api-clients
+  exit 0
+fi
+expected_node="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("mise.toml").read_text())["tools"]["node"])')"
 if [ "$(node --version)" != "v$expected_node" ]; then
   echo "Prepare Node $expected_node before installing dependencies." >&2
   exit 1
@@ -19,12 +25,7 @@ if [ "$mode" = readiness ]; then
 fi
 python3 -m venv .tools/validation-venv
 .tools/validation-venv/bin/python3 -m pip install -r validation/core/requirements.txt
-expected_rust="$(sed -n 's/^channel = "\(.*\)"/\1/p' backend/rust-toolchain.toml)"
-export RUSTUP_TOOLCHAIN="$expected_rust"
-if [ "$(rustc --version | awk '{print $2}')" != "$expected_rust" ]; then
-  echo "Prepare Rust $expected_rust before dependency preparation." >&2
-  exit 1
-fi
+sh agent/scripts/governance/require-release-rust.sh
 cargo fetch --locked --manifest-path backend/Cargo.toml
 generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
 docker pull "$generator"

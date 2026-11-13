@@ -1,5 +1,6 @@
 id = "bootstrap-secret-handoff"
-description = "Verify bootstrap credential handling"
+name = "Bootstrap secrets"
+description = "Bootstrap access keys are never printed or read from logs"
 run_at = ["pre-push", "check"]
 
 [check]

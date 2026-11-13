@@ -1,0 +1,8 @@
+id = "api-contract"
+name = "API contract"
+description = "API changes match the canonical contract"
+run_at = ["pre-push", "check"]
+
+[check]
+command = "make check-api-contract"
+timeout_seconds = 120

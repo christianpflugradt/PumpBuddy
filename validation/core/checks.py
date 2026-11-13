@@ -34,15 +34,9 @@ def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
     persistence: PersistenceModelDoc = validated_docs.get("agent/design/persistence-model.yaml")
     capabilities: WorkoutCapabilitiesDoc = validated_docs.get("agent/design/workout-capabilities.yaml")
     use_cases: WorkoutUseCasesDoc = validated_docs.get("agent/design/workout-use-cases.yaml")
-    mapping: WorkoutUseCasesToDomainModelDoc = validated_docs.get(
-        "agent/design/workout-use-cases-to-domain-model.yaml"
-    )
-    insights_capabilities: WorkoutInsightsCapabilitiesDoc = validated_docs.get(
-        "agent/design/workout-insights-capabilities.yaml"
-    )
-    insights_use_cases: WorkoutInsightsUseCasesDoc = validated_docs.get(
-        "agent/design/workout-insights-use-cases.yaml"
-    )
+    mapping: WorkoutUseCasesToDomainModelDoc = validated_docs.get("agent/design/workout-use-cases-to-domain-model.yaml")
+    insights_capabilities: WorkoutInsightsCapabilitiesDoc = validated_docs.get("agent/design/workout-insights-capabilities.yaml")
+    insights_use_cases: WorkoutInsightsUseCasesDoc = validated_docs.get("agent/design/workout-insights-use-cases.yaml")
     insights_mapping: WorkoutInsightsUseCasesToDomainModelDoc = validated_docs.get(
         "agent/design/workout-insights-use-cases-to-domain-model.yaml"
     )
@@ -182,9 +176,7 @@ def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
                     issues.append(
                         ValidationIssue(
                             severity="error",
-                            message=(
-                                f"mapping {item.use_case_id} references unknown domain entity '{entity_name}'"
-                            ),
+                            message=(f"mapping {item.use_case_id} references unknown domain entity '{entity_name}'"),
                         )
                     )
             if item.mode not in allowed_modes:
@@ -221,8 +213,7 @@ def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
                                     ValidationIssue(
                                         severity="warning",
                                         message=(
-                                            f"mapping {item.use_case_id} {operation} target '{key}' "
-                                            "does not map to a persistence table"
+                                            f"mapping {item.use_case_id} {operation} target '{key}' does not map to a persistence table"
                                         ),
                                     )
                                 )

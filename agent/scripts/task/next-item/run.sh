@@ -27,15 +27,15 @@ try_delegate() {
 
   rm -f "${output_file}"
   case "${task_name}:${status}" in
-    review-item:10)
-      return 0
-      ;;
-    implement-item:10)
-      ;;
-    *)
-      echo "Delegated task failed: ${task_name} (exit ${status})" >&2
-      exit "${status}"
-      ;;
+  review-item:10)
+    return 0
+    ;;
+  implement-item:10)
+    ;;
+  *)
+    echo "Delegated task failed: ${task_name} (exit ${status})" >&2
+    exit "${status}"
+    ;;
   esac
 
   if [ "${task_name}" = "review-item" ]; then

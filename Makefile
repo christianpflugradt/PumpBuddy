@@ -1,24 +1,18 @@
 .PHONY: \
 	check \
-	check-format \
 	check-framework \
 	check-api-contract \
 	check-bootstrap-secret-handoff \
 	check-backend \
 	check-renderer \
 	check-release-artifacts \
-	check-release-toolchain \
-	check-release-rules \
-	check-workflows \
-	check-npm-audit \
+	check-release-candidate \
 	check-rust-audit \
 	prepare \
 	coverage-backend \
 	coverage-renderer \
 	release-package \
 	release-package-verify \
-	install-git-hooks \
-	git-hooks-status \
 	run-app \
 	stop-app \
 	rebuild-app \
@@ -39,10 +33,8 @@ OPENAPI_DOCKER_RUN = docker run --pull never --network none --rm -u "$$(id -u):$
 check:
 	please run --at pre-push --checks-only
 
-check-format:
-	agent/scripts/run-quality.sh format
-
 check-framework:
+	python3 -B -m unittest discover -s agent/scripts/governance -p 'test_*.py'
 	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/validate-docs.sh
 	@for task in discuss-plan refine-plan plan-item implement-item review-item finalize-plan review-architecture review-consistency review-quality review-security review-technology freestyle next-item; do \
 		PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/check-task-contract.sh "$$task" || exit; \
@@ -63,19 +55,8 @@ check-renderer:
 check-release-artifacts:
 	agent/scripts/run-quality.sh release-artifacts
 
-check-release-toolchain:
-	node agent/scripts/check/check-release-notes-toolchain.mjs
-
-check-release-rules: check-release-toolchain
-	node --test agent/scripts/release/test-release.mjs
-	python3 -m unittest discover -s agent/scripts/release -p 'test_*.py'
-
-check-workflows:
-	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" python3 agent/scripts/check/check-workflows.py
-
-check-npm-audit:
-	npm audit --audit-level=high
-	cd renderer && npm audit --audit-level=high
+check-release-candidate:
+	DOCKER_DEFAULT_PLATFORM=linux/amd64 agent/scripts/run-quality.sh release-artifacts
 
 check-rust-audit:
 	cargo audit --file backend/Cargo.lock
@@ -110,12 +91,6 @@ rebuild-app: refresh-api-clients
 rebuild-renderer: refresh-frontend-api-client
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache renderer
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --no-deps --force-recreate renderer
-
-install-git-hooks:
-	agent/scripts/install-git-hooks.sh install
-
-git-hooks-status:
-	agent/scripts/install-git-hooks.sh status
 
 refresh-api-clients: refresh-backend-api-client refresh-frontend-api-client
 

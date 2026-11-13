@@ -31,7 +31,6 @@ if [ ! -f "${EXECUTION_CONFIG}" ]; then
   exit 23
 fi
 
-
 if [ ! -f "${MSG_FILE}" ]; then
   echo "Commit message file not found: ${MSG_FILE}" >&2
   exit 5
@@ -41,8 +40,6 @@ if [ ! -s "${MSG_FILE}" ]; then
   echo "Commit message file is empty: ${MSG_FILE}" >&2
   exit 6
 fi
-
-
 
 load_execution_git_settings "${EXECUTION_CONFIG}"
 validate_execution_git_settings

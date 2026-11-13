@@ -38,37 +38,47 @@ Only the renderer is publicly exposed; backend and database stay internal to the
 
 ## Development Quick Start
 
-Use the published governor in [`.please-version`](.please-version).
+Use the published governor in [`mise.toml`](mise.toml).
 Prepare tools/dependencies, then install managed hooks:
 
 ```sh
 mise trust
 mise install
 mise run prepare
-mise exec -- make install-git-hooks
+mise exec -- please sync --yes
 ```
 
-Use `mise exec -- make check` for manual validation and `mise exec -- git commit` /
+`mise run format` rewrites Rust, Python and shell sources; the hooks enforce them without
+rewriting through the separate rules `format-rust`, `format-python` and `format-shell`; `mise run verify` runs the deterministic
+checks and stops at the first blocker. Use `mise exec -- make check` for the full manual run and `mise exec -- git commit` /
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH
 setup; installing tools alone does not activate them. Git, Bash, make, a native
-compiler/linker, Docker with an accessible daemon and the published governor remain
-host prerequisites; credentials remain external.
+compiler/linker and Docker with an accessible daemon remain host prerequisites.
+Mise installs the pinned Rust toolchain and the published governor; credentials remain
+external. The Argon2 CLI is needed for explicit development access-key seeding.
 
-Git hooks are the final local gates: pre-commit checks Rust formatting and framework
-contracts; pre-push runs the complete local suite and Docker artifact builds.
+Git hooks are the final local gates: pre-commit stays fast and checks Rust, Python and shell
+formatting; pre-push runs the complete local suite, including the framework contracts, and Docker artifact builds.
 Inspect captured failures with `please status --details`, fix them and retry Git.
 Targeted checks remain available through `make check-backend`,
 `make check-renderer`, `make check-framework` and `make check-release-artifacts`.
 `make check` explicitly runs the complete local gate.
 
 The Makefile is the contributor/agent quality command interface. Preparation is
-separate from checks. Node is pinned in [`.node-version`](.node-version),
-Python and standalone validation tools in [`mise.toml`](mise.toml), and Rust in
-[`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
-Mise reads the existing Node and Rust version files for installation.
-Keep the Rust Dockerfile version/digest aligned with that Rust pin and the renderer
-builder aligned with Node. Checks do not install or silently replace tools.
+separate from checks. Node, Python and standalone validation tools are pinned in
+[`mise.toml`](mise.toml). CI installs the configured tools through mise.
+
+Toolchain versions, including Rust, are pinned exactly and Renovate updates the pins, so no
+moving channel (`stable`, `latest`, floating tags or refs) is needed. A moving target requires a
+strong, documented reason; do not revert a pin to one. Nightly, beta and development compilers
+are rejected by preparation and backend checks.
+
+The backend Dockerfile pins its compiler version and image digest for
+reproducible container builds, updated by Renovate separately from the mise pin. The renderer builder remains aligned with Node.
+On Nix-managed machines, host tools remain under the user's Nix configuration;
+repository setup does not change Nix, invoke Homebrew or install global tools.
+Checks do not install or silently replace tools.
 
 See [repository governance](.please/README.md) for all rules, execution points,
 prerequisites, offline test behavior and release guarantees.

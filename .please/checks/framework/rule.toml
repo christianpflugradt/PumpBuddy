@@ -1,6 +1,7 @@
 id = "framework"
-description = "Validate all framework contracts and shell scripts"
-run_at = ["pre-commit", "pre-push", "check"]
+name = "Framework contracts"
+description = "All framework contracts and shell scripts are valid"
+run_at = ["pre-push", "check"]
 
 [check]
 command = "make check-framework"

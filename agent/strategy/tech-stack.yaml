@@ -103,6 +103,10 @@ testing_baseline:
 
 version_policy:
   rules:
+    - use_host_stable_rust_unless_a_documented_project_compatibility_requirement_needs_an_override
+    - use_mise_for_project_node_python_and_validation_tool_versions
+    - retain_backend_container_compiler_version_and_digest_for_reproducible_builds
+    - leave_machine_level_installations_and_nix_changes_to_the_user
     - prefer_current_stable_versions_compatible_with_repo
     - avoid_prerelease_versions_without_explicit_request
     - align_with_lockfiles_toolchain_and_ci

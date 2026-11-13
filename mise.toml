@@ -1,17 +1,30 @@
 [tools]
+"github:please-behave/cli" = "0.9.0"
+rust = { version = "1.100.0", profile = "minimal", components = "rustfmt,clippy,llvm-tools" }
 python = "3.15.2"
-node = "{{ read_file(path='.node-version') | trim }}"
 rust = { version = '''1.99.1''', profile = "minimal", components = "rustfmt,clippy,llvm-tools" }
+node = "26.13.0"
 actionlint = "1.7.12"
+yq = "4.54.3"
 gitleaks = "8.30.1"
 shellcheck = "0.11.0"
+gh = "2.103.3"
+ripgrep = "15.2.0"
+ruff = "0.17.4"
+shfmt = "3.14.1"
+"cargo:cargo-llvm-cov" = "0.9.1"
 
-[bootstrap.packages]
-"brew:argon2" = "latest"
+[tasks.format]
+description = "Format Rust, Python and shell sources"
+run = [
+  "cargo fmt --manifest-path backend/Cargo.toml",
+  "git ls-files -z '*.py' | xargs -0 ruff format",
+  "git ls-files -z '*.sh' | xargs -0 shfmt -w",
+]
 
-[tasks.check]
-description = "Run all repository quality checks"
-run = "make check"
+[tasks.verify]
+description = "Run the deterministic Please Behave checks and stop at the first blocker"
+run = "please run --at pre-push --checks-only --fail-fast"
 
 [tasks.prepare]
 description = "Prepare locked dependencies, cached images and local browser inputs"
@@ -28,3 +41,19 @@ run = "make stop-app"
 [tasks.rebuild-app]
 description = "Rebuild and start the development application"
 run = "make rebuild-app"
+
+[tasks."prepare:candidate"]
+description = "Prepare cached API generation inputs for candidate images"
+run = "agent/scripts/governance/prepare.sh candidate"
+
+[tasks.build]
+description = "Build and verify both Docker images"
+run = "make check-release-artifacts"
+
+[tasks.package]
+description = "Export the verified Docker images without rebuilding"
+run = "make release-package"
+
+[tasks.release]
+description = "Start the Release workflow for remote main"
+run = "gh workflow run release.yml --ref main"

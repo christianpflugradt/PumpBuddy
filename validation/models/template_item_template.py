@@ -57,9 +57,7 @@ class Execution(StrictModel):
     @model_validator(mode="after")
     def validate_plan_item_skip_reason(self) -> "Execution":
         if self.independent_review_required and not (self.independent_review_reason or "").strip():
-            raise ValueError(
-                "execution.independent_review_reason must be non-empty when execution.independent_review_required is true"
-            )
+            raise ValueError("execution.independent_review_reason must be non-empty when execution.independent_review_required is true")
         return self
 
 

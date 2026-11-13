@@ -81,8 +81,8 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
     case "${PLAN_ID}" in
-      pb-[0-9]*) echo "DRY_RUN=would_commit docs: finalize discuss plan ${PLAN_ID}" ;;
-      *) echo "DRY_RUN=would_commit docs: finalize discuss plan updates" ;;
+    pb-[0-9]*) echo "DRY_RUN=would_commit docs: finalize discuss plan ${PLAN_ID}" ;;
+    *) echo "DRY_RUN=would_commit docs: finalize discuss plan updates" ;;
     esac
   else
     echo "DRY_RUN=commit_disabled_by_config"
@@ -151,12 +151,12 @@ if git diff --cached --quiet; then
 fi
 
 case "${PLAN_ID}" in
-  pb-[0-9]*)
-    run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize discuss plan ${PLAN_ID}" git commit -m "docs: finalize discuss plan ${PLAN_ID}"
-    ;;
-  *)
-    run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize discuss plan updates" git commit -m "docs: finalize discuss plan updates"
-    ;;
+pb-[0-9]*)
+  run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize discuss plan ${PLAN_ID}" git commit -m "docs: finalize discuss plan ${PLAN_ID}"
+  ;;
+*)
+  run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize discuss plan updates" git commit -m "docs: finalize discuss plan updates"
+  ;;
 esac
 
 run_push_if_enabled "${EXECUTION_CONFIG}"

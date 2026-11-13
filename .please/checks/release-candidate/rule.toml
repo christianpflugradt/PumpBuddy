@@ -1,0 +1,9 @@
+id = "release-candidate"
+name = "Release candidate images"
+description = "Both shipped Docker images build for linux/amd64"
+run_at = ["release"]
+
+[check]
+command = "make check-release-candidate"
+timeout_seconds = 2400
+resource = "build"

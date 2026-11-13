@@ -17,7 +17,7 @@ export default {
         { type: "feat", release: "minor" },
         { type: "fix", release: "patch" },
         { type: "perf", release: "patch" },
-        ...["chore", "refactor", "revert"].map(type => ({ type, release: "patch" })),
+        ...["chore", "refactor", "revert", "config"].map(type => ({ type, release: "patch" })),
         // Ignore historical generated version commits.
         { type: "build", scope: "!release", release: "patch" },
         { type: "build", scope: null, release: "patch" },
@@ -38,12 +38,16 @@ export default {
           { type: "build", section: "Build System" },
           { type: "refactor", section: "Code Refactoring" },
           { type: "revert", section: "Reverts" },
+          { type: "config", section: "Configuration" },
           ...["ci", "docs", "style", "test"].map(type => ({ type, hidden: true })),
         ],
       },
     }],
     "./agent/scripts/release/semantic-release-plugin.mjs",
     ["@semantic-release/github", {
+      successComment: false,
+      failComment: false,
+      releasedLabels: false,
     }],
   ],
 };

@@ -1,12 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
+import { verifyRelease as verifySourceRelease } from "./source-guard.mjs";
 
 export function verifyRelease(_config, context) {
   const env = context.env ?? process.env;
-  if (!env.PLEASE_RELEASE_GUARD) throw new Error("Run release-verify before publication");
-  require(env.PLEASE_RELEASE_GUARD).verifyRelease(_config, context);
+  verifySourceRelease(_config, context);
   const execution = { cwd: context.cwd, env, encoding: "utf8" };
   execFileSync("python3", ["agent/scripts/release/artifacts.py", "verify"], execution);
 }

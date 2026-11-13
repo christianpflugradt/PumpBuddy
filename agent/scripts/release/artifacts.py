@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export and verify the exact Docker candidates; publication never builds images."""
+
 import hashlib
 import json
 import os
@@ -121,9 +122,17 @@ def package(directory=Path("dist")):
         engine_id = run("docker", "image", "inspect", "--format", "{{.Id}}", tag)
         config_digest = archive_image(path, tag, expected, engine_id)
         images[name] = {"sha256": digest(path), "config_digest": config_digest}
-    (directory / "metadata.json").write_text(json.dumps({
-        "schema_version": 1, "binding": expected, "images": images,
-    }, indent=2) + "\n")
+    (directory / "metadata.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "binding": expected,
+                "images": images,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     verify(directory)
 
 
@@ -145,7 +154,7 @@ def loaded_image_id(directory, name, metadata):
 
 def publish(directory=Path("dist")):
     metadata = verify(directory)
-    subprocess.run(["node", os.environ["PLEASE_RELEASE_GUARD"], "--source"], check=True)
+    subprocess.run(["node", str(Path(__file__).with_name("source-guard.mjs")), "--source"], check=True)
     for name in COMPONENTS:
         image_id = loaded_image_id(directory, name, metadata)
         target = f"ghcr.io/christianpflugradt/pumpbuddy-{name}:v{metadata['binding']['version']}"

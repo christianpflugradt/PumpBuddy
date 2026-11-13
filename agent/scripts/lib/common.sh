@@ -6,7 +6,7 @@ path_prepend_once() {
   [ -n "${segment}" ] || return 0
   [ -d "${segment}" ] || return 0
   case ":${PATH}:" in
-    *":${segment}:"*) return 0 ;;
+  *":${segment}:"*) return 0 ;;
   esac
   PATH="${segment}:${PATH}"
   export PATH
@@ -57,15 +57,15 @@ configure_agent_pythonpath() {
   [ -d "${root_dir}" ] || return 0
 
   case ":${PYTHONPATH:-}:" in
-    *":${root_dir}:"*) ;;
-    *)
-      if [ -n "${PYTHONPATH:-}" ]; then
-        PYTHONPATH="${root_dir}:${PYTHONPATH}"
-      else
-        PYTHONPATH="${root_dir}"
-      fi
-      export PYTHONPATH
-      ;;
+  *":${root_dir}:"*) ;;
+  *)
+    if [ -n "${PYTHONPATH:-}" ]; then
+      PYTHONPATH="${root_dir}:${PYTHONPATH}"
+    else
+      PYTHONPATH="${root_dir}"
+    fi
+    export PYTHONPATH
+    ;;
   esac
 }
 
@@ -151,18 +151,18 @@ bootstrap_agent_python_runtime
 require_file() {
   path="$1"
   case "$path" in
-    *\**|*\?*|*\[* )
-      matched_any=0
-      for matched in $path; do
-        if [ -e "$matched" ]; then
-          echo "LOAD=$matched"
-          matched_any=1
-        fi
-      done
-      if [ "${matched_any}" -eq 1 ]; then
-        return 0
+  *\** | *\?* | *\[*)
+    matched_any=0
+    for matched in $path; do
+      if [ -e "$matched" ]; then
+        echo "LOAD=$matched"
+        matched_any=1
       fi
-      ;;
+    done
+    if [ "${matched_any}" -eq 1 ]; then
+      return 0
+    fi
+    ;;
   esac
 
   if [ ! -e "$path" ]; then
@@ -175,14 +175,14 @@ require_file() {
 emit_optional_load() {
   path="$1"
   case "$path" in
-    *\**|*\?*|*\[* )
-      for matched in $path; do
-        if [ -e "$matched" ]; then
-          echo "LOAD=$matched"
-        fi
-      done
-      return 0
-      ;;
+  *\** | *\?* | *\[*)
+    for matched in $path; do
+      if [ -e "$matched" ]; then
+        echo "LOAD=$matched"
+      fi
+    done
+    return 0
+    ;;
   esac
 
   if [ -e "$path" ]; then
@@ -220,18 +220,18 @@ compute_next_plan_id_from_archive() {
       base="$(basename "${dir}")"
       id_part="${base%%_*}"
       case "${id_part}" in
-        pb-[0-9]*)
-          num="${id_part#pb-}"
-          case "${num}" in
-            ''|*[!0-9]*) continue ;;
-          esac
-          width="${#num}"
-          num_base10="$(printf '%s' "${num}" | sed 's/^0*//')"
-          if [ -z "${num_base10}" ]; then
-            num_base10=0
-          fi
-          printf '%s %s\n' "${num_base10}" "${width}"
-          ;;
+      pb-[0-9]*)
+        num="${id_part#pb-}"
+        case "${num}" in
+        '' | *[!0-9]*) continue ;;
+        esac
+        width="${#num}"
+        num_base10="$(printf '%s' "${num}" | sed 's/^0*//')"
+        if [ -z "${num_base10}" ]; then
+          num_base10=0
+        fi
+        printf '%s %s\n' "${num_base10}" "${width}"
+        ;;
       esac
     done | awk '
       BEGIN { max_num=0; max_width=3 }
@@ -336,50 +336,50 @@ resolve_status_aware_item_path() {
   item_id_width="${2:-2}"
 
   case "${raw_path}" in
-    agent/execution/items/open-item-*.yaml|agent/execution/items/review-item-*.yaml|agent/execution/items/done-item-*.yaml)
-      base="$(basename "${raw_path}")"
-      item_num="$(printf '%s' "${base}" | sed -nE "s/^(open|review|done)-item-([0-9]{${item_id_width}})\\.yaml$/\\2/p")"
-      if [ -z "${item_num}" ]; then
-        printf '%s\n' "${raw_path}"
-        return 0
-      fi
+  agent/execution/items/open-item-*.yaml | agent/execution/items/review-item-*.yaml | agent/execution/items/done-item-*.yaml)
+    base="$(basename "${raw_path}")"
+    item_num="$(printf '%s' "${base}" | sed -nE "s/^(open|review|done)-item-([0-9]{${item_id_width}})\\.yaml$/\\2/p")"
+    if [ -z "${item_num}" ]; then
+      printf '%s\n' "${raw_path}"
+      return 0
+    fi
 
-      open_path="agent/execution/items/open-item-${item_num}.yaml"
-      review_path="agent/execution/items/review-item-${item_num}.yaml"
-      done_path="agent/execution/items/done-item-${item_num}.yaml"
+    open_path="agent/execution/items/open-item-${item_num}.yaml"
+    review_path="agent/execution/items/review-item-${item_num}.yaml"
+    done_path="agent/execution/items/done-item-${item_num}.yaml"
 
-      if [ -f "${raw_path}" ]; then
-        printf '%s\n' "${raw_path}"
-        return 0
-      fi
+    if [ -f "${raw_path}" ]; then
+      printf '%s\n' "${raw_path}"
+      return 0
+    fi
 
-      case "${base}" in
-        open-item-*)
-          for candidate in "${review_path}" "${done_path}" "${open_path}"; do
-            if [ -f "${candidate}" ]; then
-              printf '%s\n' "${candidate}"
-              return 0
-            fi
-          done
-          ;;
-        review-item-*)
-          for candidate in "${open_path}" "${done_path}" "${review_path}"; do
-            if [ -f "${candidate}" ]; then
-              printf '%s\n' "${candidate}"
-              return 0
-            fi
-          done
-          ;;
-        done-item-*)
-          for candidate in "${review_path}" "${open_path}" "${done_path}"; do
-            if [ -f "${candidate}" ]; then
-              printf '%s\n' "${candidate}"
-              return 0
-            fi
-          done
-          ;;
-      esac
+    case "${base}" in
+    open-item-*)
+      for candidate in "${review_path}" "${done_path}" "${open_path}"; do
+        if [ -f "${candidate}" ]; then
+          printf '%s\n' "${candidate}"
+          return 0
+        fi
+      done
       ;;
+    review-item-*)
+      for candidate in "${open_path}" "${done_path}" "${review_path}"; do
+        if [ -f "${candidate}" ]; then
+          printf '%s\n' "${candidate}"
+          return 0
+        fi
+      done
+      ;;
+    done-item-*)
+      for candidate in "${review_path}" "${open_path}" "${done_path}"; do
+        if [ -f "${candidate}" ]; then
+          printf '%s\n' "${candidate}"
+          return 0
+        fi
+      done
+      ;;
+    esac
+    ;;
   esac
 
   printf '%s\n' "${raw_path}"
@@ -432,7 +432,7 @@ append_line_guarded() {
     return 0
   fi
 
-  printf '%s\n' "${line}" >> "${target_file}"
+  printf '%s\n' "${line}" >>"${target_file}"
 }
 
 ensure_context_runtime() {
@@ -456,12 +456,12 @@ emit_context_loads() {
 
   "${context_loader}" --config "${context_config}" --mode loads | while IFS="$(printf '\t')" read -r kind path; do
     case "${kind}" in
-      required|template_required)
-        require_file "${path}"
-        ;;
-      optional)
-        emit_optional_load "${path}"
-        ;;
+    required | template_required)
+      require_file "${path}"
+      ;;
+    optional)
+      emit_optional_load "${path}"
+      ;;
     esac
   done
 }

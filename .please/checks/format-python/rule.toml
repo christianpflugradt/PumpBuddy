@@ -1,0 +1,8 @@
+id = "format-python"
+name = "Python formatting"
+description = "Python sources are formatted with Ruff"
+run_at = ["pre-commit", "pre-push", "check"]
+
+[check]
+command = "sh @rule/check.sh"
+timeout_seconds = 120

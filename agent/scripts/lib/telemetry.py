@@ -124,8 +124,7 @@ def recompute_summary(doc: dict[str, Any]) -> None:
     task_run_starts = [
         (e, ts)
         for e, ts in parsed_events
-        if e.get("event_type") in {"task_run", "task_run_started"}
-        and str(e.get("task") or "") in MEASURED_TASKS
+        if e.get("event_type") in {"task_run", "task_run_started"} and str(e.get("task") or "") in MEASURED_TASKS
     ]
     # Compute active execution duration using only the latest completed window for each
     # (task, item_id). This keeps retry attempts from inflating duration after failures.
@@ -219,9 +218,7 @@ def recompute_summary(doc: dict[str, Any]) -> None:
 
     rework_avg = round((rework_total / items_total), 4) if items_total > 0 else 0.0
 
-    first_pass_accept_count = len(
-        [item_id for item_id, cnt in accepts_by_item.items() if cnt > 0 and returns_by_item.get(item_id, 0) == 0]
-    )
+    first_pass_accept_count = len([item_id for item_id, cnt in accepts_by_item.items() if cnt > 0 and returns_by_item.get(item_id, 0) == 0])
     first_pass_rate = round((first_pass_accept_count / items_done), 4) if items_done > 0 else 0.0
 
     item_first_last: dict[str, tuple[datetime, datetime]] = {}
@@ -242,10 +239,7 @@ def recompute_summary(doc: dict[str, Any]) -> None:
     elif item_first_last:
         # Backward-compatible fallback for older telemetry without finish events.
         winner = max(
-            (
-                (item_id, int((last - first).total_seconds()))
-                for item_id, (first, last) in item_first_last.items()
-            ),
+            ((item_id, int((last - first).total_seconds())) for item_id, (first, last) in item_first_last.items()),
             key=lambda row: row[1],
         )
         outlier_duration = {"item_id": winner[0], "duration_seconds": winner[1]}

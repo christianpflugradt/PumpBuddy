@@ -1,8 +1,0 @@
-id = "release-package-verify"
-description = "Verify the complete candidate artifact set"
-run_at = ["release-candidate"]
-depends_on = ["release-package"]
-
-[check]
-command = "make release-package-verify"
-timeout_seconds = 180

@@ -75,8 +75,7 @@ def load_yaml(path: Path) -> Any:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise SystemExit(
-            f"FAIL invalid YAML in {path}: {exc}\n"
-            "Hint: quote scalar text containing ': ' or backticks, or use a block scalar."
+            f"FAIL invalid YAML in {path}: {exc}\nHint: quote scalar text containing ': ' or backticks, or use a block scalar."
         ) from exc
 
 
@@ -108,10 +107,7 @@ def validate_artifact(artifact_type: str, data: Any, path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Parse, validate, and re-emit a YAML artifact with deterministic quoting for "
-            "problematic scalar text."
-        )
+        description=("Parse, validate, and re-emit a YAML artifact with deterministic quoting for problematic scalar text.")
     )
     parser.add_argument(
         "artifact_type",

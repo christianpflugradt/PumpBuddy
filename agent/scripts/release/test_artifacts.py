@@ -24,27 +24,38 @@ class CandidateTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.directory = Path(self.tmp.name)
         self.env = {
-            "EXPECTED_RELEASE_VERSION": "4.4.0", "GITHUB_SHA": "a" * 40,
-            "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "2",
-            "PLEASE_RELEASE_GUARD": "fixture-release-guard.mjs",
-            "GITHUB_REPOSITORY": artifacts.REPOSITORY, "GITHUB_REF": "refs/heads/main",
+            "EXPECTED_RELEASE_VERSION": "4.4.0",
+            "GITHUB_SHA": "a" * 40,
+            "GITHUB_RUN_ID": "123",
+            "GITHUB_RUN_ATTEMPT": "2",
+            "GITHUB_REPOSITORY": artifacts.REPOSITORY,
+            "GITHUB_REF": "refs/heads/main",
         }
         self.environment = patch.dict(os.environ, self.env)
         self.environment.start()
         self.addCleanup(self.environment.stop)
         self.metadata = {"schema_version": 1, "binding": artifacts.binding(), "images": {}}
         for name in artifacts.COMPONENTS:
-            config = json.dumps({
-                "os": "linux", "architecture": "amd64",
-                "config": {"Labels": {
-                    "org.opencontainers.image.version": "v4.4.0",
-                    "org.opencontainers.image.revision": "a" * 40,
-                }},
-            }).encode()
+            config = json.dumps(
+                {
+                    "os": "linux",
+                    "architecture": "amd64",
+                    "config": {
+                        "Labels": {
+                            "org.opencontainers.image.version": "v4.4.0",
+                            "org.opencontainers.image.revision": "a" * 40,
+                        }
+                    },
+                }
+            ).encode()
             image_id = hashlib.sha256(config).hexdigest()
             manifest = [{"Config": image_id + ".json", "RepoTags": [f"pumpbuddy-{name}:candidate"], "Layers": ["layer.tar"]}]
             with tarfile.open(self.directory / f"{name}.tar", "w") as archive:
-                for path, content in [(image_id + ".json", config), ("manifest.json", json.dumps(manifest).encode()), ("layer.tar", b"fixture")]:
+                for path, content in [
+                    (image_id + ".json", config),
+                    ("manifest.json", json.dumps(manifest).encode()),
+                    ("layer.tar", b"fixture"),
+                ]:
                     member = tarfile.TarInfo(path)
                     member.size = len(content)
                     archive.addfile(member, io.BytesIO(content))
@@ -136,10 +147,24 @@ class CandidateTests(unittest.TestCase):
             "LABEL org.opencontainers.image.revision=" + "a" * 40 + "\n"
             "COPY marker /offline-fixture\n"
         )
-        subprocess.run([
-            "docker", "build", "--platform", "linux/amd64", "--network", "none",
-            "--pull=false", "--provenance=false", "--sbom=false", "--tag", tag, str(context),
-        ], capture_output=True, check=True)
+        subprocess.run(
+            [
+                "docker",
+                "build",
+                "--platform",
+                "linux/amd64",
+                "--network",
+                "none",
+                "--pull=false",
+                "--provenance=false",
+                "--sbom=false",
+                "--tag",
+                tag,
+                str(context),
+            ],
+            capture_output=True,
+            check=True,
+        )
         self.addCleanup(subprocess.run, ["docker", "image", "rm", tag], capture_output=True, check=True)
         image_id = artifacts.run("docker", "image", "inspect", "--format", "{{.Id}}", tag)
         output = self.directory / "real-image.tar"
@@ -153,6 +178,7 @@ class CandidateTests(unittest.TestCase):
 
     def test_publish_uses_verified_loaded_ids_and_checks_registry_identity(self):
         calls = []
+
         def tool(*args):
             if args[0] == "git":
                 return "a" * 40 + " refs/heads/main"
@@ -161,18 +187,31 @@ class CandidateTests(unittest.TestCase):
             if args[1] == "image":
                 return config_digest
             return json.dumps({"config": {"digest": config_digest}})
-        with patch.object(artifacts, "run", side_effect=tool), patch.object(artifacts.subprocess, "run", side_effect=lambda args, **_: calls.append(args)):
+
+        with (
+            patch.object(artifacts, "run", side_effect=tool),
+            patch.object(artifacts.subprocess, "run", side_effect=lambda args, **_: calls.append(args)),
+        ):
             artifacts.publish(self.directory)
         self.assertEqual(len(calls), 5)
-        self.assertEqual(calls.pop(0), ["node", "fixture-release-guard.mjs", "--source"])
-        self.assertEqual(calls[0], ["docker", "image", "tag", self.metadata["images"]["backend"]["config_digest"], "ghcr.io/christianpflugradt/pumpbuddy-backend:v4.4.0"])
+        self.assertEqual(calls.pop(0), ["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"])
+        self.assertEqual(
+            calls[0],
+            [
+                "docker",
+                "image",
+                "tag",
+                self.metadata["images"]["backend"]["config_digest"],
+                "ghcr.io/christianpflugradt/pumpbuddy-backend:v4.4.0",
+            ],
+        )
         self.assertFalse(any("build" in call for call in calls))
 
-    def test_failed_shared_source_guard_prevents_any_push(self):
+    def test_failed_local_source_guard_prevents_any_push(self):
         with patch.object(artifacts.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "node")) as write:
             with self.assertRaises(subprocess.CalledProcessError):
                 artifacts.publish(self.directory)
-            write.assert_called_once_with(["node", "fixture-release-guard.mjs", "--source"], check=True)
+            write.assert_called_once_with(["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"], check=True)
 
 
 if __name__ == "__main__":

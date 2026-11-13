@@ -65,7 +65,8 @@ fi
 python3 "${ARTIFACT_FORMATTER}" extended-review-findings "${FINDINGS_FILE}"
 python3 "${ARTIFACT_VALIDATOR}" extended-review-findings "${FINDINGS_FILE}"
 
-FINDINGS_COUNT="$(python3 - "${FINDINGS_FILE}" <<'PY'
+FINDINGS_COUNT="$(
+  python3 - "${FINDINGS_FILE}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -78,7 +79,8 @@ print(len(items) if isinstance(items, list) else 0)
 PY
 )"
 
-SELECTION_META="$(python3 - "${FINDINGS_FILE}" "${SELECTION_RAW}" <<'PY'
+SELECTION_META="$(
+  python3 - "${FINDINGS_FILE}" "${SELECTION_RAW}" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -295,7 +297,8 @@ fi
 
 PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
 
-CREATED_COUNT="$(python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${ITEM_ID_WIDTH}" <<'PY'
+CREATED_COUNT="$(
+  python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${ITEM_ID_WIDTH}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone

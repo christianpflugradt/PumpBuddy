@@ -88,9 +88,7 @@ def validate_extended_review(path: Path) -> None:
     try:
         ExtendedReviewFindingsTemplateDoc.model_validate(data)
     except Exception as exc:
-        raise SystemExit(
-            f"FAIL extended-review findings validation failed for {path}: {exc}"
-        ) from exc
+        raise SystemExit(f"FAIL extended-review findings validation failed for {path}: {exc}") from exc
 
 
 def validate_finalize_return(path: Path) -> None:
@@ -98,9 +96,7 @@ def validate_finalize_return(path: Path) -> None:
     try:
         FinalizeReturnFindingsDoc.model_validate(data)
     except Exception as exc:
-        raise SystemExit(
-            f"FAIL finalize-return findings validation failed for {path}: {exc}"
-        ) from exc
+        raise SystemExit(f"FAIL finalize-return findings validation failed for {path}: {exc}") from exc
 
 
 def main() -> None:

@@ -60,7 +60,6 @@ if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   exit 25
 fi
 
-
 if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
   echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
   exit 27
@@ -69,22 +68,22 @@ fi
 ${ITEM_CHECK_SCRIPT}
 
 case "${ITEM_INPUT}" in
-  *[!0-9]*)
-    BASE="$(basename "${ITEM_INPUT}")"
-    ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
-    case "${BASE}" in
-      open-item-*.yaml|review-item-*.yaml)
-        ITEM_ID="$(printf '%s' "${BASE}" | sed -nE "s/^[a-z]*-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
-        ;;
-      *)
-        echo "Expected an open/review item file or numeric item id, got: ${ITEM_INPUT}" >&2
-        exit 4
-        ;;
-    esac
+*[!0-9]*)
+  BASE="$(basename "${ITEM_INPUT}")"
+  ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
+  case "${BASE}" in
+  open-item-*.yaml | review-item-*.yaml)
+    ITEM_ID="$(printf '%s' "${BASE}" | sed -nE "s/^[a-z]*-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
     ;;
   *)
-    ITEM_ID="${ITEM_INPUT}"
+    echo "Expected an open/review item file or numeric item id, got: ${ITEM_INPUT}" >&2
+    exit 4
     ;;
+  esac
+  ;;
+*)
+  ITEM_ID="${ITEM_INPUT}"
+  ;;
 esac
 
 if [ -z "${ITEM_ID}" ]; then
@@ -125,9 +124,8 @@ if [ ! -s "${MSG_FILE}" ]; then
   exit 6
 fi
 
-
-
-INDEPENDENT_REVIEW_REQUIRED="$(python3 - "${OPEN_ITEM}" <<'PY'
+INDEPENDENT_REVIEW_REQUIRED="$(
+  python3 - "${OPEN_ITEM}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -152,7 +150,8 @@ fi
 REQUIRES_CORRECTIVE_IMPLEMENTATION="false"
 REQUIRES_API_CONTRACT_UPDATE="false"
 if [ -n "${ITEM_CONTEXT_PATH}" ] && [ -f "${ITEM_CONTEXT_PATH}" ]; then
-  CHECK_FLAGS="$(python3 - "${ITEM_CONTEXT_PATH}" <<'PY'
+  CHECK_FLAGS="$(
+    python3 - "${ITEM_CONTEXT_PATH}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -203,7 +202,7 @@ requires_api_contract_update = any(
 print(f"requires_corrective_implementation={'true' if requires_corrective_implementation else 'false'}")
 print(f"requires_api_contract_update={'true' if requires_api_contract_update else 'false'}")
 PY
-)"
+  )"
   REQUIRES_CORRECTIVE_IMPLEMENTATION="$(printf '%s\n' "${CHECK_FLAGS}" | sed -n 's/^requires_corrective_implementation=//p')"
   REQUIRES_API_CONTRACT_UPDATE="$(printf '%s\n' "${CHECK_FLAGS}" | sed -n 's/^requires_api_contract_update=//p')"
 fi
@@ -220,21 +219,21 @@ if [ "${REQUIRES_CORRECTIVE_IMPLEMENTATION}" = "true" ]; then
   HAS_IMPLEMENTATION_DELTA="false"
   HAS_API_CONTRACT_DELTA="false"
   for file in ${CHANGED_FILES}; do
-    if [ "${file}" = "agent/execution/items/open-item-${ITEM_ID}.yaml" ] \
-      || [ "${file}" = "agent/execution/items/review-item-${ITEM_ID}.yaml" ] \
-      || [ "${file}" = "agent/execution/plans/plan-item-${ITEM_ID}.yaml" ] \
-      || [ "${file}" = "agent/execution/telemetry.yaml" ] \
-      || [ "${file}" = "agent/execution/workflow-state.yaml" ] \
-      || [ "${file}" = "agent/tmp/implement-item-commit-message.txt" ]; then
+    if [ "${file}" = "agent/execution/items/open-item-${ITEM_ID}.yaml" ] ||
+      [ "${file}" = "agent/execution/items/review-item-${ITEM_ID}.yaml" ] ||
+      [ "${file}" = "agent/execution/plans/plan-item-${ITEM_ID}.yaml" ] ||
+      [ "${file}" = "agent/execution/telemetry.yaml" ] ||
+      [ "${file}" = "agent/execution/workflow-state.yaml" ] ||
+      [ "${file}" = "agent/tmp/implement-item-commit-message.txt" ]; then
       :
     else
       HAS_IMPLEMENTATION_DELTA="true"
     fi
 
     case "${file}" in
-      agent/design/api-contract.yaml)
-        HAS_API_CONTRACT_DELTA="true"
-        ;;
+    agent/design/api-contract.yaml)
+      HAS_API_CONTRACT_DELTA="true"
+      ;;
     esac
   done
 
