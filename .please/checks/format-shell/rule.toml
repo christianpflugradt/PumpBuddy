@@ -3,5 +3,5 @@ description = "Verify shell script formatting with shfmt"
 run_at = ["pre-commit", "pre-push", "check"]
 
 [check]
-command = "agent/scripts/run-quality.sh format-shell"
+command = "sh @rule/check.sh"
 timeout_seconds = 120

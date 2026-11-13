@@ -23,36 +23,6 @@ cleanup_testcontainers() {
 }
 
 case "${1:-check}" in
-format-rust)
-  verify_toolchain
-  cargo fmt --manifest-path backend/Cargo.toml --check
-  ;;
-format-python)
-  # Pass the files as arguments, not through xargs, so the formatter's exit status stays 1 (FAIL).
-  # shellcheck disable=SC2046
-  set -- $(git ls-files '*.py')
-  [ "$#" -gt 0 ] || exit 0
-  ruff format --check -- "$@"
-  ;;
-format-shell)
-  # shellcheck disable=SC2046
-  set -- $(git ls-files '*.sh')
-  [ "$#" -gt 0 ] || exit 0
-  # shfmt also exits 1 for syntax errors, but only formatting differences appear on standard output.
-  errors="$(mktemp)"
-  trap 'rm -f "$errors"' 0
-  status=0
-  differences="$(shfmt -d "$@" 2>"$errors")" || status=$?
-  [ "$status" -ne 0 ] || exit 0
-  if [ -n "$differences" ]; then
-    printf '%s\n' "$differences"
-    echo "FAIL: shfmt would reformat these scripts; run mise run format" >&2
-    exit 1
-  fi
-  cat "$errors" >&2
-  echo "ERROR: shfmt failed" >&2
-  exit 2
-  ;;
 backend)
   trap cleanup_testcontainers 0
   verify_toolchain
@@ -87,7 +57,7 @@ release-artifacts)
   ;;
 check) exec make check ;;
 *)
-  echo "Usage: agent/scripts/run-quality.sh [format-rust|format-python|format-shell|backend|renderer|release-artifacts|check]" >&2
+  echo "Usage: agent/scripts/run-quality.sh [backend|renderer|release-artifacts|check]" >&2
   exit 2
   ;;
 esac
