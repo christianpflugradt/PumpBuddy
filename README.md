@@ -58,8 +58,8 @@ compiler/linker and Docker with an accessible daemon remain host prerequisites.
 Mise installs the pinned Rust toolchain and the published governor; credentials remain
 external. The Argon2 CLI is needed for explicit development access-key seeding.
 
-Git hooks are the final local gates: pre-commit checks Rust, Python and shell formatting and framework
-contracts; pre-push runs the complete local suite and Docker artifact builds.
+Git hooks are the final local gates: pre-commit stays fast and checks Rust, Python and shell
+formatting; pre-push runs the complete local suite, including the framework contracts, and Docker artifact builds.
 Inspect captured failures with `please status --details`, fix them and retry Git.
 Targeted checks remain available through `make check-backend`,
 `make check-renderer`, `make check-framework` and `make check-release-artifacts`.

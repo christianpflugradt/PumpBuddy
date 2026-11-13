@@ -53,12 +53,14 @@ and retry Git. Never bypass hooks.
 
 ## Local Rules
 
+Pre-commit rules must stay fast (a total of about two seconds): slower rules run at pre-push and check only.
+
 | Rule | Execution points |
 | --- | --- |
 | format-rust | pre-commit, pre-push, check |
 | format-python | pre-commit, pre-push, check |
 | format-shell | pre-commit, pre-push, check |
-| framework | pre-commit, pre-push, check |
+| framework | pre-push, check |
 | backend-quality | pre-push, check |
 | renderer-quality | pre-push, check |
 | api-contract-alignment | pre-push, check |
