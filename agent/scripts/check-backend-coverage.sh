@@ -13,7 +13,8 @@ tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
 sh "$repo_root/agent/scripts/governance/require-stable-rust.sh"
-rust_toolchain="stable"
+# The pinned toolchain is a rustup toolchain named by its version, for example 1.100.0.
+rust_toolchain="$(rustc --version | cut -d " " -f 2)"
 
 write_na_badge() {
   TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"
