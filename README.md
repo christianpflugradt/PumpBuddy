@@ -44,11 +44,12 @@ Prepare tools/dependencies, then install managed hooks:
 ```sh
 mise trust
 mise install
-mise run ci:prepare
+mise run prepare
 mise exec -- please sync --yes
 ```
 
-Use `mise exec -- make check` for manual validation and `mise exec -- git commit` /
+`mise run format` formats Rust, Python and shell sources; `mise run verify` runs the deterministic
+checks and stops at the first blocker. Use `mise exec -- make check` for the full manual run and `mise exec -- git commit` /
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH
 setup; installing tools alone does not activate them. Git, Bash, make, a native

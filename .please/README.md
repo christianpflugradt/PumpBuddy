@@ -23,7 +23,7 @@ The backend Docker compiler version and digest stay pinned for reproducible
 container builds. They need not equal the host's numeric stable version. A local
 compiler override is reserved for a documented project compatibility requirement.
 
-Run `mise run ci:prepare` (which delegates to `make prepare`) explicitly to install
+Run `mise run prepare` (which delegates to `make prepare`) explicitly to install
 locked npm dependencies, prepare the
 repository-local Python environment, fetch Cargo dependencies, cache the OpenAPI
 generator and PostgreSQL test image, generate models and prepare browsers.
@@ -134,7 +134,7 @@ Git hooks. Release policies live under .github.
 Mise installs stable Rust with rustfmt and Clippy. The moving channel matches
 the existing compiler policy, receiving fixes without pin updates; later builds
 may use a different compiler. Docker base-image versions remain independent.
-ci:prepare (alias prepare) retains dependency and browser preparation. The focused
+`prepare` retains dependency and browser preparation. The focused
 release:prepare task only caches the API generator and regenerates model inputs.
 Model generation is explicit preparation, without a setup-only governance Rule.
 Refresh preparation after API contract or dependency changes. Docker image build

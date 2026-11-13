@@ -6,13 +6,25 @@ node = "26.13.0"
 actionlint = "1.7.12"
 gitleaks = "8.30.1"
 shellcheck = "0.11.0"
+gh = "2.103.3"
+ripgrep = "15.2.0"
+ruff = "0.17.4"
+shfmt = "3.14.1"
+"cargo:cargo-llvm-cov" = "0.9.1"
 
-[tasks.check]
-description = "Run all repository quality checks"
-run = "make check"
+[tasks.format]
+description = "Format Rust, Python and shell sources"
+run = [
+  "cargo fmt --manifest-path backend/Cargo.toml",
+  "git ls-files -z '*.py' | xargs -0 ruff format",
+  "git ls-files -z '*.sh' | xargs -0 shfmt -w",
+]
 
-[tasks."ci:prepare"]
-alias = "prepare"
+[tasks.verify]
+description = "Run the deterministic Please Behave checks and stop at the first blocker"
+run = "please run --at pre-push --checks-only --fail-fast"
+
+[tasks.prepare]
 description = "Prepare locked dependencies, cached images and local browser inputs"
 run = "make prepare"
 
