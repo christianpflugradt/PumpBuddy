@@ -1,5 +1,6 @@
 id = "release-candidate"
-description = "Build both shipped Docker images for linux/amd64 without publishing"
+name = "Release candidate images"
+description = "Both shipped Docker images build for linux/amd64"
 run_at = ["release"]
 
 [check]

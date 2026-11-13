@@ -1,5 +1,6 @@
 id = "api-contract"
-description = "Verify API changes against the canonical contract"
+name = "API contract"
+description = "API changes match the canonical contract"
 run_at = ["pre-push", "check"]
 
 [check]

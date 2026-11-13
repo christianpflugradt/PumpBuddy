@@ -1,5 +1,6 @@
 id = "renderer-quality"
-description = "Run the complete renderer quality suite offline"
+name = "Renderer quality"
+description = "The renderer passes its complete quality suite"
 run_at = ["pre-push", "check"]
 
 [check]
