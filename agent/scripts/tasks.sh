@@ -29,48 +29,48 @@ fi
 resolve_core_task_alias() {
   value="$1"
   case "${value}" in
-    1|discuss|go|discuss-plan)
-      printf '%s\n' "discuss-plan"
-      ;;
-    2|refine|split|refine-plan)
-      printf '%s\n' "refine-plan"
-      ;;
-    3|plan|plan-item)
-      printf '%s\n' "plan-item"
-      ;;
-    4|implement|do|implement-item)
-      printf '%s\n' "implement-item"
-      ;;
-    5|review|see|review-item)
-      printf '%s\n' "review-item"
-      ;;
-    6|finalize|end|finalize-plan)
-      printf '%s\n' "finalize-plan"
-      ;;
-    7|review-arch|arch-review|review-architecture)
-      printf '%s\n' "review-architecture"
-      ;;
-    8|review-consistency|consistency-review)
-      printf '%s\n' "review-consistency"
-      ;;
-    9|review-quality|quality-review)
-      printf '%s\n' "review-quality"
-      ;;
-    10|review-security|security-review)
-      printf '%s\n' "review-security"
-      ;;
-    11|review-technology|technology-review|tech-review)
-      printf '%s\n' "review-technology"
-      ;;
-    12|freestyle|free)
-      printf '%s\n' "freestyle"
-      ;;
-    13|next|next-item)
-      printf '%s\n' "next-item"
-      ;;
-    *)
-      printf '%s\n' "${value}"
-      ;;
+  1 | discuss | go | discuss-plan)
+    printf '%s\n' "discuss-plan"
+    ;;
+  2 | refine | split | refine-plan)
+    printf '%s\n' "refine-plan"
+    ;;
+  3 | plan | plan-item)
+    printf '%s\n' "plan-item"
+    ;;
+  4 | implement | do | implement-item)
+    printf '%s\n' "implement-item"
+    ;;
+  5 | review | see | review-item)
+    printf '%s\n' "review-item"
+    ;;
+  6 | finalize | end | finalize-plan)
+    printf '%s\n' "finalize-plan"
+    ;;
+  7 | review-arch | arch-review | review-architecture)
+    printf '%s\n' "review-architecture"
+    ;;
+  8 | review-consistency | consistency-review)
+    printf '%s\n' "review-consistency"
+    ;;
+  9 | review-quality | quality-review)
+    printf '%s\n' "review-quality"
+    ;;
+  10 | review-security | security-review)
+    printf '%s\n' "review-security"
+    ;;
+  11 | review-technology | technology-review | tech-review)
+    printf '%s\n' "review-technology"
+    ;;
+  12 | freestyle | free)
+    printf '%s\n' "freestyle"
+    ;;
+  13 | next | next-item)
+    printf '%s\n' "next-item"
+    ;;
+  *)
+    printf '%s\n' "${value}"
+    ;;
   esac
 }
 
@@ -96,8 +96,8 @@ if [ -n "${DIRTY_WORKSPACE}" ]; then
   exit 40
 fi
 
-if command -v sync_workflow_state_finalize_readiness >/dev/null 2>&1 \
-  && [ -f "${WORKFLOW_STATE_FILE}" ] && [ -d "${ITEMS_DIR}" ]; then
+if command -v sync_workflow_state_finalize_readiness >/dev/null 2>&1 &&
+  [ -f "${WORKFLOW_STATE_FILE}" ] && [ -d "${ITEMS_DIR}" ]; then
   sync_workflow_state_finalize_readiness "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}"
 fi
 
@@ -110,7 +110,7 @@ ITEM_ID_EXPLICIT="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM_ID=//p' | head -
 LOAD_COUNT="$(printf '%s\n' "${OUTPUT}" | grep -c '^LOAD=' || true)"
 LOAD_BYTES="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^LOAD=//p' | while IFS= read -r load_path; do
   [ -f "${load_path}" ] || continue
-  wc -c < "${load_path}" | tr -d ' '
+  wc -c <"${load_path}" | tr -d ' '
 done | awk '{s+=$1} END {print (s+0)}')"
 ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
 ITEM_ID="${ITEM_ID_EXPLICIT}"

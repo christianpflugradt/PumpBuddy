@@ -63,11 +63,11 @@ fi
 git status --porcelain -- "${ITEMS_DIR}" | while IFS= read -r status_line; do
   item_path="$(printf '%s\n' "${status_line}" | sed 's/^...//')"
   case "${item_path}" in
-    "${ITEMS_DIR}"/*item-*.yaml)
-      if [ -f "${item_path}" ]; then
-        python3 "${ARTIFACT_FORMATTER}" backlog-item "${item_path}"
-      fi
-      ;;
+  "${ITEMS_DIR}"/*item-*.yaml)
+    if [ -f "${item_path}" ]; then
+      python3 "${ARTIFACT_FORMATTER}" backlog-item "${item_path}"
+    fi
+    ;;
   esac
 done
 

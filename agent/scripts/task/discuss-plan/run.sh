@@ -21,13 +21,13 @@ emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 CURRENT_PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
 case "${CURRENT_PLAN_ID}" in
-  pb-[0-9]*)
-    echo "PLAN_ID=${CURRENT_PLAN_ID}"
-    ;;
-  *)
-    echo "Invalid or missing deterministic plan id in agent/execution/plan.yaml (expected pb-<number>)." >&2
-    exit 23
-    ;;
+pb-[0-9]*)
+  echo "PLAN_ID=${CURRENT_PLAN_ID}"
+  ;;
+*)
+  echo "Invalid or missing deterministic plan id in agent/execution/plan.yaml (expected pb-<number>)." >&2
+  exit 23
+  ;;
 esac
 
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"

@@ -86,31 +86,31 @@ fi
 ${ITEM_CHECK_SCRIPT}
 
 case "${OUTCOME}" in
-  accept|return)
-    ;;
-  *)
-    echo "Outcome must be one of: accept | return. Got: ${OUTCOME}" >&2
-    exit 4
-    ;;
+accept | return)
+  ;;
+*)
+  echo "Outcome must be one of: accept | return. Got: ${OUTCOME}" >&2
+  exit 4
+  ;;
 esac
 
 case "${ITEM_INPUT}" in
-  *[!0-9]*)
-    BASE="$(basename "${ITEM_INPUT}")"
-    ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
-    case "${BASE}" in
-      open-item-*.yaml|review-item-*.yaml|done-item-*.yaml)
-        ITEM_ID="$(printf '%s' "${BASE}" | sed -nE "s/^[a-z]*-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
-        ;;
-      *)
-        echo "Expected an open/review/done item file or numeric item id, got: ${ITEM_INPUT}" >&2
-        exit 4
-        ;;
-    esac
+*[!0-9]*)
+  BASE="$(basename "${ITEM_INPUT}")"
+  ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
+  case "${BASE}" in
+  open-item-*.yaml | review-item-*.yaml | done-item-*.yaml)
+    ITEM_ID="$(printf '%s' "${BASE}" | sed -nE "s/^[a-z]*-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
     ;;
   *)
-    ITEM_ID="${ITEM_INPUT}"
+    echo "Expected an open/review/done item file or numeric item id, got: ${ITEM_INPUT}" >&2
+    exit 4
     ;;
+  esac
+  ;;
+*)
+  ITEM_ID="${ITEM_INPUT}"
+  ;;
 esac
 
 if [ -z "${ITEM_ID}" ]; then
@@ -182,7 +182,8 @@ if changed:
 PY
 fi
 
-FINDINGS_COUNT="$(python3 - "${REVIEW_SOURCE_ITEM}" "${OUTCOME}" <<'PY'
+FINDINGS_COUNT="$(
+  python3 - "${REVIEW_SOURCE_ITEM}" "${OUTCOME}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -228,7 +229,8 @@ PY
 
 RETURN_BLOCKED_DUE_INFRA="false"
 if [ "${OUTCOME}" = "return" ]; then
-  RETURN_BLOCKED_DUE_INFRA="$(python3 - "${REVIEW_SOURCE_ITEM}" <<'PY'
+  RETURN_BLOCKED_DUE_INFRA="$(
+    python3 - "${REVIEW_SOURCE_ITEM}" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -261,7 +263,7 @@ text = "\n".join(combined)
 blocked = any(re.search(p, text) for p in patterns)
 print("true" if blocked else "false")
 PY
-)"
+  )"
 fi
 
 load_execution_git_settings "${EXECUTION_CONFIG}"

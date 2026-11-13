@@ -19,15 +19,15 @@ contract_only_reason="${API_CONTRACT_ONLY_REASON:-}"
 
 for file in ${changed_files}; do
   case "${file}" in
-    agent/design/api-contract.yaml)
-      contract_changed="true"
-      ;;
-    backend/src/api/**)
-      backend_api_surface_changed="true"
-      ;;
-    renderer/src/openapi-contract.ts|renderer/src/workout-contract-state.ts|renderer/src/workout-contract.ts|renderer/src/workout-api.ts)
-      renderer_api_boundary_changed="true"
-      ;;
+  agent/design/api-contract.yaml)
+    contract_changed="true"
+    ;;
+  backend/src/api/**)
+    backend_api_surface_changed="true"
+    ;;
+  renderer/src/openapi-contract.ts | renderer/src/workout-contract-state.ts | renderer/src/workout-contract.ts | renderer/src/workout-api.ts)
+    renderer_api_boundary_changed="true"
+    ;;
   esac
 done
 

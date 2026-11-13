@@ -6,7 +6,7 @@ export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
 export PIP_CACHE_DIR="$PWD/.cache/pip"
 export npm_config_cache="$PWD/.cache/npm"
 mode="${1:-check}"
-case "$mode" in check|candidate|readiness|badges) ;; *) exit 2 ;; esac
+case "$mode" in check | candidate | readiness | badges) ;; *) exit 2 ;; esac
 if [ "$mode" = candidate ]; then
   generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
   docker pull "$generator"

@@ -39,7 +39,7 @@ write_resume_state() {
   state_mutation_done="$5"
 
   mkdir -p "$(dirname "${FINALIZE_RESUME_STATE}")"
-  cat > "${FINALIZE_RESUME_STATE}" <<EOF
+  cat >"${FINALIZE_RESUME_STATE}" <<EOF
 RESUME_TOKEN=finalize_plan_v1
 RESUME_OUTCOME=${state_outcome}
 RESUME_PLAN_ID=${state_plan_id}
@@ -78,12 +78,12 @@ fi
 ${ITEM_CHECK_SCRIPT}
 
 case "${OUTCOME}" in
-  accept|return)
-    ;;
-  *)
-    echo "Outcome must be one of: accept | return. Got: ${OUTCOME}" >&2
-    exit 4
-    ;;
+accept | return)
+  ;;
+*)
+  echo "Outcome must be one of: accept | return. Got: ${OUTCOME}" >&2
+  exit 4
+  ;;
 esac
 
 RESUME_MODE="false"
@@ -155,7 +155,8 @@ fi
 
 FINALIZE_FINDINGS_COUNT=0
 if [ "${OUTCOME}" = "return" ]; then
-  FINALIZE_FINDINGS_COUNT="$(python3 - "${ARTIFACT_FILE}" <<'PY'
+  FINALIZE_FINDINGS_COUNT="$(
+    python3 - "${ARTIFACT_FILE}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -166,7 +167,7 @@ data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 items = data.get("items", [])
 print(len(items) if isinstance(items, list) else 0)
 PY
-)"
+  )"
 fi
 
 PLAN_ID=""
@@ -203,7 +204,8 @@ else
     exit 32
   fi
 
-  PLAN_NAME="$(python3 - "${PLAN_FILE}" <<'PY'
+  PLAN_NAME="$(
+    python3 - "${PLAN_FILE}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -214,7 +216,7 @@ data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 name = data.get("name", "")
 print(name if isinstance(name, str) else "")
 PY
-)"
+  )"
 
   if [ -z "${PLAN_NAME}" ]; then
     echo "Plan name is missing in ${PLAN_FILE}." >&2

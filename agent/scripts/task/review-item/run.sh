@@ -33,7 +33,8 @@ if [ -z "${ITEM_ID}" ]; then
   exit 11
 fi
 
-PLAN_REQUIRED="$(python3 - "${ITEM}" <<'PY'
+PLAN_REQUIRED="$(
+  python3 - "${ITEM}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -48,7 +49,8 @@ PY
 )"
 
 PLAN_PATH="agent/execution/plans/plan-item-${ITEM_ID}.yaml"
-INDEPENDENT_REVIEW_REQUIRED="$(python3 - "${ITEM}" <<'PY'
+INDEPENDENT_REVIEW_REQUIRED="$(
+  python3 - "${ITEM}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -129,16 +131,16 @@ fi
 
 while IFS= read -r line; do
   case "${line}" in
-    LOAD_REQUIRED=*)
-      p="${line#LOAD_REQUIRED=}"
-      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
-      require_file "${resolved}"
-      ;;
-    LOAD_OPTIONAL=*)
-      p="${line#LOAD_OPTIONAL=}"
-      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
-      emit_optional_load "${resolved}"
-      ;;
+  LOAD_REQUIRED=*)
+    p="${line#LOAD_REQUIRED=}"
+    resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
+    require_file "${resolved}"
+    ;;
+  LOAD_OPTIONAL=*)
+    p="${line#LOAD_OPTIONAL=}"
+    resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
+    emit_optional_load "${resolved}"
+    ;;
   esac
 done <<EOF
 ${ITEM_CONTEXT_LINES}

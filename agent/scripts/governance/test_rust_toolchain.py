@@ -1,4 +1,5 @@
 """Offline contract tests for the host stable-Rust prerequisite."""
+
 import os
 from pathlib import Path
 import subprocess
@@ -14,8 +15,9 @@ class StableRustTests(unittest.TestCase):
             rustc = Path(directory) / "rustc"
             rustc.write_text(f"#!/bin/sh\nprintf '%s\\n' '{version}'\nexit {status}\n")
             rustc.chmod(0o755)
-            return subprocess.run(["sh", str(SCRIPT)], text=True, capture_output=True,
-                                  env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"]))
+            return subprocess.run(
+                ["sh", str(SCRIPT)], text=True, capture_output=True, env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"])
+            )
 
     def test_stable_compilers_do_not_need_an_exact_project_version(self):
         for version in ("rustc 1.97.1 (built from a source tarball)", "rustc 1.99.0 (fixture)"):

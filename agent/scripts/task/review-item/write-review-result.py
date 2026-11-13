@@ -38,13 +38,9 @@ def resolve_item_path(item_input: str) -> Path:
             p = Path(f"agent/execution/items/{prefix}-item-{item_input}.yaml")
             if p.is_file():
                 return p
-        raise SystemExit(
-            f"Could not resolve item id {item_input} to a file in agent/execution/items."
-        )
+        raise SystemExit(f"Could not resolve item id {item_input} to a file in agent/execution/items.")
 
-    raise SystemExit(
-        "item-input must be an existing file path or numeric item id (for example 03)."
-    )
+    raise SystemExit("item-input must be an existing file path or numeric item id (for example 03).")
 
 
 def normalize_text(value: str) -> str:
@@ -71,9 +67,7 @@ def parse_optional_bool(value: Any, field_name: str) -> bool:
 def parse_finding_compact(raw: str, *, requires_api_contract_update: bool = False) -> dict[str, Any]:
     parts = [part.strip() for part in raw.split("|||")]
     if len(parts) != 3 or any(not part for part in parts):
-        raise SystemExit(
-            "Each --finding must use 'criterion|||evidence|||risk' with non-empty parts."
-        )
+        raise SystemExit("Each --finding must use 'criterion|||evidence|||risk' with non-empty parts.")
     finding: dict[str, Any] = {"criterion": parts[0], "evidence": parts[1], "risk": parts[2]}
     if requires_api_contract_update:
         finding["requires_api_contract_update"] = True
@@ -81,9 +75,7 @@ def parse_finding_compact(raw: str, *, requires_api_contract_update: bool = Fals
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Write review_result safely without hand-editing YAML structures."
-    )
+    parser = argparse.ArgumentParser(description="Write review_result safely without hand-editing YAML structures.")
     parser.add_argument("item_input", help="Review item path or numeric item id")
     parser.add_argument("outcome", choices=("accept", "return"))
     parser.add_argument("--criteria-met")
@@ -100,10 +92,7 @@ def main() -> None:
         "--finding-contract-update",
         action="append",
         default=[],
-        help=(
-            "Format: criterion|||evidence|||risk. Repeat for multiple findings that require "
-            "an agent/design/api-contract.yaml update."
-        ),
+        help=("Format: criterion|||evidence|||risk. Repeat for multiple findings that require an agent/design/api-contract.yaml update."),
     )
     parser.add_argument(
         "--findings-file",
@@ -142,10 +131,7 @@ def main() -> None:
         }
     else:
         findings: list[dict[str, Any]] = [parse_finding_compact(raw) for raw in args.finding]
-        findings.extend(
-            parse_finding_compact(raw, requires_api_contract_update=True)
-            for raw in args.finding_contract_update
-        )
+        findings.extend(parse_finding_compact(raw, requires_api_contract_update=True) for raw in args.finding_contract_update)
         if args.findings_file:
             extra = parse_yaml(Path(args.findings_file))
             raw_findings = extra.get("findings", extra) if isinstance(extra, dict) else extra

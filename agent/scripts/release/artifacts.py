@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export and verify the exact Docker candidates; publication never builds images."""
+
 import hashlib
 import json
 import os
@@ -121,9 +122,17 @@ def package(directory=Path("dist")):
         engine_id = run("docker", "image", "inspect", "--format", "{{.Id}}", tag)
         config_digest = archive_image(path, tag, expected, engine_id)
         images[name] = {"sha256": digest(path), "config_digest": config_digest}
-    (directory / "metadata.json").write_text(json.dumps({
-        "schema_version": 1, "binding": expected, "images": images,
-    }, indent=2) + "\n")
+    (directory / "metadata.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "binding": expected,
+                "images": images,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     verify(directory)
 
 
