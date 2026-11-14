@@ -82,7 +82,7 @@ jobs:
         with:
           install_args: python github:please-behave/cli
       - name: Prepare candidate inputs
-        run: mise run prepare:candidate
+        run: mise run setup:candidate
       - name: Validate exact Docker candidates
         uses: please-behave/action@196e1d61f898e0cb77c58ab3dd6667f021321d5e # v1.3.0
         with:

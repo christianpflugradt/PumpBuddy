@@ -44,7 +44,7 @@ Prepare tools/dependencies, then install managed hooks:
 ```sh
 mise trust
 mise install
-mise run prepare
+mise run setup
 mise exec -- please sync --yes
 ```
 

@@ -25,7 +25,7 @@ run = [
 description = "Run the deterministic Please Behave checks and stop at the first blocker"
 run = "please run --at pre-push --checks-only --fail-fast"
 
-[tasks.prepare]
+[tasks.setup]
 description = "Prepare locked dependencies, cached images and local browser inputs"
 run = "make prepare"
 
@@ -41,7 +41,7 @@ run = "make stop-app"
 description = "Rebuild and start the development application"
 run = "make rebuild-app"
 
-[tasks."prepare:candidate"]
+[tasks."setup:candidate"]
 description = "Prepare cached API generation inputs for candidate images"
 run = "agent/scripts/governance/prepare.sh candidate"
 

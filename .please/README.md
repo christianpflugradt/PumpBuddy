@@ -22,7 +22,7 @@ The backend Docker compiler version and digest stay pinned for reproducible
 container builds and are updated by Renovate separately from the mise pin.
 The toolchain pinning policy is in the README.
 
-Run `mise run prepare` (which delegates to `make prepare`) explicitly to install
+Run `mise run setup` (which delegates to `make prepare`) explicitly to install
 locked npm dependencies, prepare the
 repository-local Python environment, fetch Cargo dependencies, cache the OpenAPI
 generator and PostgreSQL test image, generate models and prepare browsers.
@@ -137,7 +137,7 @@ Git hooks. Release policies live under .github.
 Mise installs the pinned Rust toolchain with rustfmt, Clippy and LLVM tools; CI jobs, including
 Coverage Badges, install it through mise as well. Docker base-image versions remain independent.
 `prepare` retains dependency and browser preparation. The focused
-prepare:candidate task only caches the API generator and regenerates model inputs.
+setup:candidate task only caches the API generator and regenerates model inputs.
 Model generation is explicit preparation, without a setup-only governance Rule.
 Refresh preparation after API contract or dependency changes. Docker image build
 validation remains a meaningful Check; packaging and integrity run directly in Actions.
