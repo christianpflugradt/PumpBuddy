@@ -135,24 +135,19 @@ custom point is release. Plan and Publish never install or invoke governance or
 Git hooks. Release policies live under .github.
 
 Mise installs the pinned Rust toolchain with rustfmt, Clippy and LLVM tools; CI jobs, including
-Coverage Badges, install it through mise as well. Docker base-image versions remain independent.
+Statistics, install it through mise as well. Docker base-image versions remain independent.
 `prepare` retains dependency and browser preparation. The focused
 setup:candidate task only caches the API generator and regenerates model inputs.
 Model generation is explicit preparation, without a setup-only governance Rule.
 Refresh preparation after API contract or dependency changes. Docker image build
 validation remains a meaningful Check; packaging and integrity run directly in Actions.
 
-Coverage Badges is independent. It calculates backend coverage and complete
-renderer coverage again, then publishes the same two GitHub Pages endpoints.
-Only this workflow writes badge files. Backend coverage keeps its informational
+Statistics is independent. Its collect jobs calculate backend and renderer coverage again and
+count production lines of code with scc and tests per component. Its `publish` job sends the
+metrics to badges-and-stuff, which renders the badges and owns GitHub Pages; only `publish`
+receives the `STATISTICS_TOKEN` secret. Backend coverage keeps its informational
 n/a fallback, line-coverage fallback on the pinned toolchain and default zero threshold.
-Renderer coverage thresholds remain unchanged. The Pages job retains
-`coverage-pages`, `cancel-in-progress: false` and `queue: max`; ordering follows
-queue arrival. Only the Pages job receives Pages/OIDC write permissions.
-
-Actionlint 1.7.12 predates GitHub's supported concurrency.queue property;
-`.github/actionlint.yaml` suppresses only that unknown-key diagnostic for the shared
-`workflows` rule. All other workflow, expression and shell diagnostics remain blocking.
+Renderer coverage thresholds remain unchanged.
 
 ## Release
 
