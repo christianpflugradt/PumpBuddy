@@ -20,7 +20,7 @@ jobs:
       - name: Install pinned Rust toolchain and coverage tool
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          install_args: rust cargo:cargo-llvm-cov
+          install_args: rust cargo:cargo-llvm-cov aqua:boyter/scc
 
       - name: Setup Rust dependency cache
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -43,11 +43,19 @@ jobs:
           COVERAGE_METRIC_OUTPUT_DIR: ${{ github.workspace }}/build/statistics
         run: make coverage-backend
 
-      - name: Upload backend coverage metric
+      - name: Count backend lines of code and tests
+        run: |
+          set -euo pipefail
+          loc="$(scc --format json --include-ext rs --not-match 'test_support|test_runtime' backend/src | jq 'map(.Code) | add')"
+          tests="$(cargo test --offline --locked --manifest-path backend/Cargo.toml -- --list | awk '/^[0-9]+ tests?, [0-9]+ benchmarks?/ { sum += $1 } END { print sum + 0 }')"
+          python3 agent/scripts/write-count-metric.py build/statistics/backend-loc.json "backend lines of code" "$loc"
+          python3 agent/scripts/write-count-metric.py build/statistics/backend-tests.json "backend tests" "$tests"
+
+      - name: Upload backend metrics
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: backend-coverage-metric
-          path: build/statistics/backend-coverage.json
+          name: backend-metrics
+          path: build/statistics
           if-no-files-found: error
 
   collect-renderer:
@@ -73,7 +81,7 @@ jobs:
       - name: Install pinned Rust toolchain
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          install_args: rust
+          install_args: rust aqua:boyter/scc
       - name: Prepare dependencies
         run: agent/scripts/governance/prepare.sh statistics
 
@@ -82,11 +90,20 @@ jobs:
           COVERAGE_METRIC_OUTPUT_DIR: ${{ github.workspace }}/build/statistics
         run: make coverage-renderer
 
-      - name: Upload renderer coverage metric
+      - name: Count renderer lines of code and tests
+        run: |
+          set -euo pipefail
+          loc="$(scc --format json --include-ext ts,scss --not-match '\.test\.ts$' renderer/src | jq 'map(.Code) | add')"
+          unit="$(cd renderer && node_modules/.bin/vitest list --json | jq length)"
+          smoke="$(cd renderer && node_modules/.bin/playwright test --list --project=chromium | sed -n 's/^Total: \([0-9]*\) tests.*/\1/p')"
+          python3 agent/scripts/write-count-metric.py build/statistics/renderer-loc.json "renderer lines of code" "$loc"
+          python3 agent/scripts/write-count-metric.py build/statistics/renderer-tests.json "renderer tests" "$((unit + smoke))"
+
+      - name: Upload renderer metrics
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: renderer-coverage-metric
-          path: build/statistics/renderer-coverage.json
+          name: renderer-metrics
+          path: build/statistics
           if-no-files-found: error
 
   publish:
@@ -101,7 +118,7 @@ jobs:
       - name: Download metrics
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          pattern: '*-metric'
+          pattern: '*-metrics'
           merge-multiple: true
           path: metrics
 
