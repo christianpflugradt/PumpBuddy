@@ -20,7 +20,7 @@ write_na_metric() {
   TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"
   python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
     "$metric_json_path" \
-    "backend branch coverage" \
+    "backend coverage" \
     "n/a" \
     "branch" \
     "all files"
@@ -294,7 +294,7 @@ PY
 
 python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
   "$metric_json_path" \
-  "backend ${coverage_metric} coverage" \
+  "backend coverage" \
   "$coverage" \
   "$coverage_metric" \
   "all files"

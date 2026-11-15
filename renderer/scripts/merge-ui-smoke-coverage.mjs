@@ -116,7 +116,7 @@ const writeMetric = (linePercent) => {
     [
       metricScriptPath,
       metricJsonPath,
-      'renderer line coverage',
+      'renderer coverage',
       linePercent.toFixed(2),
       'line',
       'all files',

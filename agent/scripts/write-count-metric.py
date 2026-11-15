@@ -9,12 +9,12 @@ from pathlib import Path
 
 
 def main() -> int:
-    if len(sys.argv) != 4:
-        print("Usage: agent/scripts/write-count-metric.py <output-path> <label> <count>", file=sys.stderr)
+    if len(sys.argv) != 5:
+        print("Usage: agent/scripts/write-count-metric.py <output-path> <label> <count> <kind>", file=sys.stderr)
         return 2
 
     output_path = Path(sys.argv[1])
-    payload = {"id": output_path.stem, "label": sys.argv[2], "value": int(sys.argv[3]), "kind": "count", "badge": True}
+    payload = {"id": output_path.stem, "label": sys.argv[2], "value": int(sys.argv[3]), "kind": sys.argv[4], "badge": True}
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

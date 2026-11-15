@@ -1,14 +1,10 @@
 # PumpBuddy
 
-[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?display_name=tag&sort=semver)](https://github.com/christianpflugradt/PumpBuddy/releases/latest)
-[![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml)
-[![Backend Coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
-[![Renderer Coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
-[![Backend Lines of Code](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-loc.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
-[![Renderer Lines of Code](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-loc.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
-[![Backend Tests](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-tests.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
-[![Renderer Tests](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-tests.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
+[![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?display_name=tag&sort=semver)](https://github.com/christianpflugradt/PumpBuddy/releases/latest) [![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-3949ab.svg)](LICENSE)
+
+[![backend tests](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-tests.svg)](https://christianpflugradt.github.io/badges-and-stuff/) [![backend coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/) [![backend LOC](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-loc.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
+
+[![renderer tests](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-tests.svg)](https://christianpflugradt.github.io/badges-and-stuff/) [![renderer coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/) [![renderer LOC](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-loc.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
 
 PumpBuddy is a personal training companion for structured gym workouts.
 It focuses on clear plans, low-friction execution, and durable training history.
@@ -142,7 +138,7 @@ branches that fall behind `main` before merging. GitHub-native auto-merge does
 not need to be enabled. This policy applies to Renovate PRs only.
 
 CI has a single `Check` job containing software and framework validation.
-The independent `Statistics` workflow calculates coverage, production lines of code (scc, without tests and generated code) and test counts per component, and sends them to
+The independent `Statistics` workflow calculates coverage, production lines of code (LOC, counted with scc without tests and generated code) and test counts per component, and sends them to
 [badges-and-stuff](https://github.com/christianpflugradt/badges-and-stuff), which renders the
 badges; it needs the repository secret `STATISTICS_TOKEN`. Quality CI does not write
 metrics. Backend thresholds default to zero with an informational n/a fallback;

@@ -107,7 +107,7 @@ if (process.env.WRITE_COVERAGE_METRICS === "1") {
     [
       metricScriptPath,
       metricJsonPath,
-      "renderer line coverage",
+      "renderer coverage",
       (Number.isNaN(percent) ? "0" : percent.toFixed(2)),
       "line",
       "all files",
