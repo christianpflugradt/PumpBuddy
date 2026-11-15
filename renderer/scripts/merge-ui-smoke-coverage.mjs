@@ -9,9 +9,9 @@ const baseCoveragePath = path.join(coverageDir, 'coverage-final.json');
 const uiSmokeCoverageDir = path.join(coverageDir, 'ui-smoke');
 const uiSmokeMergedPath = path.join(coverageDir, 'coverage-ui-smoke.json');
 const mergedPath = path.join(coverageDir, 'coverage-merged.json');
-const badgeOutputDir = process.env.COVERAGE_BADGE_OUTPUT_DIR ?? path.join(repoRoot, 'site', 'badges');
-const badgeJsonPath = path.join(badgeOutputDir, 'renderer-coverage.json');
-const badgeScriptPath = path.join(repoRoot, 'agent', 'scripts', 'write-coverage-badge.py');
+const metricOutputDir = process.env.COVERAGE_METRIC_OUTPUT_DIR ?? path.join(repoRoot, 'build', 'statistics');
+const metricJsonPath = path.join(metricOutputDir, 'renderer-coverage.json');
+const metricScriptPath = path.join(repoRoot, 'agent', 'scripts', 'write-coverage-metric.py');
 
 const pathExists = async (targetPath) => {
   try {
@@ -110,12 +110,12 @@ if (!(await pathExists(baseCoveragePath))) {
   process.exit(1);
 }
 
-const writeBadge = (linePercent) => {
-  const badgeResult = spawnSync(
+const writeMetric = (linePercent) => {
+  const metricResult = spawnSync(
     'python3',
     [
-      badgeScriptPath,
-      badgeJsonPath,
+      metricScriptPath,
+      metricJsonPath,
       'renderer line coverage',
       linePercent.toFixed(2),
       'line',
@@ -124,10 +124,10 @@ const writeBadge = (linePercent) => {
     { cwd: repoRoot, encoding: 'utf8' },
   );
 
-  if (badgeResult.stdout) process.stdout.write(badgeResult.stdout);
-  if (badgeResult.stderr) process.stderr.write(badgeResult.stderr);
-  if (badgeResult.status !== 0) {
-    process.exit(badgeResult.status ?? 1);
+  if (metricResult.stdout) process.stdout.write(metricResult.stdout);
+  if (metricResult.stderr) process.stderr.write(metricResult.stderr);
+  if (metricResult.status !== 0) {
+    process.exit(metricResult.status ?? 1);
   }
 };
 
@@ -135,7 +135,7 @@ if (!(await pathExists(uiSmokeCoverageDir))) {
   console.log('No UI smoke coverage directory found, leaving Vitest coverage unchanged.');
   const baseCoverageMap = await readJson(baseCoveragePath);
   const baseSummary = buildSummary(baseCoverageMap);
-  writeBadge(baseSummary.total.lines.pct);
+  writeMetric(baseSummary.total.lines.pct);
   process.exit(0);
 }
 
@@ -147,7 +147,7 @@ if (coverageFiles.length === 0) {
   console.log('No UI smoke coverage files found, leaving Vitest coverage unchanged.');
   const baseCoverageMap = await readJson(baseCoveragePath);
   const baseSummary = buildSummary(baseCoverageMap);
-  writeBadge(baseSummary.total.lines.pct);
+  writeMetric(baseSummary.total.lines.pct);
   process.exit(0);
 }
 
@@ -176,8 +176,8 @@ await fs.writeFile(
   'utf8',
 );
 
-if (process.env.WRITE_COVERAGE_BADGES === '1') {
-  writeBadge(summary.total.lines.pct);
+if (process.env.WRITE_COVERAGE_METRICS === '1') {
+  writeMetric(summary.total.lines.pct);
 }
 
 console.log(`Merged UI smoke coverage from ${coverageFiles.length} file(s).`);

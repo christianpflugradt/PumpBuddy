@@ -65,8 +65,8 @@ Additional checks:
 ## CI Wiring
 
 The main CI workflow has a single `Check` job for software and framework quality.
-Coverage calculation and GitHub Pages badge publication live in the independent
-`Coverage Badges` workflow.
+Coverage calculation and statistics publication live in the independent
+`Statistics` workflow.
 
 ## Maintenance Rules
 

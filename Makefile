@@ -65,10 +65,10 @@ prepare:
 	agent/scripts/governance/prepare.sh check
 
 coverage-backend:
-	BACKEND_CHECK_WITH_COVERAGE=1 WRITE_COVERAGE_BADGES=1 $(MAKE) check-backend
+	BACKEND_CHECK_WITH_COVERAGE=1 WRITE_COVERAGE_METRICS=1 $(MAKE) check-backend
 
 coverage-renderer:
-	WRITE_COVERAGE_BADGES=1 $(MAKE) check-renderer
+	WRITE_COVERAGE_METRICS=1 $(MAKE) check-renderer
 
 release-package:
 	python3 agent/scripts/release/artifacts.py package

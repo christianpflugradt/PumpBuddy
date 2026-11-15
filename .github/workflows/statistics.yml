@@ -1,0 +1,119 @@
+name: Statistics
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  collect-backend:
+    name: Collect backend statistics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain and coverage tool
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: rust cargo:cargo-llvm-cov
+
+      - name: Setup Rust dependency cache
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: backend
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.15'
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: mise.toml
+          package-manager-cache: false
+      - name: Prepare dependencies
+        run: agent/scripts/governance/prepare.sh statistics
+
+      - name: Run backend quality and write coverage metric
+        env:
+          COVERAGE_METRIC_OUTPUT_DIR: ${{ github.workspace }}/build/statistics
+        run: make coverage-backend
+
+      - name: Upload backend coverage metric
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: backend-coverage-metric
+          path: build/statistics/backend-coverage.json
+          if-no-files-found: error
+
+  collect-renderer:
+    name: Collect renderer statistics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: mise.toml
+          cache: npm
+          cache-dependency-path: renderer/package-lock.json
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.15'
+      - name: Install pinned Rust toolchain
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: rust
+      - name: Prepare dependencies
+        run: agent/scripts/governance/prepare.sh statistics
+
+      - name: Run renderer quality and write coverage metric
+        env:
+          COVERAGE_METRIC_OUTPUT_DIR: ${{ github.workspace }}/build/statistics
+        run: make coverage-renderer
+
+      - name: Upload renderer coverage metric
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: renderer-coverage-metric
+          path: build/statistics/renderer-coverage.json
+          if-no-files-found: error
+
+  publish:
+    name: Publish statistics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    needs:
+      - collect-backend
+      - collect-renderer
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Download metrics
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: '*-metric'
+          merge-multiple: true
+          path: metrics
+
+      - name: Send statistics to badges-and-stuff
+        env:
+          GH_TOKEN: ${{ secrets.STATISTICS_TOKEN }}
+        run: |
+          set -euo pipefail
+          jq --slurp \
+            --arg project pumpbuddy \
+            --arg commit "$GITHUB_SHA" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{event_type: "statistics", client_payload: {project: $project, commit: $commit, timestamp: $timestamp, metrics: .}}' \
+            metrics/*.json >payload.json
+          gh api --method POST repos/christianpflugradt/badges-and-stuff/dispatches --input payload.json

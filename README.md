@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?display_name=tag&sort=semver)](https://github.com/christianpflugradt/PumpBuddy/releases/latest)
 [![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci.yml)
-[![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
-[![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
+[![Backend Coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/backend-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
+[![Renderer Coverage](https://christianpflugradt.github.io/badges-and-stuff/pumpbuddy/renderer-coverage.svg)](https://christianpflugradt.github.io/badges-and-stuff/)
 
 PumpBuddy is a personal training companion for structured gym workouts.
 It focuses on clear plans, low-friction execution, and durable training history.
@@ -138,9 +138,10 @@ branches that fall behind `main` before merging. GitHub-native auto-merge does
 not need to be enabled. This policy applies to Renovate PRs only.
 
 CI has a single `Check` job containing software and framework validation.
-The independent `Coverage Badges` workflow calculates and publishes existing
-GitHub Pages badges. Its publication queue is retained; quality CI does not write
-badge files. Backend thresholds default to zero with an informational n/a fallback;
+The independent `Statistics` workflow calculates the coverage metrics and sends them to
+[badges-and-stuff](https://github.com/christianpflugradt/badges-and-stuff), which renders the
+badges; it needs the repository secret `STATISTICS_TOKEN`. Quality CI does not write
+metrics. Backend thresholds default to zero with an informational n/a fallback;
 renderer coverage retains its configured thresholds.
 
 ## Commit Policy

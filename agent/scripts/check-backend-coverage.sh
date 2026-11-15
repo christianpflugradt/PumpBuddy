@@ -3,8 +3,8 @@ set -eu
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
-badge_output_dir="${COVERAGE_BADGE_OUTPUT_DIR:-$repo_root/site/badges}"
-badge_json_path="$badge_output_dir/backend-coverage.json"
+metric_output_dir="${COVERAGE_METRIC_OUTPUT_DIR:-$repo_root/build/statistics}"
+metric_json_path="$metric_output_dir/backend-coverage.json"
 threshold="${BACKEND_BRANCH_COVERAGE_MIN:-0}"
 coverage_metric="branch"
 
@@ -16,10 +16,10 @@ sh "$repo_root/agent/scripts/governance/require-release-rust.sh"
 # The pinned toolchain is a rustup toolchain named by its version, for example 1.100.0.
 rust_toolchain="$(rustc --version | cut -d " " -f 2)"
 
-write_na_badge() {
+write_na_metric() {
   TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"
-  python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
-    "$badge_json_path" \
+  python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
+    "$metric_json_path" \
     "backend branch coverage" \
     "n/a" \
     "branch" \
@@ -206,8 +206,8 @@ if command -v cargo-llvm-cov >/dev/null 2>&1; then
         if ! try_recover_with_discovered_llvm_tools; then
           [ -s "$tmp_log" ] && cat "$tmp_log" >&2
           if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
-            echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
-            write_na_badge
+            echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a metric." >&2
+            write_na_metric
             exit 0
           fi
           echo "ERROR cargo-llvm-cov execution failed after llvm tool recovery." >&2
@@ -225,8 +225,8 @@ if command -v cargo-llvm-cov >/dev/null 2>&1; then
       if ! try_recover_with_discovered_llvm_tools; then
         [ -s "$tmp_log" ] && cat "$tmp_log" >&2
         if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
-          echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
-          write_na_badge
+          echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a metric." >&2
+          write_na_metric
           exit 0
         fi
         echo "ERROR cargo-llvm-cov execution failed after llvm tool recovery." >&2
@@ -240,8 +240,8 @@ if command -v cargo-llvm-cov >/dev/null 2>&1; then
   fi
   [ -s "$tmp_log" ] && cat "$tmp_log" >&2
 else
-  echo "WARN cargo-llvm-cov not installed; falling back to cargo test and n/a badge." >&2
-  write_na_badge
+  echo "WARN cargo-llvm-cov not installed; falling back to cargo test and n/a metric." >&2
+  write_na_metric
   exit 0
 fi
 
@@ -292,8 +292,8 @@ print("n/a")
 PY
 )"
 
-python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
-  "$badge_json_path" \
+python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
+  "$metric_json_path" \
   "backend ${coverage_metric} coverage" \
   "$coverage" \
   "$coverage_metric" \

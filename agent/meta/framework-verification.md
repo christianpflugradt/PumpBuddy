@@ -117,8 +117,8 @@ project scopes. No local header constraints, range or PR-title checks remain.
 ## CI Coverage
 
 `.github/workflows/ci.yml` runs `framework` inside `check` / `Check`, including
-all task contracts. `.github/workflows/coverage-badges.yml` independently calculates
-and publishes badges.
+all task contracts. `.github/workflows/statistics.yml` independently calculates
+and publishes statistics.
 
 ## Not Covered by This Inventory
 

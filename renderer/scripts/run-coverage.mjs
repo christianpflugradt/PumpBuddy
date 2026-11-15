@@ -5,9 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const badgeOutputDir = process.env.COVERAGE_BADGE_OUTPUT_DIR ?? path.join(repoRoot, "site", "badges");
-const badgeJsonPath = path.join(badgeOutputDir, "renderer-coverage.json");
-const badgeScriptPath = path.join(repoRoot, "agent", "scripts", "write-coverage-badge.py");
+const metricOutputDir = process.env.COVERAGE_METRIC_OUTPUT_DIR ?? path.join(repoRoot, "build", "statistics");
+const metricJsonPath = path.join(metricOutputDir, "renderer-coverage.json");
+const metricScriptPath = path.join(repoRoot, "agent", "scripts", "write-coverage-metric.py");
 
 // Forward args to vitest
 const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "--run");
@@ -97,16 +97,16 @@ try {
 }
 
 if (Number.isNaN(percent)) {
-  // If we couldn't parse a summary, attempt to run the badge script with 0 and warn.
+  // If we couldn't parse a summary, attempt to run the metric script with 0 and warn.
   process.stderr.write("could not parse line coverage from vitest output\n");
 }
 
-if (process.env.WRITE_COVERAGE_BADGES === "1") {
-  const badgeResult = spawnSync(
+if (process.env.WRITE_COVERAGE_METRICS === "1") {
+  const metricResult = spawnSync(
     "python3",
     [
-      badgeScriptPath,
-      badgeJsonPath,
+      metricScriptPath,
+      metricJsonPath,
       "renderer line coverage",
       (Number.isNaN(percent) ? "0" : percent.toFixed(2)),
       "line",
@@ -115,9 +115,9 @@ if (process.env.WRITE_COVERAGE_BADGES === "1") {
     { cwd: repoRoot, encoding: "utf8" },
   );
 
-  if (badgeResult.stdout) process.stdout.write(badgeResult.stdout);
-  if (badgeResult.stderr) process.stderr.write(badgeResult.stderr);
+  if (metricResult.stdout) process.stdout.write(metricResult.stdout);
+  if (metricResult.stderr) process.stderr.write(metricResult.stderr);
 
-  if (badgeResult.status !== 0) process.exit(badgeResult.status ?? 1);
+  if (metricResult.status !== 0) process.exit(metricResult.status ?? 1);
 }
 process.exit(result.status ?? 1);
