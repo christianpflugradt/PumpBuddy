@@ -84,8 +84,8 @@ workspace-cleanliness self-test and all 13 task contracts. Missing ShellCheck
 now fails instead of silently skipping lint.
 
 API generation is a prerequisite of backend, renderer and Docker builds.
-Preparation generates the models before quality checks. Backend, renderer and
-Docker build checks share the build resource. Actions packages only after a
+Preparation generates the models before quality checks. Backend and Docker
+build checks share the build resource; the renderer check runs alongside them. Actions packages only after a
 successful candidate build and verifies archives before transfer and publication. Targeted backend/renderer Makefile
 checks expect dependencies and generated models prepared beforehand.
 
