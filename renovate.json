@@ -5,6 +5,7 @@
   "rebaseWhen": "behind-base-branch",
   "automerge": false,
   "platformAutomerge": false,
+  "minimumReleaseAge": "7 days",
   "extends": [
     "config:best-practices",
     ":maintainLockFilesMonthly",
@@ -32,17 +33,6 @@
       ]
     },
     {
-      "description": "Wait seven days before routine dependency update PRs to reduce fresh-release supply-chain risk.",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "7 days",
-      "matchPackageNames": [
-        "!please-behave/cli"
-      ]
-    },
-    {
       "description": "Wait fourteen days before major dependency update PRs because they carry higher change and review risk.",
       "matchUpdateTypes": [
         "major"
@@ -53,14 +43,17 @@
       ]
     },
     {
-      "description": "Group GitHub Actions updates and auto-merge all update types after green CI and a fourteen-day cooldown.",
+      "description": "Group non-major GitHub Actions updates and apply a fourteen-day cooldown; major updates stay manual.",
       "matchFileNames": [
         ".github/**"
       ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor",
+        "digest"
+      ],
       "groupName": "github-actions",
-      "separateMajorMinor": false,
       "minimumReleaseAge": "14 days",
-      "automerge": true,
       "matchPackageNames": [
         "!please-behave/cli"
       ]
