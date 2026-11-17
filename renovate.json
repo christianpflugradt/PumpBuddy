@@ -9,7 +9,8 @@
   "extends": [
     "config:best-practices",
     ":maintainLockFilesMonthly",
-    "github>christianpflugradt/please-behave-governance:renovate-governor"
+    "github>christianpflugradt/please-behave-governance:renovate-governor",
+    "github>christianpflugradt/please-behave-governance:renovate-content-aware"
   ],
   "packageRules": [
     {
