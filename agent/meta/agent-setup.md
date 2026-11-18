@@ -54,7 +54,6 @@ Validation stack includes:
 - Pydantic schema validation for registered example contracts
 - cross-file consistency checks for core design documents
 - execution-item invariants (`open/review/done` filename-state consistency + schema)
-- shell lint pass (`agent/scripts/check/shellcheck.sh`)
 
 Additional checks:
 

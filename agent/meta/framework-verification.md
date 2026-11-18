@@ -15,7 +15,6 @@ Additional targeted checks:
 
 - `agent/scripts/check/check-task-contract.sh <task-name>`
 - External commit-msg rules in `.please/config.toml`
-- `agent/scripts/check/shellcheck.sh`
 - `agent/scripts/check/check-execution-items.sh`
 
 ## What Is Verified
@@ -68,22 +67,7 @@ Checks:
 - no conflicting states for same item id
 - item file schema validity against `item-template` model
 
-### 4) Shell Script Lint
-
-Entrypoint:
-
-- `agent/scripts/check/shellcheck.sh`
-
-Scope:
-
-- `agent/scripts/**/*.sh`
-
-Behavior:
-
-- local: fails when `shellcheck` is not installed
-- CI (`Check`): installs shellcheck and fails on lint findings
-
-### 5) Task Contract Integrity
+### 4) Task Contract Integrity
 
 Entrypoint:
 
@@ -95,7 +79,7 @@ Checks:
 - script contract paths exist (dispatcher, task script, finalize script, context config)
 - task name in task-spec and task-context matches
 
-### 6) Experimental Execution Lifecycle
+### 4) Experimental Execution Lifecycle
 
 Validate with the task run scripts on a disposable framework fixture whenever routing or transition code changes:
 
@@ -108,7 +92,7 @@ Validate with the task run scripts on a disposable framework fixture whenever ro
 
 Implementation judgment and stakeholder consultation are instruction contracts reviewed through `implement-item` context/spec validation: low-impact repository-consistent choices proceed; material behavior/domain/UX decisions consult; contradictory or unsafe requirements block.
 
-### 7) Commit Message Policy
+### 4) Commit Message Policy
 
 External Conventional Commits and advisory header review run at commit-msg.
 `.please/config.toml` pins the shared package; `.please/commit-scopes.txt` supplies

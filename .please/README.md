@@ -68,7 +68,7 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | release-candidate | release |
 | python-tests | pre-push, check |
 
-The shared open-source-software rules `workflows` and `shell` complement
+The shared open-source-software rules `workflow-syntax` and `shell-scripts` complement
 these local rules; Local Rules contain only PumpBuddy-specific requirements.
 
 Backend runs Clippy for all targets/features and the complete native suite,
@@ -78,9 +78,9 @@ instrumented build, browser smoke and merged coverage. Tests are not split into
 artificial categories.
 
 Framework retains Pydantic project/example contracts, cross-file consistency,
-execution item invariants, command policy, ShellCheck, the disposable
-workspace-cleanliness self-test and all 13 task contracts. Missing ShellCheck
-now fails instead of silently skipping lint.
+execution item invariants, command policy, the disposable
+workspace-cleanliness self-test and the task contracts. Shell scripts are
+linted by the imported `shell-scripts` Rule.
 
 API generation is a prerequisite of backend, renderer and Docker builds.
 Preparation generates the models before quality checks. Backend and Docker
