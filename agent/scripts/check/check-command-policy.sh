@@ -1,29 +1,25 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "${ROOT_DIR}"
 
-TARGET_FILES=()
-while IFS= read -r file; do
-  [ -n "$file" ] && TARGET_FILES+=("$file")
-done < <(
+TARGET_FILES="$(
   {
     find agent/execution/plans -maxdepth 1 -type f -name 'plan-item-*.yaml' 2>/dev/null
     find agent/execution/items -maxdepth 1 -type f \( -name 'open-item-*.yaml' -o -name 'review-item-*.yaml' \) 2>/dev/null
   } | sort
-)
+)"
 
-if [ "${#TARGET_FILES[@]}" -eq 0 ]; then
+if [ -z "${TARGET_FILES}" ]; then
   echo "PASS command policy check skipped (no active plan/open/review item files found)"
   exit 0
 fi
+TARGET_COUNT="$(printf '%s\n' "${TARGET_FILES}" | wc -l | tr -d ' ')"
 
 FORBIDDEN_PATTERN='\b(npm|pnpm|yarn|bun|npx|vitest|jest|pytest)\b|\bcargo[[:space:]]+(test|clippy|fmt|nextest)\b'
 
-if MATCHES="$(rg -n -e "${FORBIDDEN_PATTERN}" "${TARGET_FILES[@]}" || true)"; then
-  :
-fi
+MATCHES="$(printf '%s\n' "${TARGET_FILES}" | xargs rg -n -e "${FORBIDDEN_PATTERN}" || true)"
 
 if [ -n "${MATCHES}" ]; then
   echo "FAIL command policy violation in active execution artifacts." >&2
@@ -33,4 +29,4 @@ if [ -n "${MATCHES}" ]; then
   exit 1
 fi
 
-echo "PASS command policy check ok (${#TARGET_FILES[@]} files scanned)"
+echo "PASS command policy check ok (${TARGET_COUNT} files scanned)"

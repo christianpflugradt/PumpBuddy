@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Explicit dependency preparation, never invoked by a Rule or Git hook.
-set -euo pipefail
+set -eu
 cd "$(git rev-parse --show-toplevel)"
 export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
 export PIP_CACHE_DIR="$PWD/.cache/pip"

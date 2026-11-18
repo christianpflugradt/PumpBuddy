@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 readonly DEV_USER_ID="00000000-0000-0000-0000-000000000001"
 readonly USER_A_ID="00000000-0000-0000-0000-000000000011"
