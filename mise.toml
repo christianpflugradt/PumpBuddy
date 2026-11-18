@@ -22,7 +22,7 @@ description = "Format Rust, Python and shell sources"
 run = [
   "cargo fmt --manifest-path backend/Cargo.toml",
   "git ls-files -z '*.py' | xargs -0 ruff format",
-  "git ls-files -z '*.sh' | xargs -0 shfmt -w",
+  "git ls-files -z '*.sh' | xargs -0 -r shfmt -w",
 ]
 
 [tasks.verify]
