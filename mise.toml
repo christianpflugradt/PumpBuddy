@@ -12,6 +12,8 @@ ripgrep = "15.2.0"
 ruff = "0.17.4"
 shfmt = "3.14.1"
 "cargo:cargo-audit" = "0.23.0"
+"pipx:pip-audit" = "2.10.1"
+uv = "0.13.9"
 "cargo:cargo-llvm-cov" = "0.9.1"
 "aqua:boyter/scc" = "4.1.0"
 

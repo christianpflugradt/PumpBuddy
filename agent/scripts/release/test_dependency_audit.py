@@ -34,6 +34,18 @@ CARGO = {
         ]
     }
 }
+PIP = {
+    "dependencies": [
+        {
+            "name": "pyyaml",
+            "version": "5.3",
+            "vulns": [{"id": "PYSEC-2099-1", "aliases": ["CVE-2099-9", "GHSA-xxxx"], "description": "Flaw\nmore"}],
+        },
+        {"name": "pyyaml-old", "version": "1", "vulns": [{"id": "PYSEC-2099-1", "aliases": []}]},
+        {"name": "clean", "version": "2", "vulns": []},
+        {"name": "skipped", "skip_reason": "not on PyPI"},
+    ]
+}
 NPM = {
     "vulnerabilities": {
         "picomatch": {
@@ -67,6 +79,14 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(set(found), {"GHSA-aaaa-bbbb-cccc", "npm:7"})
         self.assertEqual(found["GHSA-aaaa-bbbb-cccc"]["severity"], "high")
         self.assertEqual(found["npm:7"]["severity"], "medium")
+
+    def test_pip_findings_are_unknown_severity_and_merge_packages(self):
+        found = mod.pip_findings(json.dumps(PIP))
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["severity"], "unknown")
+        self.assertEqual(found[0]["aliases"], ["CVE-2099-9", "GHSA-xxxx"])
+        self.assertEqual(found[0]["packages"], ["pyyaml 5.3", "pyyaml-old 1"])
+        self.assertEqual(found[0]["description"], "Flaw")
 
     def test_npm_error_document_is_not_an_empty_result(self):
         with self.assertRaises(ValueError):
@@ -111,6 +131,27 @@ class ScanAndGateTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(calls, [("npm", "."), ("npm", "renderer"), ("cargo", "backend")])
         self.assertEqual([item["ecosystem"] for item in written["scans"]], ["npm", "npm renderer", "cargo backend"])
+
+    def test_pyproject_dependencies_are_audited_as_a_requirements_file(self):
+        seen = []
+
+        def fake(command, cwd, **_):
+            with open(command[command.index("--requirement") + 1]) as handle:
+                seen.append(handle.read())
+            return self.completed(json.dumps(PIP))
+
+        with tempfile.TemporaryDirectory() as directory:
+            pyproject = os.path.join(directory, "pyproject.toml")
+            with open(pyproject, "w") as handle:
+                handle.write('[project]\nname = "x"\ndependencies = ["PyYAML>=6,<7", "other==1"]\n')
+            path = os.path.join(directory, "report.json")
+            with patch.object(mod.subprocess, "run", side_effect=fake):
+                code = mod.scan(path, [], [], (), (pyproject,))
+            with open(path) as handle:
+                written = json.load(handle)
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, ["PyYAML>=6,<7\nother==1\n"])
+        self.assertEqual(written["scans"][0]["findings"][0]["id"], "PYSEC-2099-1")
 
     def test_unexpected_exit_status_is_a_scan_error(self):
         code, written, _ = self.scan({"npm": self.completed(json.dumps(NPM), code=3)}, cargo=())

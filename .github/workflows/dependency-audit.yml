@@ -20,9 +20,9 @@ jobs:
       - name: Install audit tools
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          install_args: node python rust cargo:cargo-audit
-      - name: Scan npm and Cargo dependencies
-        run: python3 agent/scripts/release/dependency-audit.py scan --report dependency-audit.json --npm . --npm renderer --cargo backend
+          install_args: node python rust cargo:cargo-audit uv pipx:pip-audit
+      - name: Scan npm, Cargo and Python dependencies
+        run: python3 agent/scripts/release/dependency-audit.py scan --report dependency-audit.json --npm . --npm renderer --cargo backend --requirements validation/core/requirements.txt
       - name: Report findings
         if: ${{ !cancelled() && hashFiles('dependency-audit.json') != '' }}
         run: python3 agent/scripts/release/dependency-audit.py report --report dependency-audit.json --fail-on "$AUDIT_FAIL_ON"

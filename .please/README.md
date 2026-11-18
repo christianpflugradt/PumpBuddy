@@ -94,7 +94,7 @@ offline. PostgreSQL runs locally with synthetic credentials; browser APIs are
 mocked. Preparation caches test dependencies. Docker release builds may download
 build dependencies. Dependency vulnerabilities are not checked in CI: the daily
 `dependency-audit.yml` workflow audits `package-lock.json`, `renderer/package-lock.json` and
-`backend/Cargo.lock`, and fails from the severity in its `AUDIT_FAIL_ON` variable (initially `medium`).
+`backend/Cargo.lock` and `validation/core/requirements.txt`, and fails from the severity in its `AUDIT_FAIL_ON` variable (initially `medium`).
 Releases neither wait for nor are blocked by it; the shared Security Rule Set only verifies that the workflow exists.
 Release helper tests also build a tiny scratch image without network access and
 verify its Docker save/load identity. Tests never call a real model or paid service.

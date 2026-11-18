@@ -11,6 +11,8 @@ import math
 import os
 import subprocess
 import sys
+import tempfile
+import tomllib
 
 SEVERITIES = ("low", "medium", "high", "critical")
 NPM_SEVERITIES = {"info": "low", "low": "low", "moderate": "medium", "high": "high", "critical": "critical"}
@@ -104,6 +106,42 @@ def npm_findings(output):
     return list(found.values())
 
 
+def pip_findings(output):
+    """Normalize `pip-audit --format json`; pip-audit reports no severity, so every finding is unknown."""
+    found = {}
+    for dependency in json.loads(output)["dependencies"]:
+        for vulnerability in dependency.get("vulns") or []:
+            advisory_id = vulnerability["id"]
+            entry = found.setdefault(
+                advisory_id,
+                {
+                    "id": advisory_id,
+                    "aliases": sorted(vulnerability.get("aliases") or []),
+                    "severity": "unknown",
+                    "description": (vulnerability.get("description") or "").split("\n")[0][:200] or None,
+                    "url": f"https://osv.dev/vulnerability/{advisory_id}",
+                    "packages": [],
+                },
+            )
+            entry["packages"].append(f"{dependency['name']} {dependency['version']}")
+    return list(found.values())
+
+
+def pip_audit(requirements):
+    return pip_findings(run_audit(["pip-audit", "--requirement", requirements, "--format", "json", "--progress-spinner", "off"], "."))
+
+
+def pyproject_audit(pyproject):
+    """Audit the project's declared dependencies by writing them to a temporary requirements file."""
+    with open(pyproject, "rb") as handle:
+        dependencies = tomllib.load(handle)["project"]["dependencies"]
+    with tempfile.TemporaryDirectory() as directory:
+        requirements = os.path.join(directory, "requirements.txt")
+        with open(requirements, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(dependencies) + "\n")
+        return pip_audit(requirements)
+
+
 def run_audit(command, directory):
     result = subprocess.run(command, cwd=directory, capture_output=True, check=False)
     if result.returncode not in (0, 1):
@@ -123,11 +161,13 @@ def label(tool, directory):
     return tool if directory == "." else f"{tool} {directory}"
 
 
-def scan(path, npm_directories, cargo_directories):
+def scan(path, npm_directories, cargo_directories, requirements=(), pyprojects=()):
     scans = [scan_one(label("npm", d), lambda d=d: npm_findings(run_audit(["npm", "audit", "--json"], d))) for d in npm_directories]
     scans += [
         scan_one(label("cargo", d), lambda d=d: cargo_findings(run_audit(["cargo", "audit", "--json"], d))) for d in cargo_directories
     ]
+    scans += [scan_one(label("pip", f), lambda f=f: pip_audit(f)) for f in requirements]
+    scans += [scan_one(label("pip", f), lambda f=f: pyproject_audit(f)) for f in pyprojects]
     report = {"scans": scans}
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
@@ -200,14 +240,16 @@ def main(argv):
     scanning.add_argument("--report", required=True)
     scanning.add_argument("--npm", action="append", default=[], metavar="DIR", help="directory with a package-lock.json")
     scanning.add_argument("--cargo", action="append", default=[], metavar="DIR", help="directory with a Cargo.lock")
+    scanning.add_argument("--requirements", action="append", default=[], metavar="FILE", help="pip requirements file")
+    scanning.add_argument("--pyproject", action="append", default=[], metavar="FILE", help="pyproject.toml with project dependencies")
     evaluate = commands.add_parser("report")
     evaluate.add_argument("--report", required=True)
     evaluate.add_argument("--fail-on", required=True, choices=SEVERITIES)
     args = parser.parse_args(argv)
     if args.command == "scan":
-        if not (args.npm or args.cargo):
-            parser.error("scan needs at least one --npm or --cargo directory")
-        return scan(args.report, args.npm, args.cargo)
+        if not (args.npm or args.cargo or args.requirements or args.pyproject):
+            parser.error("scan needs at least one --npm, --cargo, --requirements or --pyproject input")
+        return scan(args.report, args.npm, args.cargo, args.requirements, args.pyproject)
     return report(args.report, args.fail_on)
 
 
