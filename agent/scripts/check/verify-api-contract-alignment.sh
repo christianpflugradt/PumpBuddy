@@ -44,7 +44,7 @@ if [ "${backend_api_surface_changed}" = "true" ] && [ "${contract_changed}" != "
   echo "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml" >&2
   echo "Changed files:" >&2
   printf '%s\n' "${changed_files}" >&2
-  exit 41
+  exit 1
 fi
 
 if [ "${contract_changed}" = "true" ] && [ "${backend_api_surface_changed}" != "true" ] && [ "${renderer_api_boundary_changed}" != "true" ]; then
@@ -52,7 +52,7 @@ if [ "${contract_changed}" = "true" ] && [ "${backend_api_surface_changed}" != "
     echo "API contract alignment failed: agent/design/api-contract.yaml changed without a matching API-surface change or API-Contract-Only-Reason trailer" >&2
     echo "Changed files:" >&2
     printf '%s\n' "${changed_files}" >&2
-    exit 42
+    exit 1
   fi
 
   echo "API_CONTRACT_ALIGNMENT=passed_contract_only_allowed"
