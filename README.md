@@ -49,7 +49,7 @@ mise exec -- please sync --yes
 ```
 
 `mise run format` rewrites Rust, Python and shell sources; the hooks enforce them without
-rewriting through the separate rules `format-rust`, `format-python` and `format-shell`; `mise run verify` runs the deterministic
+rewriting through the separate rules `format-rust` and `format-python` and the imported `format-shell`; `mise run verify` runs the deterministic
 checks and stops at the first blocker. Use `mise exec -- make check` for the full manual run and `mise exec -- git commit` /
 `mise exec -- git push` so hooks inherit the same configured tools without shell
 activation. Plain commands require mise shell activation or equivalent PATH

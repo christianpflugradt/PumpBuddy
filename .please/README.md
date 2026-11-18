@@ -59,7 +59,6 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | --- | --- |
 | format-rust | pre-commit, pre-push, check |
 | format-python | pre-commit, pre-push, check |
-| format-shell | pre-commit, pre-push, check |
 | framework | pre-push, check |
 | backend-quality | pre-push, check |
 | renderer-quality | pre-push, check |
