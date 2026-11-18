@@ -7,7 +7,6 @@
 	check-renderer \
 	check-release-artifacts \
 	check-release-candidate \
-	check-rust-audit \
 	prepare \
 	coverage-backend \
 	coverage-renderer \
@@ -57,9 +56,6 @@ check-release-artifacts:
 
 check-release-candidate:
 	DOCKER_DEFAULT_PLATFORM=linux/amd64 agent/scripts/run-quality.sh release-artifacts
-
-check-rust-audit:
-	cargo audit --file backend/Cargo.lock
 
 prepare:
 	agent/scripts/governance/prepare.sh check

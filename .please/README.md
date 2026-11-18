@@ -69,7 +69,7 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | release-candidate | release |
 | python-tests | pre-push, check |
 
-The shared open-source-software rules `workflows`, `shell` and `npm-audit` complement
+The shared open-source-software rules `workflows` and `shell` complement
 these local rules; Local Rules contain only PumpBuddy-specific requirements.
 
 Backend runs Clippy for all targets/features and the complete native suite,
@@ -92,9 +92,10 @@ checks expect dependencies and generated models prepared beforehand.
 Cargo tests and Clippy select locked offline mode. npm fallback execution is
 offline. PostgreSQL runs locally with synthetic credentials; browser APIs are
 mocked. Preparation caches test dependencies. Docker release builds may download
-build dependencies; npm audits intentionally access current advisories.
-Rust dependency auditing is manual: `make check-rust-audit` requires cargo-audit
-0.22.2 and accesses current advisories. It does not block CI or releases.
+build dependencies. Dependency vulnerabilities are not checked in CI: the daily
+`dependency-audit.yml` workflow audits `package-lock.json`, `renderer/package-lock.json` and
+`backend/Cargo.lock`, and fails from the severity in its `AUDIT_FAIL_ON` variable (initially `medium`).
+Releases neither wait for nor are blocked by it; the shared Security Rule Set only verifies that the workflow exists.
 Release helper tests also build a tiny scratch image without network access and
 verify its Docker save/load identity. Tests never call a real model or paid service.
 
