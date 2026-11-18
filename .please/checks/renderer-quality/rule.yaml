@@ -1,0 +1,16 @@
+purpose: Keep the renderer passing its complete quality suite.
+problem: Type errors, failing tests or a broken build in the frontend reach main unnoticed.
+value: One check runs everything the renderer defines as its quality bar.
+conditions:
+  - statement: The renderer's own complete check passes.
+    rationale: The renderer owns its quality suite, so the rule delegates to it instead of repeating its steps.
+  - statement: The check runs offline.
+    rationale: Checks never download packages.
+success_criteria:
+  - A failing step of the renderer suite fails.
+  - Missing generated API models fail with a hint to prepare them.
+out_of_scope:
+  - description: The contents of the renderer suite, which are defined in the renderer.
+limitations:
+  - Needs prepared npm dependencies, generated models and browsers, because checks never install anything.
+placement: Local, because the renderer's tooling is the chosen Node stack of this repository.

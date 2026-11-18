@@ -1,0 +1,19 @@
+purpose: Keep the backend free of Clippy warnings and its tests passing.
+problem: Lint warnings and failing tests reach main unnoticed and surface only in CI or in production.
+value: The backend is lint-clean and tested before every push.
+conditions:
+  - statement: Clippy reports no warning for all targets and features.
+    rationale: Warnings are treated as errors, so lint findings cannot accumulate.
+  - statement: The complete backend test suite passes, including the PostgreSQL integration tests.
+    rationale: Tests are not split into artificial categories, so one run covers everything.
+  - statement: Cargo runs offline with a locked dependency set.
+    rationale: Checks never install or update dependencies.
+success_criteria:
+  - A Clippy warning or a failing test fails.
+  - Missing generated API models fail with a hint to prepare them.
+out_of_scope:
+  - description: Formatting, which format-rust covers.
+  - description: Dependency vulnerabilities.
+limitations:
+  - Needs a Docker daemon and prepared dependencies, because checks never install anything.
+placement: Local, because Clippy and Cargo are the tools of the chosen Rust stack.

@@ -1,0 +1,20 @@
+purpose: Keep the bootstrap access key out of logs and documentation.
+problem: A key printed to container output or described as readable from logs leaks access.
+value: The key reaches the operator only through the handoff file.
+conditions:
+  - statement: The production compose file writes the access key only to the handoff file and never to stdout.
+    rationale: Container logs are widely readable.
+  - statement: The development compose file publishes PostgreSQL ports only on the loopback address.
+    rationale: The development database must not be reachable from the network.
+  - statement: The root and runtime README do not tell operators to read the key from logs.
+    rationale: Documentation must not teach the leak.
+  - statement: The READMEs contain no inline POSTGRES_PASSWORD assignment.
+    rationale: Secrets belong in an env file, not in shell history.
+success_criteria:
+  - Each violation fails and shows the offending lines.
+  - A missing required file fails.
+out_of_scope:
+  - description: General secret detection, which the imported security rules cover.
+limitations:
+  - Pattern based and tied to fixed file paths, so reworded instructions or other files are not found.
+placement: Local, because the compose files and the handoff exist only in this repository.

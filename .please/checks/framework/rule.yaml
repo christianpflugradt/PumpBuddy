@@ -1,0 +1,25 @@
+purpose: Keep the agent framework of this repository consistent.
+problem: Broken contracts, task specs or work item files silently distort task runs that depend on them.
+value: Framework drift is found at push instead of in the middle of a task.
+conditions:
+  - statement: The governance script unit tests pass.
+    rationale: The framework's own helpers are tested offline.
+  - statement: Registered project contracts and examples validate against their schemas, and the cross-file design consistency checks pass.
+    rationale: Strict models reject missing or unknown fields before agents rely on them.
+  - statement: Execution items have consistent names, states and schema.
+    rationale: Task scripts derive item state from these files.
+  - statement: Active plan and item files contain no direct tool commands for quality or tests.
+    rationale: AGENTS.md makes make targets the only interface for these commands.
+  - statement: The workspace-cleanliness helper behaves correctly in a disposable repository.
+    rationale: Task scripts decide on it, so a self-test guards it.
+  - statement: Every task spec passes its contract check.
+    rationale: A spec must reference existing scripts and a matching context file.
+success_criteria:
+  - Each violation above fails.
+  - Missing Python dependencies fail with an installation hint.
+out_of_scope:
+  - description: Whether tasks make sense in content.
+  - description: Shell linting, which the imported shell-scripts rule covers.
+limitations:
+  - Task contracts are checked structurally, not by running the tasks.
+placement: Local, because the framework exists only in this repository.

@@ -1,0 +1,20 @@
+purpose: Keep the backend API and the OpenAPI contract changing together.
+problem: Contract and implementation drift apart, and the generated clients become wrong.
+value: An API change is visible in the contract, and a contract-only change is justified.
+conditions:
+  - statement: A change to the backend API surface also changes the contract file.
+    rationale: The contract is the canonical description of the API.
+  - statement: A contract change without an API or renderer boundary change needs a stated reason, given by a commit trailer or an environment variable.
+    rationale: Such a change is legitimate but unusual, so it must be explained.
+  - statement: A change only to the renderer's API boundary files passes.
+    rationale: The renderer may consume an unchanged contract.
+success_criteria:
+  - An API change without a contract change fails.
+  - A contract-only change without a reason fails.
+  - Allowed cases pass and print their status.
+out_of_scope:
+  - description: Whether contract and code agree in content.
+limitations:
+  - Only one commit is examined, the checked-out one or the one named by the quality gate, not a whole push range or uncommitted changes.
+  - The changed file paths are fixed in the script.
+placement: Local, because the contract and the API surface exist only in this repository.

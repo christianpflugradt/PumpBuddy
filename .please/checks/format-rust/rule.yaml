@@ -1,0 +1,17 @@
+purpose: Keep Rust sources formatted with rustfmt, using a released compiler.
+problem: Unformatted code fills diffs with noise and causes style discussions.
+value: Formatting is uniform and no longer reviewed by hand.
+conditions:
+  - statement: rustfmt reports no difference for the backend crate.
+    rationale: It is the formatter of the Rust toolchain.
+  - statement: The compiler version is a plain release number, not a nightly, beta or development build.
+    rationale: The guard is shared with the backend quality check. The repository does not record why it is repeated here, so this is an unexplained duplicate.
+success_criteria:
+  - Unformatted code fails and formatted code passes.
+  - A prerelease compiler fails with a message that asks for a released toolchain.
+out_of_scope:
+  - description: Formatting of other languages.
+  - description: Rust code outside the backend crate.
+limitations:
+  - Only the exact version format is checked, not whether it equals the pinned toolchain.
+placement: Local, because the formatter belongs to this repository's technology stack.

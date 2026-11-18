@@ -1,0 +1,17 @@
+purpose: Keep both shipped Docker images buildable.
+problem: A broken Dockerfile or build input is noticed only when the release workflow runs.
+value: Image build errors show up before the push instead of during a release.
+conditions:
+  - statement: The backend and the renderer image both build from their Dockerfiles.
+    rationale: These are the two images the project ships.
+  - statement: The build uses the native platform of the host.
+    rationale: It stays fast and avoids emulation; the release platform is covered by release-candidate.
+success_criteria:
+  - A failing image build fails.
+  - Missing generated API models fail with a hint to prepare them.
+out_of_scope:
+  - description: Running or publishing the images.
+  - description: Other platforms, which release-candidate builds.
+limitations:
+  - Needs a Docker daemon and may download build dependencies.
+placement: Local, because the shipped images exist only in this repository.
