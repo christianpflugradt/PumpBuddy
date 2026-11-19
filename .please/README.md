@@ -66,7 +66,6 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | bootstrap-secret-handoff | pre-push, check |
 | release-artifacts | pre-push, check |
 | release-candidate | release |
-| python-tests | pre-push, check |
 
 The shared open-source-software rules `workflow-syntax` and `shell-scripts` complement
 these local rules; Local Rules contain only PumpBuddy-specific requirements.
