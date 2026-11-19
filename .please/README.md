@@ -152,6 +152,8 @@ Renderer coverage thresholds remain unchanged.
 ## Release
 
 Manual `release.yml` remains the target of accepted finalize-plan automation.
+`mise release` waits for idle `ci.yml` on main before dispatching it; `--follow`
+watches the run.
 Jobs are Plan, Release Readiness, Release Candidate and Publish. Readiness and
 Candidate depend only on Plan and run in parallel. Publish requires both
 successfully. Nothing publishes when Plan finds no releasable changes.

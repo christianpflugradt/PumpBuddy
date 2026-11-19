@@ -245,7 +245,9 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 ## Release
 
 The manual GitHub Actions `Release` workflow uses `release.yml`;
-accepted `finalize-plan` automation can still trigger it. Plan determines the
+accepted `finalize-plan` automation can still trigger it. `mise release` waits
+until no `ci.yml` run on main is queued or in progress, then dispatches it;
+`mise release --follow` also watches the run. Plan determines the
 next version/source SHA. Release Readiness and Release Candidate run in parallel.
 Publish requires both and publishes the exact exported candidate images without
 rebuilding. Changes to main or the planned version refuse publication.

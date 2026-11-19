@@ -58,5 +58,6 @@ description = "Export the verified Docker images without rebuilding"
 run = "make release-package"
 
 [tasks.release]
-description = "Start the Release workflow for remote main"
-run = "gh workflow run release.yml --ref main"
+description = "Wait for CI on main, then start the Release workflow (--follow watches it)"
+usage = 'flag "--follow" help="Watch the dispatched release run until it finishes"'
+run = 'python3 agent/scripts/release/start-release.py ${usage_follow:+--follow}'
