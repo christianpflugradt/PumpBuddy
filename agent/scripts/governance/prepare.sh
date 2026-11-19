@@ -18,7 +18,6 @@ if [ "$(node --version)" != "v$expected_node" ]; then
   echo "Prepare Node $expected_node before installing dependencies." >&2
   exit 1
 fi
-npm ci --ignore-scripts
 npm --prefix renderer ci --ignore-scripts
 if [ "$mode" = readiness ]; then
   exit 0

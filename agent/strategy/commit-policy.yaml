@@ -2,4 +2,3 @@ version: 1
 source_of_truth: commit_policy
 governance_config: .please/config.toml
 scopes_file: .please/commit-scopes.txt
-release_config: release.config.mjs

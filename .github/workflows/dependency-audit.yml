@@ -22,7 +22,7 @@ jobs:
         with:
           install_args: node python rust cargo:cargo-audit uv pipx:pip-audit
       - name: Scan npm, Cargo and Python dependencies
-        run: python3 agent/scripts/release/dependency-audit.py scan --report dependency-audit.json --npm . --npm renderer --cargo backend --requirements validation/core/requirements.txt
+        run: python3 agent/scripts/release/dependency-audit.py scan --report dependency-audit.json --npm renderer --cargo backend --requirements validation/core/requirements.txt
       - name: Report findings
         if: ${{ !cancelled() && hashFiles('dependency-audit.json') != '' }}
         run: python3 agent/scripts/release/dependency-audit.py report --report dependency-audit.json --fail-on "$AUDIT_FAIL_ON"

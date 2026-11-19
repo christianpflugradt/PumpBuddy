@@ -1,6 +1,11 @@
 name: Release
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: Release a patch version even if no commit would raise the version, to test the release process
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -20,7 +25,7 @@ jobs:
     outputs:
       release: ${{ steps.plan.outputs.release }}
       version: ${{ steps.plan.outputs.version }}
-      source_sha: ${{ steps.plan.outputs.source_sha }}
+      source_sha: ${{ steps.plan.outputs.source-sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -31,12 +36,11 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: node
-      - run: npm ci --ignore-scripts
       - name: Plan semantic release without publication
         id: plan
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run release:plan
+        uses: christianpflugradt/please-behave-governance/actions/release/plan@4fa818fe1f56636569b585095415c409673dd296 # updates/actions/release
+        with:
+          force: ${{ inputs.force }}
 
   release-readiness:
     name: Release Readiness
@@ -58,9 +62,9 @@ jobs:
         with:
           install_args: python
       - name: Verify exact-source CI prerequisites
-        run: python3 agent/scripts/release/check-release-ci.py
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        uses: christianpflugradt/please-behave-governance/actions/release/check-ci@4fa818fe1f56636569b585095415c409673dd296 # updates/actions/release
+        with:
+          required-jobs: Check
 
   release-candidate:
     name: Release Candidate
@@ -110,10 +114,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Record release candidate evidence
-        run: python3 agent/scripts/release/release-evidence.py record
-        env:
-          EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
-          RELEASE_TARGET: linux-amd64
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@4fa818fe1f56636569b585095415c409673dd296 # updates/actions/release
+        with:
+          operation: record
+          version: ${{ needs.plan.outputs.version }}
+          target: linux-amd64
       - name: Upload release candidate evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -146,7 +151,6 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: python node
-      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: pumpbuddy-${{ github.run_id }}-${{ github.run_attempt }}-linux-amd64
@@ -166,11 +170,15 @@ jobs:
           path: release-evidence
           merge-multiple: true
       - name: Verify complete release candidate evidence
-        run: python3 agent/scripts/release/release-evidence.py verify
-        env:
-          EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@4fa818fe1f56636569b585095415c409673dd296 # updates/actions/release
+        with:
+          operation: verify
+          version: ${{ needs.plan.outputs.version }}
       - name: Publish verified images, version tag and release notes
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run release
-
+        uses: christianpflugradt/please-behave-governance/actions/release/publish@4fa818fe1f56636569b585095415c409673dd296 # updates/actions/release
+        with:
+          version: ${{ needs.plan.outputs.version }}
+          force: ${{ inputs.force }}
+          verify-command: python3 agent/scripts/release/artifacts.py verify
+          prepare-command: python3 agent/scripts/release/artifacts.py load
+          publish-command: python3 agent/scripts/release/artifacts.py publish

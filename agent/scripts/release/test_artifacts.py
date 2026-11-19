@@ -193,8 +193,7 @@ class CandidateTests(unittest.TestCase):
             patch.object(artifacts.subprocess, "run", side_effect=lambda args, **_: calls.append(args)),
         ):
             artifacts.publish(self.directory)
-        self.assertEqual(len(calls), 5)
-        self.assertEqual(calls.pop(0), ["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"])
+        self.assertEqual(len(calls), 4)
         self.assertEqual(
             calls[0],
             [
@@ -206,12 +205,6 @@ class CandidateTests(unittest.TestCase):
             ],
         )
         self.assertFalse(any("build" in call for call in calls))
-
-    def test_failed_local_source_guard_prevents_any_push(self):
-        with patch.object(artifacts.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "node")) as write:
-            with self.assertRaises(subprocess.CalledProcessError):
-                artifacts.publish(self.directory)
-            write.assert_called_once_with(["node", str(Path(artifacts.__file__).with_name("source-guard.mjs")), "--source"], check=True)
 
 
 if __name__ == "__main__":

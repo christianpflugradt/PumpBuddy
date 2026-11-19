@@ -10,4 +10,3 @@ class CommitPolicyDoc(StrictModel):
     source_of_truth: Literal["commit_policy"]
     governance_config: Literal[".please/config.toml"]
     scopes_file: Literal[".please/commit-scopes.txt"]
-    release_config: Literal["release.config.mjs"]
