@@ -58,34 +58,14 @@ jobs:
           install_args: python github:please-behave/cli
       - name: Prepare candidate inputs
         run: mise run setup:candidate
-      - name: Validate exact Docker candidates
-        uses: please-behave/action@9a184e405e62a79154989de1e54c54869180751b # v1.5.0
-        with:
-          install: 'false'
-          sync: 'true'
-          execution-point: release
-          summary: 'true'
+      - name: Verify the candidate at the release point
+        uses: christianpflugradt/please-behave-governance/actions/release/governance@e0d645d4cf3d5e462540eb184ee55b5ad7227889 # updates/actions/release
       - name: Export verified image candidates
         run: mise run package
       - name: Verify candidate artifacts
         run: make release-package-verify
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: pumpbuddy-${{ github.run_id }}-${{ github.run_attempt }}-linux-amd64
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
-      - name: Upload governance report
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: release-candidate-report-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .please/reports/last.json
-          include-hidden-files: true
-          if-no-files-found: warn
-          retention-days: 7
       - name: Record release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@bebfa9c1b717c64c49f677c0a2d2e4730d86515d # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@e0d645d4cf3d5e462540eb184ee55b5ad7227889 # updates/actions/release
         with:
           operation: record
           version: ${{ needs.plan.outputs.version }}
@@ -115,10 +95,11 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: python node
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      - name: Verify complete release candidate evidence
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@e0d645d4cf3d5e462540eb184ee55b5ad7227889 # updates/actions/release
         with:
-          name: pumpbuddy-${{ github.run_id }}-${{ github.run_attempt }}-linux-amd64
-          path: dist
+          operation: verify
+          version: ${{ needs.plan.outputs.version }}
       - name: Verify complete candidate set without rebuilding
         run: python3 agent/scripts/release/artifacts.py verify
       - name: Log in to GHCR
@@ -127,13 +108,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Verify complete release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@bebfa9c1b717c64c49f677c0a2d2e4730d86515d # updates/actions/release
-        with:
-          operation: verify
-          version: ${{ needs.plan.outputs.version }}
       - name: Publish verified images, version tag and release notes
-        uses: christianpflugradt/please-behave-governance/actions/release/publish@bebfa9c1b717c64c49f677c0a2d2e4730d86515d # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/publish@e0d645d4cf3d5e462540eb184ee55b5ad7227889 # updates/actions/release
         with:
           version: ${{ needs.plan.outputs.version }}
           force: ${{ inputs.force }}
