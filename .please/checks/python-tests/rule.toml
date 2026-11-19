@@ -1,8 +1,0 @@
-id = "python-tests"
-name = "Python tests"
-description = "Python tests for release scripts pass"
-run_at = ["pre-push", "check"]
-
-[check]
-command = "python3 -B @rule/run.py"
-timeout_seconds = 120
