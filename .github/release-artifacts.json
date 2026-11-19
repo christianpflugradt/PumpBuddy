@@ -2,8 +2,8 @@
   "root": "dist",
   "targets": {
     "linux-amd64": [
-      "backend.tar",
-      "renderer.tar",
+      "pumpbuddy-backend.tar",
+      "pumpbuddy-renderer.tar",
       "metadata.json"
     ]
   }

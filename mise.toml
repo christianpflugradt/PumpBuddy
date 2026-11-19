@@ -58,6 +58,3 @@ run = "agent/scripts/governance/prepare.sh candidate"
 description = "Build and verify both Docker images"
 run = "make check-release-artifacts"
 
-[tasks.package]
-description = "Export the verified Docker images without rebuilding"
-run = "make release-package"

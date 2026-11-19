@@ -10,8 +10,6 @@
 	prepare \
 	coverage-backend \
 	coverage-renderer \
-	release-package \
-	release-package-verify \
 	run-app \
 	stop-app \
 	rebuild-app \
@@ -65,12 +63,6 @@ coverage-backend:
 
 coverage-renderer:
 	WRITE_COVERAGE_METRICS=1 $(MAKE) check-renderer
-
-release-package:
-	python3 agent/scripts/release/artifacts.py package
-
-release-package-verify:
-	python3 agent/scripts/release/artifacts.py verify
 
 run-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d

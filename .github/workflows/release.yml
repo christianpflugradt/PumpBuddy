@@ -20,7 +20,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
-    uses: christianpflugradt/please-behave-governance/.github/workflows/release-plan.yml@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/workflows/release
+    uses: christianpflugradt/please-behave-governance/.github/workflows/release-plan.yml@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/workflows/release
     with:
       force: ${{ inputs.force }}
 
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: christianpflugradt/please-behave-governance/.github/workflows/release-readiness.yml@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/workflows/release
+    uses: christianpflugradt/please-behave-governance/.github/workflows/release-readiness.yml@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/workflows/release
     with:
       source-sha: ${{ needs.plan.outputs.source_sha }}
       required-jobs: Check
@@ -58,13 +58,16 @@ jobs:
       - name: Prepare candidate inputs
         run: mise run setup:candidate
       - name: Verify the candidate at the release point
-        uses: christianpflugradt/please-behave-governance/actions/release/governance@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/actions/release
-      - name: Export verified image candidates
-        run: mise run package
-      - name: Verify candidate artifacts
-        run: make release-package-verify
+        uses: christianpflugradt/please-behave-governance/actions/release/governance@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/actions/release
+      - name: Export the verified image candidate
+        uses: christianpflugradt/please-behave-governance/actions/release/export-image@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/actions/release
+        with:
+          version: ${{ needs.plan.outputs.version }}
+          images: |
+            pumpbuddy-backend
+            pumpbuddy-renderer
       - name: Record release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/actions/release
         with:
           operation: record
           version: ${{ needs.plan.outputs.version }}
@@ -95,23 +98,15 @@ jobs:
         with:
           install_args: python node
       - name: Verify complete release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/actions/release
         with:
           operation: verify
           version: ${{ needs.plan.outputs.version }}
-      - name: Verify complete candidate set without rebuilding
-        run: python3 agent/scripts/release/artifacts.py verify
-      - name: Log in to GHCR
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Publish verified images, version tag and release notes
-        uses: christianpflugradt/please-behave-governance/actions/release/publish@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/actions/release
+      - name: Publish the verified images, version tag and release notes
+        uses: christianpflugradt/please-behave-governance/actions/release/publish-image@f214b49bd33bf21fbea5c4a9a3214fa83df6fa1d # updates/actions/release
         with:
           version: ${{ needs.plan.outputs.version }}
           force: ${{ inputs.force }}
-          verify-command: python3 agent/scripts/release/artifacts.py verify
-          prepare-command: python3 agent/scripts/release/artifacts.py load
-          publish-command: python3 agent/scripts/release/artifacts.py publish
+          images: |
+            pumpbuddy-backend
+            pumpbuddy-renderer
