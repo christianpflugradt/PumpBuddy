@@ -5,11 +5,8 @@
 This document explains the framework philosophy behind AI-assisted development in this repository.
 It is a meta-level document for framework design and evolution, not an operational runtime instruction file.
 
-Operational source of truth remains:
-
-- task scripts (`agent/scripts/**`)
-- task context contracts (`agent/execution/task-context/*.yaml`)
-- task behavior specs (`agent/execution/task-spec/*.yaml`)
+Operational source of truth remains the validated contracts under `agent/design`
+and `agent/strategy` and the scripts under `agent/scripts`.
 
 ## Core Goals
 
@@ -26,9 +23,6 @@ Deterministic work should be solved by scripts, not delegated to agent judgment.
 
 This means:
 
-- task resolution is script-driven
-- sequencing is explicit
-- state transitions are explicit
 - checks and invariants are script-enforced
 
 Agents should focus on non-deterministic work (reasoning, implementation choices, review judgment), while deterministic mechanics are automated.
@@ -84,7 +78,6 @@ Validation goals:
 
 - reject schema drift (missing required fields, unknown fields, type mismatches)
 - reject cross-file drift (IDs, modes, references, lifecycle semantics)
-- reject execution-state inconsistencies
 - surface script hygiene issues early
 
 This prevents silent degradation of the agent framework as it evolves.
@@ -97,7 +90,6 @@ Therefore:
 
 - framework does **not** require a fixed list of strategy/design filenames
 - project teams can define their own contract set
-- each task declares its needed context explicitly via task-context configuration
 - validation model registry is extensible and project-specific
 
 This keeps the framework flexible without giving up determinism.
@@ -109,27 +101,12 @@ The framework organizes documents into layers with different responsibilities:
 - **Meta**: framework philosophy and maintenance guidance
 - **Strategy**: directional constraints and policies
 - **Design**: system/domain representation
-- **Execution**: active workflow state and task contracts
-- **Templates**: canonical structures for generated artifacts
 - **Validation**: schemas, examples, and cross-check logic
 
 Important:
 
 - layer contents are configurable by project
-- task-context files control what is actually loaded at runtime
-
-## Context Loading Philosophy
-
-Context loading is explicit and progressive.
-
-General strategy:
-
-1. load task baseline context
-2. load item/plan-referenced context
-3. load on-demand context only when a concrete ambiguity remains
-4. stop when expected improvement becomes marginal
-
-This keeps token usage controlled while preserving first-pass correctness.
+- the validation model registry controls which contracts are checked
 
 ## Human Control and Responsibility Split
 
@@ -142,7 +119,7 @@ The stakeholder owns:
 
 Agents own:
 
-- task execution within declared boundaries
+- work within the boundaries the stakeholder sets
 - implementation and review reasoning
 - producing structured artifacts required by the framework
 
@@ -157,16 +134,7 @@ Framework quality and software runtime quality are intentionally separated.
 This allows independent status signals for:
 
 - software deployability (backend/renderer quality)
-- framework integrity (contracts, scripts, task definitions)
-
-## Experimental Delivery Lifecycle
-
-Plan-level discussion and refinement remain deliberate. After refinement,
-ordinary items are implemented directly; persisted item plans are optional for
-complex work. Focused independent review is opt-in for high-risk work, while a
-fresh-context holistic review checks cross-item coherence before the explicit
-stakeholder acceptance gate. Finalization, commit, push, and quality mechanics
-remain deterministic and scripted.
+- framework integrity (contracts and scripts)
 
 ## What Should Change vs Stay Stable
 
@@ -180,7 +148,6 @@ Configurable per project:
 
 - concrete strategy/design document set
 - exact schema shapes
-- task-level context selections
 - cross-file consistency rules
 
 ## Evolution Rules
@@ -206,4 +173,5 @@ That combination is the foundation for sustainable, reusable AI-assisted develop
 
 ## Change Notes
 
-- 2026-03-21: Rewritten to align with current script-first, YAML-first, validation-driven framework and project-agnostic task-context configuration model.
+- 2026-03-21: Rewritten to align with the script-first, YAML-first, validation-driven framework.
+- 2026-11-20: Removed the task model, execution state and templates.

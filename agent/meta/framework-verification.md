@@ -13,9 +13,7 @@ Primary local entrypoint:
 
 Additional targeted checks:
 
-- `agent/scripts/check/check-task-contract.sh <task-name>`
 - External commit-msg rules in `.please/config.toml`
-- `agent/scripts/check/check-execution-items.sh`
 
 ## What Is Verified
 
@@ -54,45 +52,7 @@ Current checks:
 - mapping modes outside allowed mode set
 - persistence-impact targets that do not map cleanly to tables (warnings)
 
-### 3) Execution Item State Invariants
-
-Entrypoint:
-
-- `agent/scripts/check/check-execution-items.sh`
-
-Checks:
-
-- filename pattern: `<status>-item-XX.yaml`
-- `item.status_hint` matches filename status
-- no conflicting states for same item id
-- item file schema validity against `item-template` model
-
-### 4) Task Contract Integrity
-
-Entrypoint:
-
-- `agent/scripts/check/check-task-contract.sh <task-name>`
-
-Checks:
-
-- task spec file exists
-- script contract paths exist (dispatcher, task script, finalize script, context config)
-- task name in task-spec and task-context matches
-
-### 4) Experimental Execution Lifecycle
-
-Validate with the task run scripts on a disposable framework fixture whenever routing or transition code changes:
-
-- a refined normal item selects `implement-item` without an item plan and finalizes `open -> done`
-- an optional `plan-item` can be created and is loaded by implementation when present
-- an item marked `execution.independent_review_required=true` finalizes `open -> review` and can return through `review-item`
-- execution-item invariants reject a `done` item marked for independent review without an accepted review result
-- `next-item` selects open implementation work before required focused reviews and never auto-routes to `plan-item`
-- a completed plan enters `finalize-plan`, where a fresh-context holistic review can create return work before stakeholder acceptance
-
-Implementation judgment and stakeholder consultation are instruction contracts reviewed through `implement-item` context/spec validation: low-impact repository-consistent choices proceed; material behavior/domain/UX decisions consult; contradictory or unsafe requirements block.
-
-### 4) Commit Message Policy
+### 3) Commit Message Policy
 
 External Conventional Commits and advisory header review run at commit-msg.
 `.please/config.toml` pins the shared package; `.please/commit-scopes.txt` supplies
@@ -100,8 +60,7 @@ project scopes. No local header constraints, range or PR-title checks remain.
 
 ## CI Coverage
 
-`.github/workflows/ci.yml` runs `framework` inside `check` / `Check`, including
-all task contracts. `.github/workflows/statistics.yml` independently calculates
+`.github/workflows/ci.yml` runs `framework` inside `check` / `Check`, . `.github/workflows/statistics.yml` independently calculates
 and publishes statistics.
 
 ## Not Covered by This Inventory

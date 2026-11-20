@@ -83,47 +83,6 @@ Checks do not install or silently replace tools.
 See [repository governance](.please/README.md) for all rules, execution points,
 prerequisites, offline test behavior and release guarantees.
 
-## AI-Assisted Workflow (Short)
-
-Task-driven execution starts with:
-
-```text
-Task: <task-name|alias|number>
-```
-
-or
-
-```text
-T: <task-name|alias|number>
-```
-
-Authoritative task startup behavior: [`AGENTS.md`](AGENTS.md)
-
-Task catalog and setup docs:
-
-- [`agent/meta/agent-tasks.md`](agent/meta/agent-tasks.md)
-- [`agent/meta/agent-setup.md`](agent/meta/agent-setup.md)
-
-Current task aliases:
-
-- `discuss-plan`: `discuss`, `go`, `1`
-- `refine-plan`: `refine`, `split`, `2`
-- `plan-item`: `plan`, `3`
-- `implement-item`: `implement`, `do`, `4`
-- `review-item`: `review`, `see`, `5`
-- `finalize-plan`: `finalize`, `end`, `6`
-- `review-architecture`: `review-arch`, `arch-review`, `7`
-- `review-consistency`: `review-consistency`, `consistency-review`, `8`
-- `review-quality`: `review-quality`, `quality-review`, `9`
-- `review-security`: `review-security`, `security-review`, `10`
-- `review-technology`: `review-technology`, `technology-review`, `tech-review`, `11`
-- `freestyle`: `freestyle`, `free`, `12`
-- `next-item`: `next`, `13`
-
-The default execution lifecycle is `refine-plan → implement-item → holistic
-finalize-plan review → stakeholder acceptance`. `plan-item` is optional for
-complex work, and `review-item` is reserved for explicitly required focused
-reviews.
 
 ## Validation and CI
 

@@ -76,10 +76,8 @@ complete native check: editor-input architecture, TypeScript, unit coverage,
 instrumented build, browser smoke and merged coverage. Tests are not split into
 artificial categories.
 
-Framework retains Pydantic project/example contracts, cross-file consistency,
-execution item invariants, command policy, the disposable
-workspace-cleanliness self-test and the task contracts. Shell scripts are
-linted by the imported `shell-scripts` Rule.
+Framework retains Pydantic project/example contracts and cross-file consistency.
+Shell scripts are linted by the imported `shell-scripts` Rule.
 
 API generation is a prerequisite of backend, renderer and Docker builds.
 Preparation generates the models before quality checks. Backend and Docker

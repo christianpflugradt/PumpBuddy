@@ -2,45 +2,13 @@
 
 ## Purpose
 
-This document defines **how the framework is wired** (scripts, state files, validation, CI).
-Task semantics themselves are documented in `agent/meta/agent-tasks.md`.
+This document defines **how the framework is wired** (scripts, validation, CI).
 
 ## Runtime Wiring
 
-Deterministic runtime contract:
-
-- dispatcher: `agent/scripts/tasks.sh`
-- task runners/finalizers: `agent/scripts/task/**`
-- shared helpers: `agent/scripts/lib/**`
 - checks: `agent/scripts/check/**`
-- task context: `agent/execution/task-context/*.yaml`
-- task spec: `agent/execution/task-spec/*.yaml`
-
-Mode entry behavior is defined in `AGENTS.md`.
-
-## Execution State Layout
-
-Active execution state:
-
-- `agent/execution/plan.yaml`
-- `agent/execution/workflow-policy.yaml`
-- `agent/execution/workflow-state.yaml`
-- `agent/execution/items/open-item-XX.yaml`
-- `agent/execution/items/review-item-XX.yaml`
-- `agent/execution/items/done-item-XX.yaml`
-- `agent/execution/plans/plan-item-XX.yaml`
-
-Normal refined items move directly from `open` to `done`. `review` is reserved
-for items explicitly marked `execution.independent_review_required=true`.
-Persisted `plan-item` files are optional implementation aids, not a routing gate.
-
-Transient artifacts:
-
-- `agent/tmp/**`
-
-Archive output:
-
-- `archive/**`
+- contracts: `agent/design/*.yaml`, `agent/strategy/*.yaml`
+- archive output: `archive/**`
 
 ## Validation Wiring
 
@@ -53,11 +21,9 @@ Validation stack includes:
 - Pydantic schema validation for registered project contracts
 - Pydantic schema validation for registered example contracts
 - cross-file consistency checks for core design documents
-- execution-item invariants (`open/review/done` filename-state consistency + schema)
 
 Additional checks:
 
-- task contracts: `agent/scripts/check/check-task-contract.sh <task-name>`
 - commit messages: the external commit-msg Rule Set in `.please/config.toml`
 - commit policy source: `agent/strategy/commit-policy.yaml`
 
@@ -71,10 +37,9 @@ Coverage calculation and statistics publication live in the independent
 
 - keep operational contracts in YAML
 - keep meta docs concise and human-readable
-- update this file when wiring changes (scripts, checks, CI, state layout)
-- update `agent-tasks.md` when task catalog/intent changes
+- update this file when wiring changes (scripts, checks, CI)
 
 ## Change Notes
 
 - 2026-03-21: Reduced to setup focus (how), aligned with current YAML-first framework and CI split.
-- 2026-09-09: Documented optional item planning, focused-review state use, and canonical item paths.
+- 2026-11-20: Removed the task dispatcher, task scripts, execution state and templates.
