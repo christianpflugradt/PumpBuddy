@@ -101,10 +101,9 @@ bootstrap_agent_python_runtime() {
     exit 25
   fi
 
-  requirements_file="${root_dir}/validation/core/requirements.txt"
-  if [ ! -f "${requirements_file}" ]; then
-    echo "Missing requirements file: ${requirements_file}" >&2
-    echo "Install dependencies manually for python3: PyYAML and pydantic." >&2
+  if [ ! -f "${root_dir}/uv.lock" ] || ! command -v uv >/dev/null 2>&1; then
+    echo "Missing uv or ${root_dir}/uv.lock." >&2
+    echo "Install the locked dependencies with uv, or install PyYAML and pydantic for python3 manually." >&2
     exit 25
   fi
 
@@ -129,10 +128,7 @@ bootstrap_agent_python_runtime() {
   fi
 
   echo "Bootstrapping local Python runtime in ${venv_dir}..." >&2
-  if [ ! -x "${venv_python}" ]; then
-    python3 -m venv "${venv_dir}"
-  fi
-  "${venv_python}" -m pip install -r "${requirements_file}"
+  UV_PROJECT_ENVIRONMENT="${venv_dir}" uv sync --locked --project "${root_dir}"
   PATH="${venv_dir}/bin:${PATH}"
   export PATH
 

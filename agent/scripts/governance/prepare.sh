@@ -22,8 +22,7 @@ npm --prefix renderer ci --ignore-scripts
 if [ "$mode" = readiness ]; then
   exit 0
 fi
-python3 -m venv .tools/validation-venv
-.tools/validation-venv/bin/python3 -m pip install -r validation/core/requirements.txt
+UV_PROJECT_ENVIRONMENT=.tools/validation-venv uv sync --locked
 sh agent/scripts/governance/require-release-rust.sh
 cargo fetch --locked --manifest-path backend/Cargo.toml
 generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"

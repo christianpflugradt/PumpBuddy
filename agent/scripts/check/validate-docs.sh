@@ -27,7 +27,7 @@ importlib.import_module("yaml")
 PY
 then
   echo "Error: Missing Python dependencies. Install them with:" >&2
-  echo "  $PYTHON_BIN -m pip install -r validation/core/requirements.txt" >&2
+  echo "  uv sync --locked" >&2
   exit 1
 fi
 
