@@ -21,10 +21,20 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: node python rust cargo:cargo-audit uv pipx:pip-audit
-      - name: Audit the dependencies
-        uses: christianpflugradt/please-behave-governance/actions/dependency-audit@ef32fb94723c4e10822ef56c7fef36615d983f58 # updates/actions/dependency-audit
+      - name: Audit the npm dependencies
+        uses: christianpflugradt/please-behave-governance/actions/dependency-audit/npm@59733eeb16cb063211bd27db3a57ab95f720a1db # updates/actions/dependency-audit
         with:
-          npm: renderer
-          cargo: backend
-          requirements: validation/core/requirements.txt
+          directory: renderer
+      - name: Audit the Cargo dependencies
+        uses: christianpflugradt/please-behave-governance/actions/dependency-audit/cargo@59733eeb16cb063211bd27db3a57ab95f720a1db # updates/actions/dependency-audit
+        with:
+          directory: backend
+      - name: Audit the Python dependencies
+        uses: christianpflugradt/please-behave-governance/actions/dependency-audit/python@59733eeb16cb063211bd27db3a57ab95f720a1db # updates/actions/dependency-audit
+        with:
+          directory: .
+      - name: Report the findings
+        if: ${{ !cancelled() }}
+        uses: christianpflugradt/please-behave-governance/actions/dependency-audit/report@59733eeb16cb063211bd27db3a57ab95f720a1db # updates/actions/dependency-audit
+        with:
           fail-on: ${{ env.AUDIT_FAIL_ON }}
