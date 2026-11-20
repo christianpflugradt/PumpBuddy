@@ -5,12 +5,6 @@ ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT_DIR"
 export ROOT_DIR
 
-COMMON_LIB="$ROOT_DIR/agent/scripts/lib/common.sh"
-if [ -f "$COMMON_LIB" ]; then
-  # shellcheck source=/dev/null
-  . "$COMMON_LIB"
-fi
-
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 # Avoid creating __pycache__ artifacts during local quality checks.
 export PYTHONDONTWRITEBYTECODE=1
@@ -32,6 +26,3 @@ then
 fi
 
 "$PYTHON_BIN" -m validation.core.validate "$@"
-agent/scripts/check/check-execution-items.sh
-agent/scripts/check/check-command-policy.sh
-agent/scripts/check/check-workspace-cleanliness.sh

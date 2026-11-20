@@ -47,10 +47,6 @@ runtime_container_rules:
   required:
     - renderer_is_only_public_entrypoint
 
-temp_artifact_rules:
-  required:
-    - temporary_agent_files_under_agent_tmp
-
 commit_versioning_rules:
   required:
     - conventional_commits

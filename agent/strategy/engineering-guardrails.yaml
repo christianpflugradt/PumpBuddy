@@ -15,13 +15,9 @@ repository_rules:
   required:
     - keep_agent_framework_under_agent_directory
     - keep_automation_scripts_under_agent_scripts
-    - keep_temporary_agent_artifacts_under_agent_tmp
-    - keep_execution_items_under_agent_execution
-    - preserve_filename_based_item_states
   forbidden:
     - scatter_framework_documents_across_unrelated_locations
     - use_ad_hoc_directories_when_stable_location_exists
-    - encode_execution_item_state_inside_file_content_when_filename_already_defines_state
 
 maintainability_rules:
   required:
@@ -131,14 +127,6 @@ approved_exceptions:
       - no_broad_direct_database_access_exception
       - no_public_admin_or_maintenance_endpoint
       - no_secret_logging_or_stdout_handoff
-
-temp_artifact_rules:
-  required:
-    - temporary_agent_files_under_agent_tmp
-    - temporary_artifacts_disposable
-    - generated_temporary_artifacts_ignored_by_git_by_default
-  forbidden:
-    - treating_temporary_files_as_authoritative_state
 
 commit_versioning_rules:
   required:

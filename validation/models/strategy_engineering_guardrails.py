@@ -34,5 +34,4 @@ class EngineeringGuardrailsDoc(StrictModel):
     api_rules: SectionRules
     runtime_container_rules: SectionRules
     approved_exceptions: Optional[List[ApprovedException]] = None
-    temp_artifact_rules: SectionRules
     commit_versioning_rules: SectionRules

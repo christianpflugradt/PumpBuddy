@@ -61,8 +61,6 @@ docker-compose.override.yml
 # --- Runtime / local data ---
 *.pid
 *.seed
-agent/tmp/*
-!agent/tmp/.gitkeep
 
 # Repository-local governance tools and release candidates
 .tools/

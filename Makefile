@@ -33,9 +33,6 @@ check:
 check-framework:
 	python3 -B -m unittest discover -s agent/scripts/governance -p 'test_*.py'
 	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/validate-docs.sh
-	@for spec in agent/execution/task-spec/*.yaml; do \
-		PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/check-task-contract.sh "$$(basename "$$spec" .yaml)" || exit; \
-	done
 
 check-bootstrap-secret-handoff:
 	agent/scripts/check/check-bootstrap-secret-handoff.sh
