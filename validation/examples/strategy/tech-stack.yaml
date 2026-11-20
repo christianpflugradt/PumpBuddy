@@ -7,7 +7,8 @@ status:
   lifecycle: active
   owner: human_stakeholder
   applies_to:
-    - implement_item
+    - implementation
+    - review
 
 architecture_intent:
   goals:

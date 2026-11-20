@@ -5,7 +5,8 @@ formatting:
 
 authority:
   applies_to:
-    - implement_item
+    - implementation
+    - review
 
 repository_rules:
   required:

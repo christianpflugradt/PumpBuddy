@@ -5,11 +5,8 @@ formatting:
 
 authority:
   applies_to:
-    - implement_item
-    - review_item
-    - review_architecture
-    - review_consistency
-    - review_quality
+    - implementation
+    - review
 
 test_categories:
   required:
