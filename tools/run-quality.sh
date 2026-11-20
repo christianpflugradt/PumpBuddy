@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 set -eu
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
 
 verify_toolchain() {
-  sh agent/scripts/governance/require-release-rust.sh
+  sh tools/governance/require-release-rust.sh
 }
 
 require_models() {
@@ -30,7 +30,7 @@ backend)
   docker image inspect postgres:18-alpine >/dev/null
   TESTCONTAINERS_COMMAND=remove cargo clippy --offline --locked --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
   if [ "${BACKEND_CHECK_WITH_COVERAGE:-0}" = "1" ]; then
-    agent/scripts/check-backend-coverage.sh
+    tools/check-backend-coverage.sh
   else
     TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path backend/Cargo.toml
   fi
@@ -57,7 +57,7 @@ release-artifacts)
   ;;
 check) exec make check ;;
 *)
-  echo "Usage: agent/scripts/run-quality.sh [backend|renderer|release-artifacts|check]" >&2
+  echo "Usage: tools/run-quality.sh [backend|renderer|release-artifacts|check]" >&2
   exit 2
   ;;
 esac

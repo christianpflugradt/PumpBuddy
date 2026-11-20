@@ -35,7 +35,7 @@ jobs:
           node-version-file: mise.toml
           package-manager-cache: false
       - name: Prepare dependencies
-        run: agent/scripts/governance/prepare.sh statistics
+        run: tools/governance/prepare.sh statistics
 
       - name: Run backend quality and write coverage metric
         env:
@@ -47,8 +47,8 @@ jobs:
           set -euo pipefail
           loc="$(scc --format json --include-ext rs --not-match 'test_support|test_runtime' backend/src | jq 'map(.Code) | add')"
           tests="$(cargo test --offline --locked --manifest-path backend/Cargo.toml -- --list | awk '/^[0-9]+ tests?, [0-9]+ benchmarks?/ { sum += $1 } END { print sum + 0 }')"
-          python3 agent/scripts/write-count-metric.py build/statistics/backend-loc.json "backend LOC" "$loc" loc
-          python3 agent/scripts/write-count-metric.py build/statistics/backend-tests.json "backend tests" "$tests" tests
+          python3 tools/write-count-metric.py build/statistics/backend-loc.json "backend LOC" "$loc" loc
+          python3 tools/write-count-metric.py build/statistics/backend-tests.json "backend tests" "$tests" tests
 
       - name: Upload backend metrics
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -82,7 +82,7 @@ jobs:
         with:
           install_args: rust aqua:boyter/scc
       - name: Prepare dependencies
-        run: agent/scripts/governance/prepare.sh statistics
+        run: tools/governance/prepare.sh statistics
 
       - name: Run renderer quality and write coverage metric
         env:
@@ -95,8 +95,8 @@ jobs:
           loc="$(scc --format json --include-ext ts,scss --not-match '\.test\.ts$' renderer/src | jq 'map(.Code) | add')"
           unit="$(cd renderer && node_modules/.bin/vitest list --json | jq length)"
           smoke="$(cd renderer && node_modules/.bin/playwright test --list --project=chromium | sed -n 's/^Total: \([0-9]*\) tests.*/\1/p')"
-          python3 agent/scripts/write-count-metric.py build/statistics/renderer-loc.json "renderer LOC" "$loc" loc
-          python3 agent/scripts/write-count-metric.py build/statistics/renderer-tests.json "renderer tests" "$((unit + smoke))" tests
+          python3 tools/write-count-metric.py build/statistics/renderer-loc.json "renderer LOC" "$loc" loc
+          python3 tools/write-count-metric.py build/statistics/renderer-tests.json "renderer tests" "$((unit + smoke))" tests
 
       - name: Upload renderer metrics
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

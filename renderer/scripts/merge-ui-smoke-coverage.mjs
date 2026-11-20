@@ -11,7 +11,7 @@ const uiSmokeMergedPath = path.join(coverageDir, 'coverage-ui-smoke.json');
 const mergedPath = path.join(coverageDir, 'coverage-merged.json');
 const metricOutputDir = process.env.COVERAGE_METRIC_OUTPUT_DIR ?? path.join(repoRoot, 'build', 'statistics');
 const metricJsonPath = path.join(metricOutputDir, 'renderer-coverage.json');
-const metricScriptPath = path.join(repoRoot, 'agent', 'scripts', 'write-coverage-metric.py');
+const metricScriptPath = path.join(repoRoot, 'tools', 'write-coverage-metric.py');
 
 const pathExists = async (targetPath) => {
   try {

@@ -54,7 +54,7 @@ run = "make rebuild-app"
 
 [tasks."setup:candidate"]
 description = "Prepare cached API generation inputs for candidate images"
-run = "agent/scripts/governance/prepare.sh candidate"
+run = "tools/governance/prepare.sh candidate"
 
 [tasks.build]
 description = "Build and verify both Docker images"

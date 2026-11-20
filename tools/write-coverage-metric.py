@@ -11,7 +11,7 @@ from pathlib import Path
 def main() -> int:
     if len(sys.argv) < 4:
         print(
-            "Usage: agent/scripts/write-coverage-metric.py <output-path> <label> <percent> [metric] [scope]",
+            "Usage: tools/write-coverage-metric.py <output-path> <label> <percent> [metric] [scope]",
             file=sys.stderr,
         )
         return 2

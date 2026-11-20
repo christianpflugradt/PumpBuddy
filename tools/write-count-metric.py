@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main() -> int:
     if len(sys.argv) != 5:
-        print("Usage: agent/scripts/write-count-metric.py <output-path> <label> <count> <kind>", file=sys.stderr)
+        print("Usage: tools/write-count-metric.py <output-path> <label> <count> <kind>", file=sys.stderr)
         return 2
 
     output_path = Path(sys.argv[1])

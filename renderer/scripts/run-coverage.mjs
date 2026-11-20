@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const metricOutputDir = process.env.COVERAGE_METRIC_OUTPUT_DIR ?? path.join(repoRoot, "build", "statistics");
 const metricJsonPath = path.join(metricOutputDir, "renderer-coverage.json");
-const metricScriptPath = path.join(repoRoot, "agent", "scripts", "write-coverage-metric.py");
+const metricScriptPath = path.join(repoRoot, "tools", "write-coverage-metric.py");
 
 // Forward args to vitest
 const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "--run");

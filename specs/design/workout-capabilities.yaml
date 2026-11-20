@@ -2,9 +2,9 @@ version: 1
 area: workout
 source_of_truth: capabilities
 references:
-  glossary: agent/design/glossary.yaml
-  insights_capabilities: agent/design/workout-insights-capabilities.yaml
-  completion_result_specification: agent/design/workout-use-cases.yaml
+  glossary: specs/design/glossary.yaml
+  insights_capabilities: specs/design/workout-insights-capabilities.yaml
+  completion_result_specification: specs/design/workout-use-cases.yaml
 formatting:
   indent_spaces: 2
 

@@ -42,7 +42,7 @@ def _validate_with_registry(
 def _example_path_mapping() -> Dict[str, str]:
     mapping: Dict[str, str] = {}
     for model_key in MODEL_REGISTRY:
-        relative = Path(model_key).relative_to("agent")
+        relative = Path(model_key).relative_to("specs")
         mapping[model_key] = (Path("validation/examples") / relative).as_posix()
     return mapping
 

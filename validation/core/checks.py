@@ -29,16 +29,16 @@ def _to_set(values: List[str]) -> Set[str]:
 def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
     issues: List[ValidationIssue] = []
 
-    glossary: GlossaryDoc = validated_docs.get("agent/design/glossary.yaml")
-    domain: DomainModelDoc = validated_docs.get("agent/design/domain-model.yaml")
-    persistence: PersistenceModelDoc = validated_docs.get("agent/design/persistence-model.yaml")
-    capabilities: WorkoutCapabilitiesDoc = validated_docs.get("agent/design/workout-capabilities.yaml")
-    use_cases: WorkoutUseCasesDoc = validated_docs.get("agent/design/workout-use-cases.yaml")
-    mapping: WorkoutUseCasesToDomainModelDoc = validated_docs.get("agent/design/workout-use-cases-to-domain-model.yaml")
-    insights_capabilities: WorkoutInsightsCapabilitiesDoc = validated_docs.get("agent/design/workout-insights-capabilities.yaml")
-    insights_use_cases: WorkoutInsightsUseCasesDoc = validated_docs.get("agent/design/workout-insights-use-cases.yaml")
+    glossary: GlossaryDoc = validated_docs.get("specs/design/glossary.yaml")
+    domain: DomainModelDoc = validated_docs.get("specs/design/domain-model.yaml")
+    persistence: PersistenceModelDoc = validated_docs.get("specs/design/persistence-model.yaml")
+    capabilities: WorkoutCapabilitiesDoc = validated_docs.get("specs/design/workout-capabilities.yaml")
+    use_cases: WorkoutUseCasesDoc = validated_docs.get("specs/design/workout-use-cases.yaml")
+    mapping: WorkoutUseCasesToDomainModelDoc = validated_docs.get("specs/design/workout-use-cases-to-domain-model.yaml")
+    insights_capabilities: WorkoutInsightsCapabilitiesDoc = validated_docs.get("specs/design/workout-insights-capabilities.yaml")
+    insights_use_cases: WorkoutInsightsUseCasesDoc = validated_docs.get("specs/design/workout-insights-use-cases.yaml")
     insights_mapping: WorkoutInsightsUseCasesToDomainModelDoc = validated_docs.get(
-        "agent/design/workout-insights-use-cases-to-domain-model.yaml"
+        "specs/design/workout-insights-use-cases-to-domain-model.yaml"
     )
 
     if not all([glossary, domain, persistence, capabilities, use_cases, mapping]):

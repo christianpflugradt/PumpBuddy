@@ -114,7 +114,7 @@ See [repository governance](.please/README.md) for provider setup and release se
 
 Canonical API contract:
 
-- `agent/design/api-contract.yaml`
+- `specs/design/api-contract.yaml`
 
 Generate models:
 

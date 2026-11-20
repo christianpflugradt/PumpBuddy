@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
 metric_output_dir="${COVERAGE_METRIC_OUTPUT_DIR:-$repo_root/build/statistics}"
 metric_json_path="$metric_output_dir/backend-coverage.json"
@@ -12,13 +12,13 @@ tmp_json="$(mktemp)"
 tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
-sh "$repo_root/agent/scripts/governance/require-release-rust.sh"
+sh "$repo_root/tools/governance/require-release-rust.sh"
 # The pinned toolchain is a rustup toolchain named by its version, for example 1.100.0.
 rust_toolchain="$(rustc --version | cut -d " " -f 2)"
 
 write_na_metric() {
   TESTCONTAINERS_COMMAND=remove cargo test --offline --locked --manifest-path "$manifest_path"
-  python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
+  python3 "$repo_root/tools/write-coverage-metric.py" \
     "$metric_json_path" \
     "backend coverage" \
     "n/a" \
@@ -292,7 +292,7 @@ print("n/a")
 PY
 )"
 
-python3 "$repo_root/agent/scripts/write-coverage-metric.py" \
+python3 "$repo_root/tools/write-coverage-metric.py" \
   "$metric_json_path" \
   "backend coverage" \
   "$coverage" \

@@ -2,9 +2,9 @@ version: 1
 area: configurator
 source_of_truth: use_cases
 references:
-  glossary: agent/design/glossary.yaml
-  domain_model: agent/design/domain-model.yaml
-  persistence_model: agent/design/persistence-model.yaml
+  glossary: specs/design/glossary.yaml
+  domain_model: specs/design/domain-model.yaml
+  persistence_model: specs/design/persistence-model.yaml
 formatting:
   indent_spaces: 2
 

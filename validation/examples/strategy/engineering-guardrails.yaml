@@ -9,7 +9,7 @@ authority:
 
 repository_rules:
   required:
-    - keep_framework_under_agent_directory
+    - keep_specs_under_specs_directory
 
 maintainability_rules:
   required:

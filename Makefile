@@ -18,7 +18,7 @@
 	refresh-backend-api-client \
 	refresh-frontend-api-client
 
-OPENAPI_CONTRACT := agent/design/api-contract.yaml
+OPENAPI_CONTRACT := specs/design/api-contract.yaml
 OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.27.0@sha256:949efd0d5cf3c093ef169887b2ebe0879ee2e8074b6476264232ce4fd8ef46d0
 OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
 OPENAPI_RENDERER_OUTPUT := renderer/generated/openapi/typescript
@@ -31,29 +31,29 @@ check:
 	please run --at pre-push --checks-only
 
 check-framework:
-	python3 -B -m unittest discover -s agent/scripts/governance -p 'test_*.py'
-	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" agent/scripts/check/validate-docs.sh
+	python3 -B -m unittest discover -s tools/governance -p 'test_*.py'
+	@PATH="$(CURDIR)/.tools/validation-venv/bin:$(PATH)" tools/check/validate-docs.sh
 
 check-bootstrap-secret-handoff:
-	agent/scripts/check/check-bootstrap-secret-handoff.sh
+	tools/check/check-bootstrap-secret-handoff.sh
 
 check-api-contract:
-	agent/scripts/check/verify-api-contract-alignment.sh
+	tools/check/verify-api-contract-alignment.sh
 
 check-backend:
-	agent/scripts/run-quality.sh backend
+	tools/run-quality.sh backend
 
 check-renderer:
-	agent/scripts/run-quality.sh renderer
+	tools/run-quality.sh renderer
 
 check-release-artifacts:
-	agent/scripts/run-quality.sh release-artifacts
+	tools/run-quality.sh release-artifacts
 
 check-release-candidate:
-	DOCKER_DEFAULT_PLATFORM=linux/amd64 agent/scripts/run-quality.sh release-artifacts
+	DOCKER_DEFAULT_PLATFORM=linux/amd64 tools/run-quality.sh release-artifacts
 
 prepare:
-	agent/scripts/governance/prepare.sh check
+	tools/governance/prepare.sh check
 
 coverage-backend:
 	BACKEND_CHECK_WITH_COVERAGE=1 WRITE_COVERAGE_METRICS=1 $(MAKE) check-backend
@@ -71,7 +71,7 @@ rebuild-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" down --volumes --remove-orphans
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --force-recreate
-	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" agent/scripts/seed-dev-access-key.sh
+	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" tools/seed-dev-access-key.sh
 
 rebuild-renderer: refresh-frontend-api-client
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache renderer

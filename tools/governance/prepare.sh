@@ -23,7 +23,7 @@ if [ "$mode" = readiness ]; then
   exit 0
 fi
 UV_PROJECT_ENVIRONMENT=.tools/validation-venv uv sync --locked
-sh agent/scripts/governance/require-release-rust.sh
+sh tools/governance/require-release-rust.sh
 cargo fetch --locked --manifest-path backend/Cargo.toml
 generator="$(sed -n 's/^OPENAPI_GENERATOR_IMAGE ?= //p' Makefile)"
 docker pull "$generator"

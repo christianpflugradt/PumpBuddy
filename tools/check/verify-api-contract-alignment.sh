@@ -19,7 +19,7 @@ contract_only_reason="${API_CONTRACT_ONLY_REASON:-}"
 
 for file in ${changed_files}; do
   case "${file}" in
-  agent/design/api-contract.yaml)
+  specs/design/api-contract.yaml)
     contract_changed="true"
     ;;
   backend/src/api/**)
@@ -41,7 +41,7 @@ if [ -z "${contract_only_reason}" ]; then
 fi
 
 if [ "${backend_api_surface_changed}" = "true" ] && [ "${contract_changed}" != "true" ]; then
-  echo "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml" >&2
+  echo "API contract alignment failed: API surface changed without updating specs/design/api-contract.yaml" >&2
   echo "Changed files:" >&2
   printf '%s\n' "${changed_files}" >&2
   exit 1
@@ -49,7 +49,7 @@ fi
 
 if [ "${contract_changed}" = "true" ] && [ "${backend_api_surface_changed}" != "true" ] && [ "${renderer_api_boundary_changed}" != "true" ]; then
   if [ -z "${contract_only_reason}" ]; then
-    echo "API contract alignment failed: agent/design/api-contract.yaml changed without a matching API-surface change or API-Contract-Only-Reason trailer" >&2
+    echo "API contract alignment failed: specs/design/api-contract.yaml changed without a matching API-surface change or API-Contract-Only-Reason trailer" >&2
     echo "Changed files:" >&2
     printf '%s\n' "${changed_files}" >&2
     exit 1

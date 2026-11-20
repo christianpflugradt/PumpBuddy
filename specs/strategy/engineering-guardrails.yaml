@@ -13,8 +13,7 @@ authority:
 
 repository_rules:
   required:
-    - keep_agent_framework_under_agent_directory
-    - keep_automation_scripts_under_agent_scripts
+    - keep_specs_under_specs_directory
   forbidden:
     - scatter_framework_documents_across_unrelated_locations
     - use_ad_hoc_directories_when_stable_location_exists

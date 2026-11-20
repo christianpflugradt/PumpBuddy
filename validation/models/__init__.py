@@ -20,22 +20,22 @@ from .strategy_tech_stack import TechStackDoc
 from .strategy_test_strategy import TestStrategyDoc
 
 MODEL_REGISTRY = {
-    "agent/design/api-contract.yaml": ApiContractDoc,
-    "agent/design/glossary.yaml": GlossaryDoc,
-    "agent/design/domain-model.yaml": DomainModelDoc,
-    "agent/design/persistence-model.yaml": PersistenceModelDoc,
-    "agent/design/workout-capabilities.yaml": WorkoutCapabilitiesDoc,
-    "agent/design/workout-use-cases.yaml": WorkoutUseCasesDoc,
-    "agent/design/workout-use-cases-to-domain-model.yaml": WorkoutUseCasesToDomainModelDoc,
-    "agent/design/workout-insights-capabilities.yaml": WorkoutInsightsCapabilitiesDoc,
-    "agent/design/workout-insights-use-cases.yaml": WorkoutInsightsUseCasesDoc,
-    "agent/design/workout-insights-use-cases-to-domain-model.yaml": WorkoutInsightsUseCasesToDomainModelDoc,
-    "agent/strategy/security.yaml": SecurityDoc,
-    "agent/strategy/commit-policy.yaml": CommitPolicyDoc,
-    "agent/strategy/tech-stack.yaml": TechStackDoc,
-    "agent/strategy/test-strategy.yaml": TestStrategyDoc,
-    "agent/strategy/engineering-guardrails.yaml": EngineeringGuardrailsDoc,
-    "agent/strategy/quality-gates.yaml": QualityGatesDoc,
+    "specs/design/api-contract.yaml": ApiContractDoc,
+    "specs/design/glossary.yaml": GlossaryDoc,
+    "specs/design/domain-model.yaml": DomainModelDoc,
+    "specs/design/persistence-model.yaml": PersistenceModelDoc,
+    "specs/design/workout-capabilities.yaml": WorkoutCapabilitiesDoc,
+    "specs/design/workout-use-cases.yaml": WorkoutUseCasesDoc,
+    "specs/design/workout-use-cases-to-domain-model.yaml": WorkoutUseCasesToDomainModelDoc,
+    "specs/design/workout-insights-capabilities.yaml": WorkoutInsightsCapabilitiesDoc,
+    "specs/design/workout-insights-use-cases.yaml": WorkoutInsightsUseCasesDoc,
+    "specs/design/workout-insights-use-cases-to-domain-model.yaml": WorkoutInsightsUseCasesToDomainModelDoc,
+    "specs/strategy/security.yaml": SecurityDoc,
+    "specs/strategy/commit-policy.yaml": CommitPolicyDoc,
+    "specs/strategy/tech-stack.yaml": TechStackDoc,
+    "specs/strategy/test-strategy.yaml": TestStrategyDoc,
+    "specs/strategy/engineering-guardrails.yaml": EngineeringGuardrailsDoc,
+    "specs/strategy/quality-gates.yaml": QualityGatesDoc,
 }
 
 __all__ = [
