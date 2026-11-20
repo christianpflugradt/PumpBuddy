@@ -8,7 +8,7 @@ permissions:
 jobs:
   collect-backend:
     name: Collect backend statistics
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -59,7 +59,7 @@ jobs:
 
   collect-renderer:
     name: Collect renderer statistics
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -107,7 +107,7 @@ jobs:
 
   publish:
     name: Publish statistics
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     needs:
       - collect-backend
