@@ -20,6 +20,8 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: rust cargo:cargo-llvm-cov aqua:boyter/scc
+          experimental: true
+          version: 2026.11.11
 
       - name: Setup Rust dependency cache
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -81,6 +83,8 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install_args: rust aqua:boyter/scc
+          experimental: true
+          version: 2026.11.11
       - name: Prepare dependencies
         run: tools/governance/prepare.sh statistics
 
