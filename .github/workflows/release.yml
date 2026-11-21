@@ -41,7 +41,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.release == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       RELEASE_TAG: v${{ needs.plan.outputs.version }}
       EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
@@ -57,6 +57,12 @@ jobs:
           install_args: python github:please-behave/cli
       - name: Prepare candidate inputs
         run: mise run setup:candidate
+      - name: Set up emulation for the arm64 build
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Verify the candidate at the release point
         uses: christianpflugradt/please-behave-governance/actions/release/governance@23c098e0071e5f564a89f5980ffbd199e114fd29 # updates/actions/release
       - name: Export the verified image candidate
@@ -85,6 +91,8 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
+      attestations: write
     env:
       EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
     steps:

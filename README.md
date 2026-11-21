@@ -211,7 +211,7 @@ next version/source SHA. Release Readiness and Release Candidate run in parallel
 Publish requires both and publishes the exact exported candidate images without
 rebuilding. Changes to main or the planned version refuse publication.
 
-Both published images remain **linux/amd64**:
+Both published images are multi-architecture (**linux/amd64** and **linux/arm64**); only the release builds both platforms, pre-push and CI build natively:
 
 - `ghcr.io/christianpflugradt/pumpbuddy-backend:v<version>`
 - `ghcr.io/christianpflugradt/pumpbuddy-renderer:v<version>`

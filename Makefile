@@ -6,7 +6,8 @@
 	check-backend \
 	check-renderer \
 	check-release-artifacts \
-	check-release-candidate \
+	check-release-candidate-backend \
+	check-release-candidate-renderer \
 	prepare \
 	coverage-backend \
 	coverage-renderer \
@@ -49,8 +50,11 @@ check-renderer:
 check-release-artifacts:
 	tools/run-quality.sh release-artifacts
 
-check-release-candidate:
-	DOCKER_DEFAULT_PLATFORM=linux/amd64 tools/run-quality.sh release-artifacts
+check-release-candidate-backend:
+	tools/run-quality.sh release-candidate-backend
+
+check-release-candidate-renderer:
+	tools/run-quality.sh release-candidate-renderer
 
 prepare:
 	tools/governance/prepare.sh check

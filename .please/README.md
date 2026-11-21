@@ -65,7 +65,8 @@ Pre-commit rules must stay fast (a total of about two seconds): slower rules run
 | api-contract | pre-push, check |
 | bootstrap-secret-handoff | pre-push, check |
 | release-artifacts | pre-push, check |
-| release-candidate | release |
+| release-candidate-backend | release |
+| release-candidate-renderer | release |
 
 The shared open-source-software rules `workflow-syntax` and `shell-scripts` complement
 these local rules; Local Rules contain only PumpBuddy-specific requirements.
@@ -162,10 +163,8 @@ release unless breaking. Breaking changes are major. Historical build(release)
 version commits are ignored. Scoped reverts cancel unreleased originals in
 version calculation and notes. No generated version commit is created.
 
-Candidate builds the versioned Docker images. Source checks, framework checks and backend/renderer tests are reused from CI. Candidate images explicitly remain linux/amd64.
-Local Docker checks retain the native host platform used before this migration;
-Linux CI and Release Candidate build AMD64 natively. Local ARM checks do not
-introduce an ARM release image or require AMD64 compiler emulation.
+Candidate builds the versioned Docker images. Source checks, framework checks and backend/renderer tests are reused from CI. Release Candidate is the only place that builds the images for linux/amd64 and linux/arm64, as OCI image indexes with provenance and SBOM; the second platform is emulated, and the backend and renderer builds are separate Rules of up to an hour each.
+Pre-push and CI keep building the images natively for the host platform with `release-artifacts`, so they stay fast.
 Backend APP_VERSION, BUILD_COMMIT and BUILD_TIMESTAMP and renderer APP_VERSION
 are retained; both runtime images also record source/version labels.
 Caddy configuration is still validated by the renderer build.

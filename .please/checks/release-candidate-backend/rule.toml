@@ -1,0 +1,9 @@
+id = "release-candidate-backend"
+name = "Release candidate backend image"
+description = "The backend Docker image builds for linux/amd64 and linux/arm64"
+run_at = ["release"]
+
+[check]
+command = "make check-release-candidate-backend"
+timeout_seconds = 3600
+resource = "build"

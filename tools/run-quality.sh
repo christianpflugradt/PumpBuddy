@@ -15,6 +15,15 @@ require_models() {
   fi
 }
 
+build_candidate() {
+  name="$1"
+  shift
+  require_models
+  mkdir -p dist
+  docker buildx build --platform linux/amd64,linux/arm64 --provenance=mode=max --sbom=true \
+    --output "type=oci,dest=dist/$name.tar" "$@"
+}
+
 cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
   if [ -n "$container_ids" ]; then
@@ -55,9 +64,19 @@ release-artifacts)
     --tag pumpbuddy-renderer:candidate \
     --build-arg "APP_VERSION=$version" --build-arg "BUILD_COMMIT=$source_commit" renderer
   ;;
+release-candidate-backend)
+  build_candidate pumpbuddy-backend --file backend/Dockerfile \
+    --build-arg "APP_VERSION=${RELEASE_TAG:?}" \
+    --build-arg "BUILD_COMMIT=$(git rev-parse HEAD)" \
+    --build-arg "BUILD_TIMESTAMP=$(git show --no-patch --date=iso-strict --format=%cd HEAD)" backend
+  ;;
+release-candidate-renderer)
+  build_candidate pumpbuddy-renderer --file renderer/Dockerfile \
+    --build-arg "APP_VERSION=${RELEASE_TAG:?}" --build-arg "BUILD_COMMIT=$(git rev-parse HEAD)" renderer
+  ;;
 check) exec make check ;;
 *)
-  echo "Usage: tools/run-quality.sh [backend|renderer|release-artifacts|check]" >&2
+  echo "Usage: tools/run-quality.sh [backend|renderer|release-artifacts|release-candidate-backend|release-candidate-renderer|check]" >&2
   exit 2
   ;;
 esac

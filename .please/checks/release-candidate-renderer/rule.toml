@@ -1,0 +1,9 @@
+id = "release-candidate-renderer"
+name = "Release candidate renderer image"
+description = "The renderer Docker image builds for linux/amd64 and linux/arm64"
+run_at = ["release"]
+
+[check]
+command = "make check-release-candidate-renderer"
+timeout_seconds = 3600
+resource = "build"
