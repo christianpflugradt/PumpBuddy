@@ -115,6 +115,3 @@ jobs:
         with:
           version: ${{ needs.plan.outputs.version }}
           force: ${{ inputs.force }}
-          images: |
-            pumpbuddy-backend
-            pumpbuddy-renderer
