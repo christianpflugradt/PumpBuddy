@@ -20,7 +20,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
-    uses: christianpflugradt/please-behave-governance/.github/workflows/release-plan.yml@05232727216eaace7658709f4c4bc0a22f9b0f95 # updates/workflows/release
+    uses: christianpflugradt/please-behave-governance/.github/workflows/release-plan.yml@4466526021c1101170b208e3cadbbe1973313423 # updates/workflows/release
     with:
       force: ${{ inputs.force }}
 
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: christianpflugradt/please-behave-governance/.github/workflows/release-readiness.yml@05232727216eaace7658709f4c4bc0a22f9b0f95 # updates/workflows/release
+    uses: christianpflugradt/please-behave-governance/.github/workflows/release-readiness.yml@4466526021c1101170b208e3cadbbe1973313423 # updates/workflows/release
     with:
       source-sha: ${{ needs.plan.outputs.source_sha }}
       required-jobs: check / Check
@@ -70,11 +70,11 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Verify the candidate at the release point
-        uses: christianpflugradt/please-behave-governance/actions/release/governance@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/governance@afcf276e729e20b014b25b713a52b577f9224ccf # updates/actions/release
         with:
           target: ${{ matrix.target }}
       - name: Check the image candidates of the platform
-        uses: christianpflugradt/please-behave-governance/actions/release/check-image@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/check-image@afcf276e729e20b014b25b713a52b577f9224ccf # updates/actions/release
         with:
           target: ${{ matrix.target }}
           version: ${{ needs.plan.outputs.version }}
@@ -82,7 +82,7 @@ jobs:
             pumpbuddy-backend
             pumpbuddy-renderer
       - name: Record release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@afcf276e729e20b014b25b713a52b577f9224ccf # updates/actions/release
         with:
           operation: record
           version: ${{ needs.plan.outputs.version }}
@@ -117,12 +117,12 @@ jobs:
           experimental: true
           version: 2026.11.11
       - name: Verify complete release candidate evidence
-        uses: christianpflugradt/please-behave-governance/actions/release/evidence@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/evidence@afcf276e729e20b014b25b713a52b577f9224ccf # updates/actions/release
         with:
           operation: verify
           version: ${{ needs.plan.outputs.version }}
       - name: Publish the verified images, version tag and release notes
-        uses: christianpflugradt/please-behave-governance/actions/release/publish-image@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        uses: christianpflugradt/please-behave-governance/actions/release/publish-image@afcf276e729e20b014b25b713a52b577f9224ccf # updates/actions/release
         with:
           version: ${{ needs.plan.outputs.version }}
           force: ${{ inputs.force }}
