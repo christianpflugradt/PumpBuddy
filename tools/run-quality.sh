@@ -18,10 +18,11 @@ require_models() {
 build_candidate() {
   name="$1"
   shift
+  target="${RELEASE_TARGET:?}"
   require_models
   mkdir -p dist
-  docker buildx build --platform linux/amd64,linux/arm64 --provenance=mode=max --sbom=true \
-    --output "type=oci,dest=dist/$name.tar" "$@"
+  docker buildx build --platform "$(printf '%s' "$target" | sed 's#-#/#')" --provenance=mode=max --sbom=true \
+    --output "type=oci,dest=dist/$name-$target.tar" "$@"
 }
 
 cleanup_testcontainers() {

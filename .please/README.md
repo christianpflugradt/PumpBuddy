@@ -163,7 +163,7 @@ release unless breaking. Breaking changes are major. Historical build(release)
 version commits are ignored. Scoped reverts cancel unreleased originals in
 version calculation and notes. No generated version commit is created.
 
-Candidate builds the versioned Docker images. Source checks, framework checks and backend/renderer tests are reused from CI. Release Candidate is the only place that builds the images for linux/amd64 and linux/arm64, as OCI image indexes with provenance and SBOM; the second platform is emulated, and the backend and renderer builds are separate Rules of up to an hour each.
+Candidate builds the versioned Docker images. Source checks, framework checks and backend/renderer tests are reused from CI. Release Candidate is a matrix of the targets linux-amd64 and linux-arm64, each on a native runner, and it is the only place that builds the images as release archives, with provenance and SBOM; the backend and renderer builds are separate Rules of up to an hour each, and publication assembles the platforms into one image index.
 Pre-push and CI keep building the images natively for the host platform with `release-artifacts`, so they stay fast.
 Backend APP_VERSION, BUILD_COMMIT and BUILD_TIMESTAMP and renderer APP_VERSION
 are retained; both runtime images also record source/version labels.

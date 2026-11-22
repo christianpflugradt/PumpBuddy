@@ -1,6 +1,6 @@
 id = "release-candidate-backend"
 name = "Release candidate backend image"
-description = "The backend Docker image builds for linux/amd64 and linux/arm64"
+description = "The backend Docker image builds for the platform of the job"
 run_at = ["release"]
 
 [check]

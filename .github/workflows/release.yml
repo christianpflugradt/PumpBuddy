@@ -37,13 +37,21 @@ jobs:
       required-jobs: check / Check
 
   release-candidate:
-    name: Release Candidate
+    name: Release Candidate (${{ matrix.target }})
     needs: plan
     if: needs.plan.outputs.release == 'true'
-    runs-on: ubuntu-26.04
+    strategy:
+      matrix:
+        include:
+          - target: linux-amd64
+            runner: ubuntu-26.04
+          - target: linux-arm64
+            runner: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
       RELEASE_TAG: v${{ needs.plan.outputs.version }}
+      RELEASE_TARGET: ${{ matrix.target }}
       EXPECTED_RELEASE_VERSION: ${{ needs.plan.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -59,17 +67,16 @@ jobs:
           version: 2026.11.11
       - name: Prepare candidate inputs
         run: mise run setup:candidate
-      - name: Set up emulation for the arm64 build
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: arm64
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Verify the candidate at the release point
         uses: christianpflugradt/please-behave-governance/actions/release/governance@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
-      - name: Export the verified image candidate
-        uses: christianpflugradt/please-behave-governance/actions/release/export-image@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
         with:
+          target: ${{ matrix.target }}
+      - name: Check the image candidates of the platform
+        uses: christianpflugradt/please-behave-governance/actions/release/check-image@c85286b88d8fe1da760ba222c7d787a96c65019b # updates/actions/release
+        with:
+          target: ${{ matrix.target }}
           version: ${{ needs.plan.outputs.version }}
           images: |
             pumpbuddy-backend
@@ -79,7 +86,7 @@ jobs:
         with:
           operation: record
           version: ${{ needs.plan.outputs.version }}
-          target: linux-amd64
+          target: ${{ matrix.target }}
 
   publish:
     name: Publish

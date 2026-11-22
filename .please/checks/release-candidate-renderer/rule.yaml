@@ -1,18 +1,18 @@
-purpose: Keep the renderer Docker image buildable for both release platforms at release time.
+purpose: Keep the renderer Docker image buildable for the platform of the job at release time.
 problem: A platform-specific build failure would otherwise first appear while publishing.
-value: The release is gated on the exact platforms that ship, and the candidate archive is written for export.
+value: The release is gated on the exact platforms that ship, and the candidate archive of each platform is written for verification.
 conditions:
-  - statement: The renderer image builds for linux/amd64 and linux/arm64 as an OCI image index with provenance and SBOM, written to dist.
-    rationale: That is the candidate the shared release actions export, verify and publish unchanged.
+  - statement: The renderer image builds for the platform in RELEASE_TARGET as an OCI archive with provenance and SBOM, written to dist.
+    rationale: That is the platform candidate that the shared release actions verify, assemble with the other platforms and publish unchanged.
   - statement: The rule runs only at the custom release point.
-    rationale: The multi-architecture build is slow, needed only when releasing, and must never delay pre-push or CI; release-artifacts covers the other points natively.
+    rationale: The candidate build is needed only when releasing and must never delay pre-push or CI; release-artifacts covers the other points natively.
 success_criteria:
-  - A failing build for either release platform fails.
+  - A failing build for the platform of the job fails.
 out_of_scope:
   - description: Publishing the image.
   - description: Builds at pre-push and check, which release-artifacts covers on the native platform.
   - description: Running the image.
 limitations:
-  - Needs Docker Buildx and, on a host of another architecture, emulation for the second platform.
+  - Needs Docker Buildx and RELEASE_TARGET, which the release workflow sets for each candidate job.
   - Is limited to one hour, the maximum a check may take.
 placement: Local, because the release point and the images exist only in this repository.
