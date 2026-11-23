@@ -1,4 +1,5 @@
 id = "release-artifacts"
+version = "1.0"
 name = "Release image build"
 description = "Both shipped Docker images build"
 run_at = ["pre-push", "check"]

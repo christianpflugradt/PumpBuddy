@@ -1,4 +1,5 @@
 id = "framework"
+version = "1.0"
 name = "Framework contracts"
 description = "All framework contracts and shell scripts are valid"
 run_at = ["pre-push", "check"]

@@ -1,4 +1,5 @@
 id = "renderer-quality"
+version = "1.0"
 name = "Renderer quality"
 description = "The renderer passes its complete quality suite"
 run_at = ["pre-push", "check"]

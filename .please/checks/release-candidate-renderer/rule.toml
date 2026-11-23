@@ -1,4 +1,5 @@
 id = "release-candidate-renderer"
+version = "1.0"
 name = "Release candidate renderer image"
 description = "The renderer Docker image builds for the platform of the job"
 run_at = ["release"]

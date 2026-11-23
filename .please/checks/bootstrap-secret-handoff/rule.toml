@@ -1,4 +1,5 @@
 id = "bootstrap-secret-handoff"
+version = "1.0"
 name = "Bootstrap secrets"
 description = "Bootstrap access keys are never printed or read from logs"
 run_at = ["pre-push", "check"]

@@ -1,4 +1,5 @@
 id = "backend-quality"
+version = "1.0"
 name = "Backend quality"
 description = "The backend has no Clippy warnings and all backend tests pass"
 run_at = ["pre-push", "check"]

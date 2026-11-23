@@ -1,4 +1,5 @@
 id = "release-candidate-backend"
+version = "1.0"
 name = "Release candidate backend image"
 description = "The backend Docker image builds for the platform of the job"
 run_at = ["release"]
