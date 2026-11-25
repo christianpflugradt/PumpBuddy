@@ -125,4 +125,6 @@ jobs:
         uses: christianpflugradt/repository-catalog/actions/release/publish-image@247434c51b05ace2163a53887595dd1eaa701fdf # updates/actions/release
         with:
           version: ${{ needs.plan.outputs.version }}
+          source-sha: ${{ needs.plan.outputs.source_sha }}
+          gateway-url: ${{ secrets.GATEWAY_URL }}
           force: ${{ inputs.force }}
