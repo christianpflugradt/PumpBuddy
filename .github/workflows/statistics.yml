@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned Rust toolchain and coverage tool
-        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         with:
           install_args: rust uv cargo:cargo-llvm-cov aqua:boyter/scc
           experimental: true
@@ -80,7 +80,7 @@ jobs:
         with:
           python-version: '3.15.2'
       - name: Install pinned Rust toolchain
-        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         with:
           install_args: rust uv aqua:boyter/scc
           experimental: true
